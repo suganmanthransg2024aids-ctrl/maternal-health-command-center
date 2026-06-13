@@ -1,0 +1,171 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@400;500;600;700;800&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-bg:            #020617;
+  --color-panel:         #0F172A;
+  --color-surface:       #1E293B;
+  --color-border:        #1E3A5F;
+  --color-accent1:       #0F4C81;
+  --color-accent2:       #1976D2;
+  --color-accent3:       #42A5F5;
+  --color-textprimary:   #F1F5F9;
+  --color-textsecondary: #94A3B8;
+  --color-texthint:      #475569;
+  --color-critical:      #EF4444;
+  --color-veryhigh:      #F97316;
+  --color-high:          #EAB308;
+  --color-moderate:      #3B82F6;
+  --color-low:           #22C55E;
+  --color-success:       #16A34A;
+  --color-warning:       #F59E0B;
+  --color-danger:        #DC2626;
+  --color-info:          #0EA5E9;
+}
+
+/* ── Theme CSS variables ────────────────────────────── */
+:root,
+[data-theme="dark"] {
+  --ccmc-bg:           #020617;
+  --ccmc-panel:        #0F172A;
+  --ccmc-surface:      #1E293B;
+  --ccmc-border:       rgba(30,58,95,0.7);
+  --ccmc-border-s:     #1E3A5F;
+  --ccmc-text:         #F1F5F9;
+  --ccmc-text-sec:     #94A3B8;
+  --ccmc-text-hint:    #475569;
+  --ccmc-input-bg:     rgba(30,41,59,0.8);
+  --ccmc-input-border: rgba(30,58,95,0.8);
+  --ccmc-login-bg:     linear-gradient(135deg,#020617 0%,#0a1628 40%,#0f2240 100%);
+  --ccmc-hover:        rgba(15,76,129,0.15);
+  --ccmc-shimmer1:     #0F172A;
+  --ccmc-shimmer2:     #1E293B;
+}
+
+[data-theme="bright"] {
+  --ccmc-bg:           #EFF6FF;
+  --ccmc-panel:        #FFFFFF;
+  --ccmc-surface:      #F0F9FF;
+  --ccmc-border:       rgba(148,163,184,0.5);
+  --ccmc-border-s:     #CBD5E1;
+  --ccmc-text:         #1E293B;
+  --ccmc-text-sec:     #475569;
+  --ccmc-text-hint:    #94A3B8;
+  --ccmc-input-bg:     rgba(248,250,252,0.95);
+  --ccmc-input-border: rgba(148,163,184,0.6);
+  --ccmc-login-bg:     linear-gradient(135deg,#DBEAFE 0%,#EFF6FF 40%,#F0F9FF 100%);
+  --ccmc-hover:        rgba(59,130,246,0.06);
+  --ccmc-shimmer1:     #F0F9FF;
+  --ccmc-shimmer2:     #E0F2FE;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background: var(--ccmc-bg);
+  color: var(--ccmc-text);
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  transition: background 0.25s, color 0.25s;
+}
+
+/* ── Bright-mode Tailwind text overrides ─────────────── */
+[data-theme="bright"] .text-white           { color: var(--ccmc-text)      !important; }
+[data-theme="bright"] .text-slate-100       { color: var(--ccmc-text)      !important; }
+[data-theme="bright"] .text-slate-200       { color: #334155               !important; }
+[data-theme="bright"] .text-slate-300       { color: var(--ccmc-text-sec)  !important; }
+[data-theme="bright"] .text-slate-400       { color: var(--ccmc-text-sec)  !important; }
+[data-theme="bright"] .text-slate-500       { color: var(--ccmc-text-hint) !important; }
+[data-theme="bright"] .text-slate-600       { color: var(--ccmc-text-hint) !important; }
+[data-theme="bright"] .text-slate-700       { color: #94A3B8               !important; }
+[data-theme="bright"] .bg-slate-800         { background: var(--ccmc-surface) !important; }
+[data-theme="bright"] .bg-slate-900         { background: var(--ccmc-panel)   !important; }
+[data-theme="bright"] .divide-slate-700 > * { border-color: var(--ccmc-border-s) !important; }
+[data-theme="bright"] .border-slate-700     { border-color: var(--ccmc-border-s) !important; }
+[data-theme="bright"] .border-slate-800     { border-color: var(--ccmc-border-s) !important; }
+
+/* ── Scrollbars ─────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--ccmc-panel); }
+::-webkit-scrollbar-thumb { background: var(--ccmc-border-s); border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background: #1976D2; }
+
+/* ── Glassmorphism card ─────────────────────────────── */
+.glass-card {
+  background: rgba(15,23,42,0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(30,58,95,0.8);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06);
+}
+[data-theme="bright"] .glass-card {
+  background: rgba(255,255,255,0.85);
+  border: 1px solid rgba(148,163,184,0.5);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.9);
+}
+
+/* ── Gradient text ──────────────────────────────────── */
+.gradient-text {
+  background: linear-gradient(135deg, #42A5F5, #1976D2, #0F4C81);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Status badge colours ───────────────────────────── */
+.badge-critical  { background: rgba(239,68,68,0.15);  color: #FCA5A5; border: 1px solid rgba(239,68,68,0.3); }
+.badge-very-high { background: rgba(249,115,22,0.15); color: #FDBA74; border: 1px solid rgba(249,115,22,0.3); }
+.badge-high      { background: rgba(234,179,8,0.15);  color: #FDE047; border: 1px solid rgba(234,179,8,0.3); }
+.badge-moderate  { background: rgba(59,130,246,0.15); color: #93C5FD; border: 1px solid rgba(59,130,246,0.3); }
+.badge-low       { background: rgba(34,197,94,0.15);  color: #86EFAC; border: 1px solid rgba(34,197,94,0.3); }
+
+/* ── Animated pulse ring ────────────────────────────── */
+.pulse-ring { animation: pulse-ring 2s cubic-bezier(0.455,0.03,0.515,0.955) infinite; }
+@keyframes pulse-ring {
+  0%   { box-shadow: 0 0 0 0   rgba(66,165,245,0.4); }
+  70%  { box-shadow: 0 0 0 10px rgba(66,165,245,0);   }
+  100% { box-shadow: 0 0 0 0   rgba(66,165,245,0);   }
+}
+
+/* ── Shimmer loading ────────────────────────────────── */
+.shimmer {
+  background: linear-gradient(90deg, var(--ccmc-shimmer1) 25%, var(--ccmc-shimmer2) 50%, var(--ccmc-shimmer1) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+@keyframes shimmer {
+  0%   { background-position:  200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ── Table styles ───────────────────────────────────── */
+.data-table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
+.data-table th {
+  background: var(--ccmc-panel);
+  color: var(--ccmc-text-sec);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--ccmc-border-s);
+  white-space: nowrap;
+}
+.data-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--ccmc-border);
+  color: var(--ccmc-text-sec);
+  vertical-align: middle;
+}
+.data-table tr:hover td { background: var(--ccmc-hover); }
+
+/* ── Print ──────────────────────────────────────────── */
+@media print {
+  body { background: white !important; color: black !important; }
+  aside, nav, header, button, .no-print { display: none !important; }
+  main, .print-full { width: 100% !important; max-width: 100% !important; margin: 0 !important; padding: 0 !important; }
+  .print-page-break { page-break-before: always; }
+}
