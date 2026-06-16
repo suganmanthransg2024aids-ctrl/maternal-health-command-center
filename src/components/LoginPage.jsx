@@ -13,6 +13,8 @@ export default function LoginPage({ onLogin }) {
   const [showPass, setShowPass] = useState(false);
   const [error,    setError]    = useState('');
   const [loading,  setLoading]  = useState(false);
+  const [tnHover,  setTnHover]  = useState(false);
+  const [ccmcHover,setCcmcHover]= useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -55,6 +57,17 @@ export default function LoginPage({ onLogin }) {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden py-8"
       style={{ background: bg }}>
+
+      <style>{`
+        @keyframes ccmcLogoPulse {
+          0%, 100% { opacity: 0.5; transform: scale(1); }
+          50%       { opacity: 0.9; transform: scale(1.1); }
+        }
+        @keyframes ccmcRingRotate {
+          from { transform: rotate(0deg); }
+          to   { transform: rotate(360deg); }
+        }
+      `}</style>
 
       {/* Background orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -100,28 +113,87 @@ export default function LoginPage({ onLogin }) {
 
             {/* ── LEFT: Tamil Nadu Government ── */}
             <div className="flex flex-col items-center gap-3 flex-shrink-0">
-              <div className="relative">
-                <div
-                  className="absolute inset-0 rounded-full"
-                  style={{ background: 'radial-gradient(circle,rgba(204,0,0,0.35),transparent)', filter: 'blur(18px)', transform: 'scale(1.2)' }}
-                />
-                <div
-                  className="relative flex items-center justify-center rounded-full p-1"
-                  style={{
-                    background: dark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.95)',
-                    border: `2px solid ${dark ? 'rgba(204,0,0,0.3)' : 'rgba(204,0,0,0.15)'}`,
-                    boxShadow: '0 8px 32px rgba(0,0,0,0.25)',
-                    width: 112, height: 112,
-                  }}
-                >
+              <div
+                style={{ position: 'relative', width: 136, height: 136 }}
+                onMouseEnter={() => setTnHover(true)}
+                onMouseLeave={() => setTnHover(false)}
+              >
+                {/* Outer ambient glow — pulsing */}
+                <div style={{
+                  position: 'absolute', inset: -16, borderRadius: '50%',
+                  background: `radial-gradient(circle, rgba(204,0,0,${tnHover ? 0.5 : 0.22}), rgba(255,153,0,${tnHover ? 0.18 : 0.08}), transparent 70%)`,
+                  filter: 'blur(14px)',
+                  animation: 'ccmcLogoPulse 3s ease-in-out infinite',
+                  transition: 'background 0.4s ease',
+                  pointerEvents: 'none',
+                }} />
+                {/* India tricolor conic border ring */}
+                <div style={{
+                  position: 'absolute', inset: 0, borderRadius: '50%',
+                  background: 'conic-gradient(from 90deg, #FF9933 0deg 120deg, #FFFFFF 120deg 240deg, #138808 240deg 360deg)',
+                  opacity: tnHover ? 0.9 : 0.55,
+                  transform: tnHover ? 'scale(1.07)' : 'scale(1)',
+                  transition: 'all 0.5s ease',
+                  pointerEvents: 'none',
+                }} />
+                {/* Inner mask to turn ring into a border */}
+                <div style={{
+                  position: 'absolute', inset: 3, borderRadius: '50%',
+                  background: dark ? '#071220' : '#eef4ff',
+                  pointerEvents: 'none',
+                }} />
+                {/* Second inner decorative ring — thin gold accent */}
+                <div style={{
+                  position: 'absolute', inset: 5, borderRadius: '50%',
+                  background: 'conic-gradient(from 270deg, rgba(255,200,50,0.7), transparent 40%, rgba(255,200,50,0.4) 70%, transparent)',
+                  opacity: tnHover ? 0.7 : 0.35,
+                  transition: 'opacity 0.4s ease',
+                  pointerEvents: 'none',
+                }} />
+                {/* Glass logo container */}
+                <div style={{
+                  position: 'absolute', inset: 7, borderRadius: '50%',
+                  background: dark
+                    ? 'linear-gradient(145deg, rgba(255,255,255,0.13) 0%, rgba(15,8,30,0.6) 100%)'
+                    : 'linear-gradient(145deg, #ffffff 0%, rgba(240,245,255,0.96) 100%)',
+                  backdropFilter: 'blur(20px)',
+                  WebkitBackdropFilter: 'blur(20px)',
+                  border: `1px solid ${dark ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,1)'}`,
+                  boxShadow: tnHover
+                    ? `0 22px 50px rgba(0,0,0,0.5), 0 0 36px rgba(204,0,0,0.3), 0 0 60px rgba(204,0,0,0.12), inset 0 2px 2px rgba(255,255,255,0.55), inset 0 -2px 2px rgba(0,0,0,0.18)`
+                    : `0 10px 30px rgba(0,0,0,0.32), 0 0 16px rgba(204,0,0,0.14), inset 0 2px 1px rgba(255,255,255,0.45), inset 0 -2px 1px rgba(0,0,0,0.1)`,
+                  transform: tnHover ? 'scale(1.13) translateY(-6px)' : 'scale(1) translateY(0)',
+                  transition: 'all 0.42s cubic-bezier(0.34,1.56,0.64,1)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  overflow: 'hidden',
+                }}>
+                  {/* Specular dome highlight — 3D glass effect */}
+                  <div style={{
+                    position: 'absolute', top: 6, left: '16%', right: '16%', height: '40%',
+                    background: 'linear-gradient(180deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.12) 60%, transparent 100%)',
+                    borderRadius: '50% 50% 0 0 / 65% 65% 0 0',
+                    pointerEvents: 'none', zIndex: 2,
+                  }} />
+                  {/* Bottom reflection — depth illusion */}
+                  <div style={{
+                    position: 'absolute', bottom: 5, left: '22%', right: '22%', height: '20%',
+                    background: 'linear-gradient(0deg, rgba(255,255,255,0.15) 0%, transparent 100%)',
+                    borderRadius: '0 0 50% 50% / 0 0 40% 40%',
+                    pointerEvents: 'none', zIndex: 2,
+                  }} />
                   <img
                     src="/images/tn-gov.png"
                     alt="Government of Tamil Nadu"
-                    style={{ width: 96, height: 96, objectFit: 'contain' }}
+                    style={{
+                      width: 84, height: 84, objectFit: 'contain',
+                      position: 'relative', zIndex: 1,
+                      filter: `drop-shadow(0 3px 8px rgba(0,0,0,0.28)) ${tnHover ? 'drop-shadow(0 0 10px rgba(204,0,0,0.35))' : ''}`,
+                      transition: 'filter 0.4s ease',
+                    }}
                     onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
                   />
-                  <div style={{ display: 'none', width: 96, height: 96, alignItems: 'center', justifyContent: 'center' }}>
-                    <svg viewBox="0 0 40 40" style={{ width: 72, height: 72 }}>
+                  <div style={{ display: 'none', width: 84, height: 84, alignItems: 'center', justifyContent: 'center', position: 'relative', zIndex: 1 }}>
+                    <svg viewBox="0 0 40 40" style={{ width: 68, height: 68 }}>
                       <circle cx="20" cy="20" r="18" fill="#8B0000" />
                       <text x="20" y="25" textAnchor="middle" fill="gold" fontSize="11" fontWeight="bold">TN</text>
                     </svg>
@@ -199,28 +271,88 @@ export default function LoginPage({ onLogin }) {
 
             {/* ── RIGHT: CCMC Logo ── */}
             <div className="flex flex-col items-center gap-3 flex-shrink-0">
-              <div className="relative">
-                <div
-                  className="absolute inset-0 rounded-full"
-                  style={{ background: 'radial-gradient(circle,rgba(25,118,210,0.4),transparent)', filter: 'blur(18px)', transform: 'scale(1.2)' }}
-                />
-                <div
-                  className="relative flex items-center justify-center rounded-full p-1"
-                  style={{
-                    background: dark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.95)',
-                    border: `2px solid ${dark ? 'rgba(25,118,210,0.35)' : 'rgba(25,118,210,0.2)'}`,
-                    boxShadow: '0 8px 32px rgba(0,0,0,0.25)',
-                    width: 112, height: 112,
-                  }}
-                >
+              <div
+                style={{ position: 'relative', width: 136, height: 136 }}
+                onMouseEnter={() => setCcmcHover(true)}
+                onMouseLeave={() => setCcmcHover(false)}
+              >
+                {/* Outer ambient glow — blue pulsing, offset timing */}
+                <div style={{
+                  position: 'absolute', inset: -16, borderRadius: '50%',
+                  background: `radial-gradient(circle, rgba(25,118,210,${ccmcHover ? 0.6 : 0.28}), rgba(66,165,245,${ccmcHover ? 0.25 : 0.1}), transparent 70%)`,
+                  filter: 'blur(16px)',
+                  animation: 'ccmcLogoPulse 3s ease-in-out infinite',
+                  animationDelay: '0.5s',
+                  transition: 'background 0.4s ease',
+                  pointerEvents: 'none',
+                }} />
+                {/* Blue conic gradient border ring */}
+                <div style={{
+                  position: 'absolute', inset: 0, borderRadius: '50%',
+                  background: 'conic-gradient(from 0deg, #0F4C81 0deg, #1976D2 60deg, #42A5F5 120deg, #60CFFF 180deg, #42A5F5 240deg, #1976D2 300deg, #0F4C81 360deg)',
+                  opacity: ccmcHover ? 0.95 : 0.62,
+                  transform: ccmcHover ? 'scale(1.07)' : 'scale(1)',
+                  transition: 'all 0.5s ease',
+                  pointerEvents: 'none',
+                }} />
+                {/* Inner mask */}
+                <div style={{
+                  position: 'absolute', inset: 3, borderRadius: '50%',
+                  background: dark ? '#071220' : '#eef4ff',
+                  pointerEvents: 'none',
+                }} />
+                {/* Second inner decorative ring — cyan accent */}
+                <div style={{
+                  position: 'absolute', inset: 5, borderRadius: '50%',
+                  background: 'conic-gradient(from 180deg, rgba(66,165,245,0.6), transparent 40%, rgba(96,207,255,0.45) 70%, transparent)',
+                  opacity: ccmcHover ? 0.75 : 0.38,
+                  transition: 'opacity 0.4s ease',
+                  pointerEvents: 'none',
+                }} />
+                {/* Glass logo container */}
+                <div style={{
+                  position: 'absolute', inset: 7, borderRadius: '50%',
+                  background: dark
+                    ? 'linear-gradient(145deg, rgba(255,255,255,0.13) 0%, rgba(10,22,50,0.65) 100%)'
+                    : 'linear-gradient(145deg, #ffffff 0%, rgba(224,242,255,0.97) 100%)',
+                  backdropFilter: 'blur(20px)',
+                  WebkitBackdropFilter: 'blur(20px)',
+                  border: `1px solid ${dark ? 'rgba(66,165,245,0.22)' : 'rgba(255,255,255,1)'}`,
+                  boxShadow: ccmcHover
+                    ? `0 22px 50px rgba(0,0,0,0.48), 0 0 40px rgba(25,118,210,0.5), 0 0 70px rgba(25,118,210,0.2), inset 0 2px 2px rgba(255,255,255,0.55), inset 0 -2px 2px rgba(0,0,0,0.14)`
+                    : `0 10px 30px rgba(0,0,0,0.3), 0 0 22px rgba(25,118,210,0.22), inset 0 2px 1px rgba(255,255,255,0.45), inset 0 -2px 1px rgba(0,0,0,0.1)`,
+                  transform: ccmcHover ? 'scale(1.13) translateY(-6px)' : 'scale(1) translateY(0)',
+                  transition: 'all 0.42s cubic-bezier(0.34,1.56,0.64,1)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  overflow: 'hidden',
+                }}>
+                  {/* Specular dome highlight */}
+                  <div style={{
+                    position: 'absolute', top: 6, left: '16%', right: '16%', height: '40%',
+                    background: 'linear-gradient(180deg, rgba(255,255,255,0.52) 0%, rgba(255,255,255,0.1) 60%, transparent 100%)',
+                    borderRadius: '50% 50% 0 0 / 65% 65% 0 0',
+                    pointerEvents: 'none', zIndex: 2,
+                  }} />
+                  {/* Bottom reflection */}
+                  <div style={{
+                    position: 'absolute', bottom: 5, left: '22%', right: '22%', height: '20%',
+                    background: 'linear-gradient(0deg, rgba(66,165,245,0.15) 0%, transparent 100%)',
+                    borderRadius: '0 0 50% 50% / 0 0 40% 40%',
+                    pointerEvents: 'none', zIndex: 2,
+                  }} />
                   <img
                     src="/images/ccmc-logo.png"
                     alt="CCMC – Coimbatore City Municipal Corporation"
-                    style={{ width: 96, height: 96, objectFit: 'contain' }}
+                    style={{
+                      width: 84, height: 84, objectFit: 'contain',
+                      position: 'relative', zIndex: 1,
+                      filter: `drop-shadow(0 3px 8px rgba(0,0,0,0.22)) ${ccmcHover ? 'drop-shadow(0 0 12px rgba(25,118,210,0.45))' : ''}`,
+                      transition: 'filter 0.4s ease',
+                    }}
                     onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
                   />
-                  <div style={{ display: 'none', width: 96, height: 96, alignItems: 'center', justifyContent: 'center',
-                    background: 'linear-gradient(135deg,#0F4C81,#1976D2)', borderRadius: '50%' }}>
+                  <div style={{ display: 'none', width: 84, height: 84, alignItems: 'center', justifyContent: 'center',
+                    background: 'linear-gradient(135deg,#0F4C81,#1976D2)', borderRadius: '50%', position: 'relative', zIndex: 1 }}>
                     <span style={{ color: 'white', fontWeight: 'bold', fontSize: 14 }}>CCMC</span>
                   </div>
                 </div>

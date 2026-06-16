@@ -34,4 +34,18 @@ desktop.ini
 *.env
 .env*
 
+# Excel data files (source of truth is Google Sheets in production)
+*.xlsx
+*.xls
+
+# Large binaries
 cloudflared.exe
+*.exe
+
+# Python virtual environments
+venv/
+.venv/
+env/
+
+# Render / deployment artifacts
+.render/

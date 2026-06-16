@@ -13,6 +13,8 @@ import os
 import datetime
 import re
 import hashlib
+import threading
+import time
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -33,14 +35,26 @@ if os.path.exists(_cfg_file):
     except Exception:
         pass
 
-_default_excel = os.path.join(BASE_DIR, '..', '..', '..', 'Downloads',
-                              'ccmc maternal',
-                              'Coimbatore Corp Zonewise HR Mother Updation  (1).xlsx')
-EXCEL_PATH     = os.path.abspath(_cfg.get('excel_path', _default_excel))
-PORT           = int(_cfg.get('port', 8001))
-HOST           = _cfg.get('host', '0.0.0.0')
-CALLS_FILE     = os.path.join(BASE_DIR, 'call_tracking.json')
-FOLLOWUP_FILE  = os.path.join(BASE_DIR, 'followup_data.json')
+# ── Cloud / Local data source ───────────────────────────────────────────────
+# EXCEL_URL: set this env var to the Google Sheets XLSX export URL for cloud sync.
+# When set, the app downloads the sheet on startup and every 5 minutes automatically.
+# Leave unset (or empty) to use the local Excel file via config.json / default path.
+EXCEL_URL = os.environ.get('EXCEL_URL', '').strip()
+
+if EXCEL_URL:
+    # Cloud mode: file downloaded to /tmp at startup
+    EXCEL_PATH = '/tmp/ccmc_data.xlsx'
+else:
+    _default_excel = os.path.join(BASE_DIR, '..', '..', '..', 'Downloads',
+                                  'ccmc maternal',
+                                  'Coimbatore Corp Zonewise HR Mother Updation  (1).xlsx')
+    EXCEL_PATH = os.path.abspath(_cfg.get('excel_path', os.environ.get('EXCEL_PATH', _default_excel)))
+
+# PORT: Render (and most PaaS platforms) inject PORT via env var at runtime.
+PORT = int(os.environ.get('PORT', _cfg.get('port', 8001)))
+HOST = _cfg.get('host', '0.0.0.0')
+CALLS_FILE    = os.path.join(BASE_DIR, 'call_tracking.json')
+FOLLOWUP_FILE = os.path.join(BASE_DIR, 'followup_data.json')
 
 # ── Auth ───────────────────────────────────────────────────────────────────
 USERS = {
@@ -52,18 +66,18 @@ USERS = {
               "phcs": ["CTM", "PATTUNOOL", "NANJUNDAPURAM", "NEELIKONAMPALAYAM"], "full_access": False},
     "HRT2":  {"password": "hrt2@2024",  "role": "HRT2",  "name": "Girija",
               "phcs": ["VVM", "RATHINAPURI", "RK BAI", "TELUNGUPALAYAM", "SOWRIPALAYAM"], "full_access": False},
-    "HRT3":  {"password": "hrt3@2024",  "role": "HRT3",  "name": "Nivetha",
-              "phcs": ["KK PUDUR", "KURUCHI", "SN PALAYAM", "MM HOME"], "full_access": False},
-    "HRT4":  {"password": "hrt4@2024",  "role": "HRT4",  "name": "Pavithraa M",
-              "phcs": ["UPPILIPALAYAM", "RAMANATHAPURAM", "SINGANALLUR", "PODANUR"], "full_access": False},
-    "HRT5":  {"password": "hrt5@2024",  "role": "HRT5",  "name": "Pavithra",
-              "phcs": ["KUNIYAMUTHUR", "VADAVALLI", "THONDAMUTHUR", "KALVEERAMPALAYAM", "JRM"], "full_access": False},
-    "HRT6":  {"password": "hrt6@2024",  "role": "HRT6",  "name": "Ishwarya",
-              "phcs": ["VILANKURICHI"], "full_access": False},
-    "HRT7":  {"password": "hrt7@2024",  "role": "HRT7",  "name": "Swetha",
+    "HRT3":  {"password": "hrt3@2024",  "role": "HRT3",  "name": "Swetha",
               "phcs": ["GANAPATHY", "RAJA STREET", "THUDIYALUR", "49 GOUNDAMPALAYAM", "MANIYAKARAMPALAYAM"], "full_access": False},
-    "HRT8":  {"password": "hrt8@2024",  "role": "HRT8",  "name": "Abarna V",
+    "HRT4":  {"password": "hrt4@2024",  "role": "HRT4",  "name": "Abarna V",
               "phcs": ["GANAPATHY MANAGAR UPHC", "SELVAPURAM", "VELLAKINAR", "PEELAMEDU", "SLM"], "full_access": False},
+    "HRT5":  {"password": "hrt5@2024",  "role": "HRT5",  "name": "Nivetha",
+              "phcs": ["KK PUDUR", "KURUCHI", "SN PALAYAM", "MM HOME", "MM", "MM PHC", "MPHC"], "full_access": False},
+    "HRT6":  {"password": "hrt6@2024",  "role": "HRT6",  "name": "Pavithra",
+              "phcs": ["KUNIYAMUTHUR", "VADAVALLI", "THONDAMUTHUR", "JRM", "KALVEERAMPALAYAM"], "full_access": False},
+    "HRT7":  {"password": "hrt7@2024",  "role": "HRT7",  "name": "Ishwarya",
+              "phcs": ["VILANKURICHI"], "full_access": False},
+    "HRT8":  {"password": "hrt8@2024",  "role": "HRT8",  "name": "Pavithraa M",
+              "phcs": ["UPPILIPALAYAM", "RAMANATHAPURAM", "SINGANALLUR", "PODANUR"], "full_access": False},
 }
 
 # ── PHC → HRT Mapping ──────────────────────────────────────────────────────
@@ -77,30 +91,33 @@ PHC_MAP = {
     "RK BAI":                 {"hrt_code": "HRT2", "hrt_name": "Girija",      "phc_display": "RK Bhai"},
     "TELUNGUPALAYAM":         {"hrt_code": "HRT2", "hrt_name": "Girija",      "phc_display": "Telungupalayam"},
     "SOWRIPALAYAM":           {"hrt_code": "HRT2", "hrt_name": "Girija",      "phc_display": "Sowripalayam"},
-    "KK PUDUR":               {"hrt_code": "HRT3", "hrt_name": "Nivetha",     "phc_display": "KK Pudur"},
-    "KURUCHI":                {"hrt_code": "HRT3", "hrt_name": "Nivetha",     "phc_display": "Kuruchi"},
-    "SN PALAYAM":             {"hrt_code": "HRT3", "hrt_name": "Nivetha",     "phc_display": "Seeranaikenpalayam"},
-    "MM HOME":                {"hrt_code": "HRT3", "hrt_name": "Nivetha",     "phc_display": "NM Home"},
-    "UPPILIPALAYAM":          {"hrt_code": "HRT4", "hrt_name": "Pavithraa M", "phc_display": "Uppilipalayam"},
-    "RAMANATHAPURAM":         {"hrt_code": "HRT4", "hrt_name": "Pavithraa M", "phc_display": "Ramanathapuram"},
-    "SINGANALLUR":            {"hrt_code": "HRT4", "hrt_name": "Pavithraa M", "phc_display": "Singanallur"},
-    "PODANUR":                {"hrt_code": "HRT4", "hrt_name": "Pavithraa M", "phc_display": "Podanur"},
-    "KUNIYAMUTHUR":           {"hrt_code": "HRT5", "hrt_name": "Pavithra",    "phc_display": "Kuniyamuthur"},
-    "VADAVALLI":              {"hrt_code": "HRT5", "hrt_name": "Pavithra",    "phc_display": "Vadavalli"},
-    "THONDAMUTHUR":           {"hrt_code": "HRT5", "hrt_name": "Pavithra",    "phc_display": "Thondamuthur"},
-    "KALVEERAMPALAYAM":       {"hrt_code": "HRT5", "hrt_name": "Pavithra",    "phc_display": "Kalveerampalayam"},
-    "JRM":                    {"hrt_code": "HRT5", "hrt_name": "Pavithra",    "phc_display": "JRM Center"},
-    "VILANKURICHI":           {"hrt_code": "HRT6", "hrt_name": "Ishwarya",    "phc_display": "Vilankurichi"},
-    "GANAPATHY":              {"hrt_code": "HRT7", "hrt_name": "Swetha",      "phc_display": "Ganapathy"},
-    "RAJA STREET":            {"hrt_code": "HRT7", "hrt_name": "Swetha",      "phc_display": "Raja Street"},
-    "THUDIYALUR":             {"hrt_code": "HRT7", "hrt_name": "Swetha",      "phc_display": "Thudiyalur"},
-    "49 GOUNDAMPALAYAM":      {"hrt_code": "HRT7", "hrt_name": "Swetha",      "phc_display": "Goundampalayam"},
-    "MANIYAKARAMPALAYAM":     {"hrt_code": "HRT7", "hrt_name": "Swetha",      "phc_display": "Maniyakarampalayam"},
-    "GANAPATHY MANAGAR UPHC": {"hrt_code": "HRT8", "hrt_name": "Abarna V",   "phc_display": "Ganapathy Managar"},
-    "SELVAPURAM":             {"hrt_code": "HRT8", "hrt_name": "Abarna V",   "phc_display": "Selvapuram"},
-    "VELLAKINAR":             {"hrt_code": "HRT8", "hrt_name": "Abarna V",   "phc_display": "Vellakinar"},
-    "PEELAMEDU":              {"hrt_code": "HRT8", "hrt_name": "Abarna V",   "phc_display": "Peelamedu"},
-    "SLM":                    {"hrt_code": "HRT8", "hrt_name": "Abarna V",   "phc_display": "SLM Home"},
+    "GANAPATHY":              {"hrt_code": "HRT3", "hrt_name": "Swetha",      "phc_display": "Ganapathy"},
+    "RAJA STREET":            {"hrt_code": "HRT3", "hrt_name": "Swetha",      "phc_display": "Raja Street"},
+    "THUDIYALUR":             {"hrt_code": "HRT3", "hrt_name": "Swetha",      "phc_display": "Thudiyalur"},
+    "49 GOUNDAMPALAYAM":      {"hrt_code": "HRT3", "hrt_name": "Swetha",      "phc_display": "Goundampalayam"},
+    "MANIYAKARAMPALAYAM":     {"hrt_code": "HRT3", "hrt_name": "Swetha",      "phc_display": "Maniyakaranpalayam"},
+    "GANAPATHY MANAGAR UPHC": {"hrt_code": "HRT4", "hrt_name": "Abarna V",    "phc_display": "Ganapathy Managar"},
+    "SELVAPURAM":             {"hrt_code": "HRT4", "hrt_name": "Abarna V",    "phc_display": "Selvapuram"},
+    "VELLAKINAR":             {"hrt_code": "HRT4", "hrt_name": "Abarna V",    "phc_display": "Vellakinar"},
+    "PEELAMEDU":              {"hrt_code": "HRT4", "hrt_name": "Abarna V",    "phc_display": "Peelamedu"},
+    "SLM":                    {"hrt_code": "HRT4", "hrt_name": "Abarna V",    "phc_display": "SLM Home"},
+    "KK PUDUR":               {"hrt_code": "HRT5", "hrt_name": "Nivetha",     "phc_display": "KK Pudur"},
+    "KURUCHI":                {"hrt_code": "HRT5", "hrt_name": "Nivetha",     "phc_display": "Kuruchi"},
+    "SN PALAYAM":             {"hrt_code": "HRT5", "hrt_name": "Nivetha",     "phc_display": "Seeranaikenpalayam"},
+    "MM HOME":                {"hrt_code": "HRT5", "hrt_name": "Nivetha",     "phc_display": "MM Home"},
+    "MM":                     {"hrt_code": "HRT5", "hrt_name": "Nivetha",     "phc_display": "MM Home"},
+    "MM PHC":                 {"hrt_code": "HRT5", "hrt_name": "Nivetha",     "phc_display": "MM Home"},
+    "MPHC":                   {"hrt_code": "HRT5", "hrt_name": "Nivetha",     "phc_display": "MM Home"},
+    "KUNIYAMUTHUR":           {"hrt_code": "HRT6", "hrt_name": "Pavithra",    "phc_display": "Kuniyamuthur"},
+    "VADAVALLI":              {"hrt_code": "HRT6", "hrt_name": "Pavithra",    "phc_display": "Vadavalli"},
+    "THONDAMUTHUR":           {"hrt_code": "HRT6", "hrt_name": "Pavithra",    "phc_display": "Thondamuthur"},
+    "JRM":                    {"hrt_code": "HRT6", "hrt_name": "Pavithra",    "phc_display": "JRM Centre"},
+    "KALVEERAMPALAYAM":       {"hrt_code": "HRT6", "hrt_name": "Pavithra",    "phc_display": "Kalveerampalayam"},
+    "VILANKURICHI":           {"hrt_code": "HRT7", "hrt_name": "Ishwarya",    "phc_display": "Vilankuruchi"},
+    "UPPILIPALAYAM":          {"hrt_code": "HRT8", "hrt_name": "Pavithraa M", "phc_display": "Uppilipalayam"},
+    "RAMANATHAPURAM":         {"hrt_code": "HRT8", "hrt_name": "Pavithraa M", "phc_display": "Ramanathapuram"},
+    "SINGANALLUR":            {"hrt_code": "HRT8", "hrt_name": "Pavithraa M", "phc_display": "Singanallur"},
+    "PODANUR":                {"hrt_code": "HRT8", "hrt_name": "Pavithraa M", "phc_display": "Podanur"},
     "SHEET45":                {"hrt_code": "UNASSIGNED", "hrt_name": "Unassigned", "phc_display": "Other"},
 }
 
@@ -139,11 +156,100 @@ SHEET_TO_PHC = {
     "TELUNGUPALAYAM":         "TELUNGUPALAYAM",
     "SELVAPURAM":             "SELVAPURAM",
     "GANAPATHY MANAGAR UPHC": "GANAPATHY MANAGAR UPHC",
+    "MM":                     "MM",
+    "MM PHC":                 "MM PHC",
+    "MPHC":                   "MPHC",
     "SHEET45":                "SHEET45",
 }
 
 # ── In-memory cache ────────────────────────────────────────────────────────
 _cache = {"df": None, "ts": None}
+
+# ── Auto-sync state ────────────────────────────────────────────────────────
+_sync_state = {
+    "last_mtime":     None,
+    "last_sync_time": None,
+    "syncing":        False,
+    "sync_count":     0,
+    "auto_enabled":   True,
+}
+AUTO_SYNC_INTERVAL  = 30   # seconds — local mtime check interval
+CLOUD_SYNC_INTERVAL = 300  # seconds — Google Sheets re-download interval (5 min)
+
+def _get_file_mtime():
+    try:
+        return os.path.getmtime(EXCEL_PATH)
+    except Exception:
+        return None
+
+def _download_excel():
+    """Download Excel from EXCEL_URL (Google Sheets export). Returns True if data changed."""
+    if not EXCEL_URL:
+        return False
+    try:
+        import urllib.request
+        tmp = EXCEL_PATH + '.download'
+        urllib.request.urlretrieve(EXCEL_URL, tmp)
+        # Compare with existing to detect real changes
+        changed = True
+        if os.path.exists(EXCEL_PATH):
+            with open(EXCEL_PATH, 'rb') as f_old, open(tmp, 'rb') as f_new:
+                changed = f_old.read() != f_new.read()
+        if changed:
+            os.replace(tmp, EXCEL_PATH)
+        else:
+            os.remove(tmp)
+        return changed
+    except Exception as e:
+        print(f"[CLOUD-SYNC] Download error: {e}", flush=True)
+        return False
+
+def _auto_sync_worker():
+    """Background daemon: local mtime check (every 30s) or cloud re-download (every 5 min)."""
+    time.sleep(20)
+    _sync_state["last_mtime"] = _get_file_mtime()
+    _cloud_elapsed = 0
+
+    while True:
+        try:
+            time.sleep(AUTO_SYNC_INTERVAL)
+            if not _sync_state["auto_enabled"] or _sync_state["syncing"]:
+                continue
+
+            should_reload = False
+
+            if EXCEL_URL:
+                _cloud_elapsed += AUTO_SYNC_INTERVAL
+                if _cloud_elapsed >= CLOUD_SYNC_INTERVAL:
+                    _cloud_elapsed = 0
+                    print("[CLOUD-SYNC] Checking Google Sheets for updates…", flush=True)
+                    if _download_excel():
+                        print("[CLOUD-SYNC] Data changed — reloading…", flush=True)
+                        should_reload = True
+                    else:
+                        print("[CLOUD-SYNC] No change.", flush=True)
+            else:
+                current_mtime = _get_file_mtime()
+                if current_mtime and current_mtime != _sync_state["last_mtime"]:
+                    print("[AUTO-SYNC] Excel file changed — reloading…", flush=True)
+                    should_reload = True
+
+            if should_reload:
+                _sync_state["syncing"] = True
+                try:
+                    load_excel()
+                    _sync_state["last_mtime"]     = _get_file_mtime()
+                    _sync_state["last_sync_time"] = datetime.datetime.now().isoformat()
+                    _sync_state["sync_count"]    += 1
+                    n = len(_cache["df"]) if _cache["df"] is not None else 0
+                    print(f"[SYNC] Done — {n} records live", flush=True)
+                except Exception as e:
+                    print(f"[SYNC] Reload error: {e}", flush=True)
+                finally:
+                    _sync_state["syncing"] = False
+        except Exception as e:
+            print(f"[AUTO-SYNC] Worker error: {e}", flush=True)
+
 
 def _load_json(path):
     if os.path.exists(path):
@@ -238,10 +344,39 @@ def _days_to_edd(edd_val):
     except Exception:
         return None
 
+_DELIVERY_DATE_RE = re.compile(r'^(\d{1,2})[./\-](\d{1,2})[./\-](\d{2,4})')
+
+def _parse_delivery_date(text):
+    """Extract actual delivery date from uphc_response text e.g. '31.3.26 AT:5PM/LSCS...'"""
+    if not text or str(text).strip() in ("", "nan", "NaT"):
+        return None
+    m = _DELIVERY_DATE_RE.match(str(text).strip())
+    if not m:
+        return None
+    day, month, year = int(m.group(1)), int(m.group(2)), int(m.group(3))
+    if year < 100:
+        year += 2000
+    try:
+        d = datetime.date(year, month, day)
+        today = datetime.date.today()
+        # Sanity: must be within last 2 years and not in future
+        if datetime.date(today.year - 2, 1, 1) <= d <= today:
+            return d
+    except ValueError:
+        pass
+    return None
+
 def _normalise_col(df, candidates, default=""):
-    for c in candidates:
-        if c in df.columns:
-            return df[c].fillna("").astype(str).str.strip()
+    # Case-insensitive, whitespace-stripped column lookup
+    col_norm = {}
+    for c in df.columns:
+        key = str(c).strip().upper()
+        if key not in col_norm:
+            col_norm[key] = c
+    for cand in candidates:
+        key = str(cand).strip().upper()
+        if key in col_norm:
+            return df[col_norm[key]].fillna("").astype(str).str.strip()
     return pd.Series([default] * len(df), index=df.index)
 
 # ── Excel Reader ───────────────────────────────────────────────────────────
@@ -258,27 +393,48 @@ def load_excel():
         phc_key = SHEET_TO_PHC.get(sheet_key, sheet_key)
         hrt_info = PHC_MAP.get(phc_key, {"hrt_code": "UNASSIGNED", "hrt_name": "Unassigned", "phc_display": sheet})
         try:
-            raw = pd.read_excel(EXCEL_PATH, sheet_name=sheet, dtype=str)
+            raw = xl.parse(sheet, dtype=str)
         except Exception:
             continue
         raw = raw.dropna(how="all")
         raw = raw.fillna("")
         if len(raw) == 0:
             continue
-        # Strip all values
-        for col in raw.columns:
-            raw[col] = raw[col].astype(str).str.strip()
 
-        # Build normalised record
-        row_no       = _normalise_col(raw, ["-", "S.NO", "S NO", "SNO", "SL NO"])
+        # ── Normalize column headers ──────────────────────────────────────
+        # Strip whitespace and convert integer/float headers to strings
+        raw.columns = [str(c).strip() for c in raw.columns]
+        # Rename unnamed column immediately after RCH ID as MOTHER NAME
+        # (handles sheets like MM HOME where the name column has no header)
+        cols = list(raw.columns)
+        for _rch_cand in ("RCH ID", "RCH  ID"):
+            _rch_up = _rch_cand.upper()
+            _cols_up = [c.upper() for c in cols]
+            if _rch_up in _cols_up:
+                _rch_pos = _cols_up.index(_rch_up)
+                if _rch_pos + 1 < len(cols):
+                    _nc = cols[_rch_pos + 1]
+                    if _nc.startswith("Unnamed:") or _nc == "":
+                        cols[_rch_pos + 1] = "MOTHER NAME"
+                        raw.columns = cols
+                break
+
+        # Strip all cell values (use positional indexing to avoid duplicate-column issues)
+        for i in range(len(raw.columns)):
+            raw.iloc[:, i] = raw.iloc[:, i].astype(str).str.strip()
+
+        # ── Build normalised columns (_normalise_col is now case+strip tolerant) ──
+        row_no       = _normalise_col(raw, ["S.NO", "S.NO.", "S NO", "SNO", "SL NO", "-"])
         uphc_name    = _normalise_col(raw, ["UPHC NAME", "UPHC"])
         hsc_name     = _normalise_col(raw, ["HSC NAME", "HSC"])
-        res_type     = _normalise_col(raw, ["RESIDENT/VISITOR", "RESIDENT"])
+        res_type     = _normalise_col(raw, ["RESIDENT/VISITOR", "RESIDENT / VISITORS",
+                                            "RESIDENT / VISITOR", "RESIDENT"])
         rch_id       = _normalise_col(raw, ["RCH ID"])
         mother_name  = _normalise_col(raw, ["MOTHER NAME AND ADDRESS", "NAME AND ADD",
-                                            "NAME AND ADDRESS", "NAME"])
+                                            "NAME AND ADDRESS", "MOTHER NAME",
+                                            "MOTHERNAME", "NAME AND AD", "NAME"])
         cell_no      = _normalise_col(raw, ["CELL NO", "MOBILE", "PHONE"])
-        husband      = _normalise_col(raw, ["HUSBAND NAME ", "HUSBAND NAME", "HUSBAND"])
+        husband      = _normalise_col(raw, ["HUSBAND NAME", "HUSBAND"])
         gravida      = _normalise_col(raw, ["GRAVIDA"])
         lmp          = _normalise_col(raw, ["LMP"])
         edd          = _normalise_col(raw, ["EDD"])
@@ -289,13 +445,13 @@ def load_excel():
         bp           = _normalise_col(raw, ["BP", "BLOOD PRESSURE"])
         hb           = _normalise_col(raw, ["HB", "HAEMOGLOBIN", "HEMOGLOBIN"])
         gct          = _normalise_col(raw, ["GCT"])
-        ppbs         = _normalise_col(raw, ["PPBS"])
-        echo         = _normalise_col(raw, ["ECHO/ECG", "ECHO"])
+        ppbs         = _normalise_col(raw, ["PPBS", "FBS/PPBS", "FBS"])
+        echo         = _normalise_col(raw, ["ECHO/ECG", "ECG/ECHO", "ECHO"])
         usg          = _normalise_col(raw, ["USG"])
         tsh          = _normalise_col(raw, ["TSH"])
         blood_grp    = _normalise_col(raw, ["BLOOD GROUP"])
         sputum       = _normalise_col(raw, ["SPUTUM AFB", "SPUTUM"])
-        urine        = _normalise_col(raw, ["URINE ROUTINE", "URINE"])
+        urine        = _normalise_col(raw, ["URINE ROUTINE", "URINE RE", "URINE"])
         birth_plan   = _normalise_col(raw, ["BIRTH PLAN", "REGULAR FOLLOW UP"])
         referral     = _normalise_col(raw, ["REFERRAL DETAILS"])
         last_visit   = _normalise_col(raw, ["UPHC LAST VISIT DATE", "LAST VISIT DATE"])
@@ -305,15 +461,19 @@ def load_excel():
         next_visit   = _normalise_col(raw, ["NEXT VISIT DATE \nONLY FILL BY UPHC",
                                             "NEXT VISIT DATE", "NEXT VISIT"])
         uphc_response= _normalise_col(raw, ["UPHC RESPONSE AS PER NEXT VISIT", "UPHC RESPONSE"])
-        next_plan    = _normalise_col(raw, ["NEXT PLAN OF VISIT PLACE AND TIME "])
+        next_plan    = _normalise_col(raw, ["NEXT PLAN OF VISIT PLACE AND TIME ",
+                                            "NEXT PLAN OF VISIT PLACE AND TIME",
+                                            "PLAN OF NEXT VISIT DATE AND PLACE",
+                                            "PLAN OF NEXT VISIT DATE & PLACE "])
 
         for i in range(len(raw)):
             hr_text  = high_risk.iloc[i]
             score, factors, category = _parse_risk(hr_text)
             name_raw = mother_name.iloc[i]
-            # Skip header-repeat rows
+            # Skip header-repeat rows and blank rows
             if name_raw.upper() in ("NAME AND ADD", "MOTHER NAME AND ADDRESS",
-                                    "NAME AND ADDRESS", "NAME", ""):
+                                    "NAME AND ADDRESS", "MOTHER NAME", "MOTHERNAME",
+                                    "NAME AND AD", "NAME", ""):
                 continue
             # Extract name vs address (often combined with comma or newline)
             name_parts = re.split(r",|W/O|w/o|\n", name_raw, maxsplit=1)
@@ -329,6 +489,17 @@ def load_excel():
             delivery_info = next_plan.iloc[i] if next_plan.iloc[i] else uphc_response.iloc[i]
             is_delivered  = any(kw in str(delivery_info).upper()
                                 for kw in ["DELIVERED", "DOD", "LSCS", "NVD", "FCH", "MCH"])
+
+            # Parse actual delivery date from uphc_response (e.g. "31.3.26 AT:5PM/LSCS...")
+            uphc_resp_val = uphc_response.iloc[i]
+            actual_ddate  = _parse_delivery_date(uphc_resp_val) if is_delivered else None
+            today_d       = datetime.date.today()
+            if actual_ddate:
+                days_since_del = (today_d - actual_ddate).days
+            elif is_delivered and days_left is not None and days_left < 0:
+                days_since_del = int(abs(days_left))   # EDD proxy fallback
+            else:
+                days_since_del = None
 
             rch = rch_id.iloc[i]
             uid = f"{phc_key}_{i}_{rch}" if rch else f"{phc_key}_{i}"
@@ -376,13 +547,16 @@ def load_excel():
                 "call_date":    call_date.iloc[i],
                 "next_visit_date": next_visit.iloc[i],
                 "uphc_response":uphc_response.iloc[i],
-                "delivery_info":delivery_info,
+                "delivery_info":    delivery_info,
+                "delivery_date":    actual_ddate.strftime("%d-%m-%Y") if actual_ddate else "",
+                "days_since_delivery": days_since_del,
                 "is_delivered": is_delivered,
             })
 
     df = pd.DataFrame(frames)
     _cache["df"] = df
     _cache["ts"] = datetime.datetime.now().isoformat()
+    _sync_state["last_sync_time"] = _cache["ts"]
     return df
 
 def get_data():
@@ -480,8 +654,28 @@ def login():
 @app.route("/api/refresh", methods=["POST"])
 def refresh():
     _cache["df"] = None
-    load_excel()
+    _sync_state["syncing"] = True
+    try:
+        load_excel()
+        _sync_state["last_sync_time"] = datetime.datetime.now().isoformat()
+        _sync_state["sync_count"]    += 1
+        _sync_state["last_mtime"]     = _get_file_mtime()
+    finally:
+        _sync_state["syncing"] = False
     return jsonify({"success": True, "records": len(_cache["df"]), "ts": _cache["ts"]})
+
+@app.route("/api/sync-status")
+def sync_status_api():
+    """Returns real-time sync state for the frontend auto-refresh polling."""
+    return jsonify({
+        "last_sync_time": _sync_state["last_sync_time"] or _cache.get("ts"),
+        "syncing":        _sync_state["syncing"],
+        "sync_count":     _sync_state["sync_count"],
+        "auto_enabled":   _sync_state["auto_enabled"],
+        "interval_sec":   AUTO_SYNC_INTERVAL,
+        "records":        len(_cache["df"]) if _cache["df"] is not None else 0,
+        "excel_modified": _sync_state["last_mtime"],
+    })
 
 @app.route("/api/patients")
 def patients():
@@ -552,6 +746,8 @@ def stats():
     due_30    = int(df["days_to_edd"].between(0, 30).sum())
     due_today = int((df["days_to_edd"] == 0).sum())
     overdue   = int((df["days_to_edd"] < 0).sum())
+    # Postdated EDD: AN mothers whose EDD passed but delivery not recorded
+    postdated_edd = int(((df["is_delivered"] == False) & (df["days_to_edd"] < 0)).sum())
 
     missing_phone = int((df["cell_no"].str.strip() == "").sum())
     missing_name  = int((df["mother_name"].str.strip() == "").sum())
@@ -602,6 +798,7 @@ def stats():
         "due_30_days":         due_30,
         "due_today":           due_today,
         "overdue_edd":         overdue,
+        "postdated_edd":       postdated_edd,
         "missing_phone":       missing_phone,
         "missing_name":        missing_name,
         "validation_issues":   validation_issues,
@@ -663,6 +860,185 @@ def alerts():
         "alerts":   all_alerts,
     })
 
+@app.route("/api/postdated-edd")
+def postdated_edd_list():
+    role = request.args.get("role", "DMCHO")
+    df   = filter_by_role(get_data(), role)
+
+    # AN mothers whose EDD has passed but delivery not recorded
+    mask = (df["is_delivered"] == False) & (df["days_to_edd"].notna()) & (df["days_to_edd"] < 0)
+    pdf  = df[mask].copy()
+
+    calls     = _load_json(CALLS_FILE)
+    followups = _load_json(FOLLOWUP_FILE)
+
+    result = []
+    for _, row in pdf.iterrows():
+        uid = row["uid"]
+
+        call_hist  = calls.get(uid, [])
+        last_call  = call_hist[-1] if call_hist else None
+        call_status = last_call.get("status", "No Call") if last_call else "No Call"
+        last_call_date = last_call.get("date", "") if last_call else ""
+
+        fu_hist   = followups.get(uid, [])
+        last_fu   = fu_hist[-1] if fu_hist else None
+        fu_status = last_fu.get("status", "No Follow-Up") if last_fu else "No Follow-Up"
+        last_fu_date = last_fu.get("visit_date", "") if last_fu else ""
+
+        days_past = int(abs(row["days_to_edd"]))
+
+        result.append({
+            "uid":               uid,
+            "rch_id":            row.get("rch_id", ""),
+            "mother_name":       row.get("mother_name", ""),
+            "cell_no":           row.get("cell_no", ""),
+            "phc_display":       row.get("phc_display", ""),
+            "hrt_code":          row.get("hrt_code", ""),
+            "hrt_name":          row.get("hrt_name", ""),
+            "hsc_name":          row.get("hsc_name", ""),
+            "edd":               row.get("edd", ""),
+            "days_past_edd":     days_past,
+            "risk_category":     row.get("risk_category", ""),
+            "call_status":       call_status,
+            "last_call_date":    last_call_date,
+            "followup_status":   fu_status,
+            "last_followup_date":last_fu_date,
+            "high_risk_raw":     row.get("high_risk_raw", ""),
+            "gravida":           row.get("gravida", ""),
+            "address":           row.get("address", ""),
+        })
+
+    # Sort by days past EDD descending (most overdue first)
+    result.sort(key=lambda x: x["days_past_edd"], reverse=True)
+
+    return jsonify({"total": len(result), "mothers": result})
+
+
+# ── Universal Drill-Down ────────────────────────────────────────────────────
+@app.route("/api/drill-down")
+def drill_down():
+    metric    = request.args.get("metric", "total")
+    role      = request.args.get("role", "DMCHO")
+    df        = filter_by_role(get_data(), role)
+    today_str = datetime.date.today().strftime("%Y-%m-%d")
+
+    # ── Apply metric filter ────────────────────────────────────────────────
+    if metric == "total":
+        sub = df
+    elif metric == "critical":
+        sub = df[df["risk_category"] == "Critical"]
+    elif metric == "very_high":
+        sub = df[df["risk_category"] == "Very High"]
+    elif metric == "high":
+        sub = df[df["risk_category"] == "High"]
+    elif metric == "high_risk":
+        sub = df[df["risk_category"].isin(["High", "Very High", "Critical"])]
+    elif metric == "moderate":
+        sub = df[df["risk_category"] == "Moderate"]
+    elif metric == "low":
+        sub = df[df["risk_category"] == "Low"]
+    elif metric == "due_today":
+        sub = df[(df["is_delivered"] == False) & (df["days_to_edd"] == 0)]
+    elif metric == "due_7_days":
+        sub = df[(df["is_delivered"] == False) & (df["days_to_edd"].between(0, 7))]
+    elif metric == "due_30_days":
+        sub = df[(df["is_delivered"] == False) & (df["days_to_edd"].between(0, 30))]
+    elif metric == "delivered":
+        sub = df[df["is_delivered"] == True]
+    elif metric == "postdated_edd":
+        sub = df[(df["is_delivered"] == False) & (df["days_to_edd"].notna()) & (df["days_to_edd"] < 0)]
+    elif metric == "missing_phone":
+        sub = df[df["cell_no"].str.strip() == ""]
+    elif metric == "missing_name":
+        sub = df[df["mother_name"].str.strip() == ""]
+    elif metric == "followups_today":
+        fu = _load_json(FOLLOWUP_FILE)
+        role_uids = set(df["uid"].tolist())
+        uids_today = {uid for uid, hist in fu.items()
+                      if uid in role_uids
+                      for entry in hist
+                      if entry.get("next_visit_date") == today_str}
+        sub = df[df["uid"].isin(uids_today)]
+    elif metric == "calls_pending":
+        calls_j = _load_json(CALLS_FILE)
+        role_uids = set(df["uid"].tolist())
+        uids_today = {uid for uid, hist in calls_j.items()
+                      if uid in role_uids
+                      for entry in hist
+                      if entry.get("next_followup_date") == today_str}
+        sub = df[df["uid"].isin(uids_today)]
+    elif metric.startswith("phc:"):
+        phc_key = metric[4:].upper()
+        sub = df[df["phc_key"] == phc_key]
+    else:
+        sub = df
+
+    total_count = len(sub)
+
+    # ── Enrich with call/follow-up status ─────────────────────────────────
+    calls_data     = _load_json(CALLS_FILE)
+    followups_data = _load_json(FOLLOWUP_FILE)
+
+    def _safe_int(val):
+        try:
+            if val is None or (isinstance(val, float) and np.isnan(val)):
+                return None
+            return int(val)
+        except (TypeError, ValueError):
+            return None
+
+    def _safe_float(val):
+        try:
+            if val is None or (isinstance(val, float) and np.isnan(val)):
+                return 0.0
+            return float(val)
+        except (TypeError, ValueError):
+            return 0.0
+
+    result = []
+    for _, row in sub.iterrows():
+        uid = row["uid"]
+
+        call_hist   = calls_data.get(uid, [])
+        last_call   = call_hist[-1] if call_hist else None
+        call_status = last_call.get("status",     "No Call")       if last_call else "No Call"
+        last_call_d = last_call.get("date",        "")             if last_call else ""
+
+        fu_hist     = followups_data.get(uid, [])
+        last_fu     = fu_hist[-1] if fu_hist else None
+        fu_status   = last_fu.get("status",        "No Follow-Up") if last_fu else "No Follow-Up"
+        last_fu_d   = last_fu.get("visit_date",    "")             if last_fu else ""
+
+        result.append({
+            "uid":                 uid,
+            "rch_id":              row.get("rch_id", ""),
+            "mother_name":         row.get("mother_name", ""),
+            "cell_no":             row.get("cell_no", ""),
+            "phc_display":         row.get("phc_display", ""),
+            "phc_key":             row.get("phc_key", ""),
+            "hrt_code":            row.get("hrt_code", ""),
+            "hrt_name":            row.get("hrt_name", ""),
+            "hsc_name":            row.get("hsc_name", ""),
+            "risk_category":       row.get("risk_category", ""),
+            "risk_score":          _safe_float(row.get("risk_score")),
+            "edd":                 row.get("edd", ""),
+            "days_to_edd":         _safe_int(row.get("days_to_edd")),
+            "gravida":             row.get("gravida", ""),
+            "is_delivered":        bool(row.get("is_delivered", False)),
+            "delivery_date":       row.get("delivery_date", ""),
+            "days_since_delivery": _safe_int(row.get("days_since_delivery")),
+            "high_risk_raw":       row.get("high_risk_raw", ""),
+            "address":             row.get("address", ""),
+            "call_status":         call_status,
+            "last_call_date":      last_call_d,
+            "followup_status":     fu_status,
+            "last_followup_date":  last_fu_d,
+        })
+
+    return jsonify({"metric": metric, "total": total_count, "returned": len(result), "mothers": result})
+
+
 @app.route("/api/deliveries")
 def deliveries():
     role = request.args.get("role", "DMCHO")
@@ -694,40 +1070,60 @@ def deliveries():
     # ── AN Mothers (not yet delivered, EDD known) ───────────────
     an = df[(df["is_delivered"] == False) & df["days_to_edd"].notna()]
     an_today  = an[an["days_to_edd"] == 0]
-    an_1_3    = an[an["days_to_edd"].between(1, 3)]
-    an_4_7    = an[an["days_to_edd"].between(4, 7)]
+    an_w7     = an[an["days_to_edd"].between(1, 7)]
     an_8_14   = an[an["days_to_edd"].between(8, 14)]
     an_15_30  = an[an["days_to_edd"].between(15, 30)]
-    an_30plus = an[an["days_to_edd"] > 30]
+    an_31_60  = an[an["days_to_edd"].between(31, 60)]
+    an_61_90  = an[an["days_to_edd"].between(61, 90)]
+    an_90plus = an[an["days_to_edd"] > 90]
 
-    # ── PN Mothers (delivered; days_to_edd < 0 = past EDD) ─────
-    pn = df[df["is_delivered"] == True]
-    pn_0_7   = pn[pn["days_to_edd"].between(-7, 0)]
-    pn_8_14  = pn[pn["days_to_edd"].between(-14, -8)]
-    pn_15_42 = pn[pn["days_to_edd"] <= -15]
+    # ── PN Mothers — use actual delivery date; fall back to EDD proxy ─
+    pn = df[df["is_delivered"] == True].copy()
+    # _pn_days: prefer days_since_delivery (from parsed delivery date),
+    # fall back to abs(days_to_edd) as proxy
+    pn_days_actual = pd.to_numeric(pn["days_since_delivery"], errors="coerce")
+    pn_days_proxy  = pn["days_to_edd"].apply(
+        lambda x: abs(x) if pd.notna(x) and x < 0 else np.nan
+    )
+    pn["_pn_days"] = pn_days_actual.fillna(pn_days_proxy)
+
+    pn_1_7    = pn[pn["_pn_days"].between(1,  7)]
+    pn_8_14   = pn[pn["_pn_days"].between(8,  14)]
+    pn_15_21  = pn[pn["_pn_days"].between(15, 21)]
+    pn_21_28  = pn[pn["_pn_days"].between(22, 28)]
+    pn_28_42  = pn[pn["_pn_days"].between(29, 42)]
+    pn_42plus = pn[pn["_pn_days"] > 42]
 
     an_upcoming = an[an["days_to_edd"].between(0, 30)]
 
     return jsonify({
         "an_today":   to_records(an_today),
-        "an_1_3":     to_records(an_1_3),
-        "an_4_7":     to_records(an_4_7),
+        "an_w7":      to_records(an_w7),
         "an_8_14":    to_records(an_8_14),
         "an_15_30":   to_records(an_15_30),
-        "an_30plus":  to_records(an_30plus),
-        "pn_0_7":     to_records(pn_0_7),
+        "an_31_60":   to_records(an_31_60),
+        "an_61_90":   to_records(an_61_90),
+        "an_90plus":  to_records(an_90plus),
+        "pn_1_7":     to_records(pn_1_7),
         "pn_8_14":    to_records(pn_8_14),
-        "pn_15_42":   to_records(pn_15_42),
+        "pn_15_21":   to_records(pn_15_21),
+        "pn_21_28":   to_records(pn_21_28),
+        "pn_28_42":   to_records(pn_28_42),
+        "pn_42plus":  to_records(pn_42plus),
         "counts": {
             "an_today":   int(len(an_today)),
-            "an_1_3":     int(len(an_1_3)),
-            "an_4_7":     int(len(an_4_7)),
+            "an_w7":      int(len(an_w7)),
             "an_8_14":    int(len(an_8_14)),
             "an_15_30":   int(len(an_15_30)),
-            "an_30plus":  int(len(an_30plus)),
-            "pn_0_7":     int(len(pn_0_7)),
+            "an_31_60":   int(len(an_31_60)),
+            "an_61_90":   int(len(an_61_90)),
+            "an_90plus":  int(len(an_90plus)),
+            "pn_1_7":     int(len(pn_1_7)),
             "pn_8_14":    int(len(pn_8_14)),
-            "pn_15_42":   int(len(pn_15_42)),
+            "pn_15_21":   int(len(pn_15_21)),
+            "pn_21_28":   int(len(pn_21_28)),
+            "pn_28_42":   int(len(pn_28_42)),
+            "pn_42plus":  int(len(pn_42plus)),
         },
         "an_phc_summary": phc_summary(an_upcoming),
         "pn_phc_summary": phc_summary(pn),
@@ -768,6 +1164,188 @@ def phc_analytics():
         })
     result.sort(key=lambda x: x["total"], reverse=True)
     return jsonify(result)
+
+@app.route("/api/phc-audit")
+def phc_audit():
+    """Full PHC mapping validation report — compares configured vs detected PHCs."""
+    df = get_data()
+
+    # 1. Configured PHCs (from PHC_MAP, excluding aliases and SHEET45/UNASSIGNED)
+    configured = {
+        k: v for k, v in PHC_MAP.items()
+        if v["hrt_code"] not in ("UNASSIGNED",)
+        and k not in ("MM", "MM PHC", "MPHC", "SHEET45")   # aliases
+    }
+
+    # 2. Detected PHCs (actually in the loaded dataframe)
+    detected_in_db = {}
+    for phc_key, grp in df.groupby("phc_key"):
+        detected_in_db[phc_key] = {
+            "count":       int(len(grp)),
+            "phc_display": grp["phc_display"].iloc[0],
+            "hrt_code":    grp["hrt_code"].iloc[0],
+            "hrt_name":    grp["hrt_name"].iloc[0],
+        }
+
+    # 3. Excel sheet names
+    xl_sheets = []
+    try:
+        xl = pd.ExcelFile(EXCEL_PATH)
+        xl_sheets = xl.sheet_names
+    except Exception:
+        pass
+
+    # 4. Missing: configured but not in DB
+    missing = []
+    for k, v in configured.items():
+        if k not in detected_in_db:
+            missing.append({
+                "phc_key":     k,
+                "phc_display": v["phc_display"],
+                "hrt_code":    v["hrt_code"],
+                "hrt_name":    v["hrt_name"],
+                "in_excel":    any(s.upper().strip() == k for s in xl_sheets),
+            })
+
+    # 5. Unmapped: in DB but not in PHC_MAP
+    unmapped = []
+    for k, v in detected_in_db.items():
+        if k not in PHC_MAP:
+            unmapped.append({"phc_key": k, "count": v["count"]})
+
+    # 6. Correctly mapped
+    correct = [
+        {"phc_key": k, "phc_display": detected_in_db[k]["phc_display"],
+         "hrt_code": detected_in_db[k]["hrt_code"], "count": detected_in_db[k]["count"]}
+        for k in configured if k in detected_in_db
+    ]
+    correct.sort(key=lambda x: x["hrt_code"])
+
+    # 7. HRT-wise summary
+    hrt_summary = {}
+    for hrt_code, grp in df.groupby("hrt_code"):
+        hrt_summary[hrt_code] = {
+            "hrt_name":   grp["hrt_name"].iloc[0],
+            "total":      int(len(grp)),
+            "phc_count":  int(grp["phc_key"].nunique()),
+            "phcs":       sorted(grp["phc_display"].unique().tolist()),
+        }
+
+    return jsonify({
+        "summary": {
+            "configured_phcs":  len(configured),
+            "detected_in_db":   len(detected_in_db),
+            "correct_mapped":   len(correct),
+            "missing_phcs":     len(missing),
+            "unmapped_phcs":    len(unmapped),
+            "total_records":    int(len(df)),
+            "excel_sheets":     len(xl_sheets),
+        },
+        "missing":    missing,
+        "unmapped":   unmapped,
+        "correct":    correct,
+        "hrt_summary":hrt_summary,
+        "all_detected": [
+            {"phc_key": k, **v} for k, v in sorted(detected_in_db.items())
+        ],
+    })
+
+@app.route("/api/phcs")
+def phc_list_api():
+    """PHC list for filter dropdowns, scoped to role."""
+    role = request.args.get("role", "DMCHO")
+    df   = filter_by_role(get_data(), role)
+    phcs = []
+    seen = set()
+    for phc_key in df["phc_key"].unique():
+        if phc_key in seen:
+            continue
+        seen.add(phc_key)
+        phc_info = PHC_MAP.get(phc_key, {})
+        phcs.append({
+            "phc_key":     phc_key,
+            "phc_display": phc_info.get("phc_display", phc_key),
+            "hrt_code":    phc_info.get("hrt_code", ""),
+            "count":       int((df["phc_key"] == phc_key).sum()),
+        })
+    phcs.sort(key=lambda x: x["phc_display"])
+    return jsonify(phcs)
+
+@app.route("/api/hrt-call-performance")
+def hrt_call_performance():
+    """Per-HRT daily call activity analytics."""
+    role        = request.args.get("role", "DMCHO")
+    date_filter = request.args.get("date", "")
+
+    df        = filter_by_role(get_data(), role)
+    calls_j   = _load_json(CALLS_FILE)
+    followups_j = _load_json(FOLLOWUP_FILE)
+    today_str = datetime.date.today().strftime("%Y-%m-%d")
+    fu_date   = date_filter or today_str
+
+    result = []
+    for hrt_code, grp in df.groupby("hrt_code"):
+        hrt_name      = grp["hrt_name"].iloc[0]
+        total_mothers = int(len(grp))
+        phcs          = sorted(grp["phc_display"].unique().tolist())
+
+        attempted = connected = no_response = switched_off = 0
+        wrong_number = call_back_later = followup_required = resolved = pending = 0
+        last_call_date = ""
+        last_call_time = ""
+
+        for uid in grp["uid"].tolist():
+            hist = calls_j.get(uid, [])
+            if not hist:
+                pending += 1
+                continue
+            day_hist = [c for c in hist if c.get("date") == date_filter] if date_filter else hist
+            if not day_hist:
+                pending += 1
+                continue
+            last = day_hist[-1]
+            attempted += 1
+            s = last.get("status", "")
+            d = last.get("date", "")
+            t = last.get("time", "")
+            if d > last_call_date:
+                last_call_date = d
+                last_call_time = t
+            if s == "Connected":            connected += 1
+            elif s == "No Response":        no_response += 1
+            elif s == "Switched Off":       switched_off += 1
+            elif s == "Wrong Number":       wrong_number += 1
+            elif s == "Call Back Later":    call_back_later += 1
+            elif s == "Follow-Up Required": followup_required += 1
+            elif s == "Resolved":           resolved += 1
+
+        fu_due = sum(
+            1 for uid in grp["uid"].tolist()
+            for entry in followups_j.get(uid, [])
+            if entry.get("next_visit_date") == fu_date
+        )
+
+        result.append({
+            "hrt_code":           hrt_code,
+            "hrt_name":           hrt_name,
+            "total_mothers":      total_mothers,
+            "phcs":               phcs,
+            "calls_attempted":    attempted,
+            "calls_connected":    connected,
+            "no_response":        no_response,
+            "switched_off":       switched_off,
+            "wrong_number":       wrong_number,
+            "call_back_later":    call_back_later,
+            "followup_required":  followup_required,
+            "resolved":           resolved,
+            "calls_pending":      pending,
+            "followups_due":      fu_due,
+            "last_call_date":     last_call_date,
+            "last_call_time":     last_call_time,
+        })
+
+    result.sort(key=lambda x: x["hrt_code"])
+    return jsonify({"date": date_filter or today_str, "hrts": result, "total_hrts": len(result)})
 
 # ── Executive Analytics ────────────────────────────────────────────────────
 @app.route("/api/executive-analytics")
@@ -1021,10 +1599,24 @@ def serve_react(path):
 
 if __name__ == "__main__":
     print("HIGH RISK MOTHER TRACKER - CCMC Backend")
-    print(f"Excel : {EXCEL_PATH}")
+    if EXCEL_URL:
+        print(f"Mode  : CLOUD — Google Sheets sync every {CLOUD_SYNC_INTERVAL}s")
+        print(f"URL   : {EXCEL_URL}")
+        print(f"Cache : {EXCEL_PATH}")
+        print("Downloading initial data from Google Sheets…", flush=True)
+        _download_excel()
+    else:
+        print(f"Mode  : LOCAL — mtime watch every {AUTO_SYNC_INTERVAL}s")
+        print(f"Excel : {EXCEL_PATH}")
     print(f"Dist  : {FRONTEND_DIST}")
     load_excel()
+    _sync_state["last_mtime"] = _get_file_mtime()
     print(f"Loaded {len(_cache['df'])} records")
-    print(f"Open   : http://localhost:{PORT}")
+    _sync_thread = threading.Thread(
+        target=_auto_sync_worker, daemon=True, name="ExcelAutoSync"
+    )
+    _sync_thread.start()
+    print(f"Auto-sync : ON")
+    print(f"Open      : http://localhost:{PORT}")
     print("Flask ready on", PORT)
     app.run(host=HOST, port=PORT, debug=False, use_reloader=False)

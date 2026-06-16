@@ -344,17 +344,24 @@ function PatientProfile({ uid, onBack, user }) {
 }
 
 export default function PatientExplorer({ user, openPatient, defaultUid, onBack }) {
-  const [patients, setPatients] = useState([]);
-  const [total,    setTotal]    = useState(0);
-  const [loading,  setLoading]  = useState(false);
-  const [page,     setPage]     = useState(1);
-  const [search,   setSearch]   = useState('');
+  const [patients,   setPatients]   = useState([]);
+  const [total,      setTotal]      = useState(0);
+  const [loading,    setLoading]    = useState(false);
+  const [page,       setPage]       = useState(1);
+  const [search,     setSearch]     = useState('');
   const [filterRisk, setFilterRisk] = useState('');
   const [filterPHC,  setFilterPHC]  = useState('');
   const [filterHRT,  setFilterHRT]  = useState('');
+  const [phcList,    setPhcList]    = useState([]);
   const [profileUid, setProfileUid] = useState(defaultUid || null);
 
   const PER_PAGE = 50;
+
+  // Load available PHCs for this role once
+  useEffect(() => {
+    fetch(`${API}/phcs?role=${user.role}`)
+      .then(r => r.json()).then(d => setPhcList(d)).catch(() => {});
+  }, [user.role]);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -390,6 +397,36 @@ export default function PatientExplorer({ user, openPatient, defaultUid, onBack 
         </div>
       </div>
 
+      {/* PHC Quick-Filter Strip */}
+      {phcList.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          <button
+            onClick={() => { setFilterPHC(''); setPage(1); }}
+            className="px-2.5 py-1 rounded-full text-[10px] font-bold transition-all"
+            style={{
+              background: !filterPHC ? 'rgba(66,165,245,0.25)' : 'rgba(30,58,95,0.3)',
+              color: !filterPHC ? '#42A5F5' : '#64748B',
+              border: `1px solid ${!filterPHC ? 'rgba(66,165,245,0.5)' : 'rgba(30,58,95,0.5)'}`,
+            }}>
+            All PHCs
+          </button>
+          {phcList.map(p => (
+            <button
+              key={p.phc_key}
+              onClick={() => { setFilterPHC(p.phc_key); setPage(1); }}
+              className="px-2.5 py-1 rounded-full text-[10px] font-semibold transition-all"
+              style={{
+                background: filterPHC === p.phc_key ? 'rgba(66,165,245,0.2)' : 'rgba(15,23,42,0.5)',
+                color: filterPHC === p.phc_key ? '#93C5FD' : '#64748B',
+                border: `1px solid ${filterPHC === p.phc_key ? 'rgba(66,165,245,0.4)' : 'rgba(30,58,95,0.4)'}`,
+              }}>
+              {p.phc_display}
+              <span className="ml-1 opacity-60">{p.count}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Filters */}
       <div className="flex flex-wrap gap-2">
         <div className="relative flex-1 min-w-48">
@@ -400,6 +437,14 @@ export default function PatientExplorer({ user, openPatient, defaultUid, onBack 
             onFocus={e => e.target.style.borderColor = '#1976D2'}
             onBlur={e => e.target.style.borderColor = 'rgba(30,58,95,0.7)'} />
         </div>
+        <select value={filterPHC} onChange={e => { setFilterPHC(e.target.value); setPage(1); }}
+          className="px-3 py-2 rounded-lg text-xs text-white outline-none"
+          style={{ background: 'var(--ccmc-panel)', border: '1px solid var(--ccmc-border)' }}>
+          <option value="">All PHCs</option>
+          {phcList.map(p => (
+            <option key={p.phc_key} value={p.phc_key}>{p.phc_display} ({p.count})</option>
+          ))}
+        </select>
         <select value={filterRisk} onChange={e => { setFilterRisk(e.target.value); setPage(1); }}
           className="px-3 py-2 rounded-lg text-xs text-white outline-none"
           style={{ background: 'var(--ccmc-panel)', border: '1px solid var(--ccmc-border)' }}>
@@ -408,14 +453,16 @@ export default function PatientExplorer({ user, openPatient, defaultUid, onBack 
             <option key={r} value={r}>{r}</option>
           ))}
         </select>
-        <select value={filterHRT} onChange={e => { setFilterHRT(e.target.value); setPage(1); }}
-          className="px-3 py-2 rounded-lg text-xs text-white outline-none"
-          style={{ background: 'var(--ccmc-panel)', border: '1px solid var(--ccmc-border)' }}>
-          <option value="">All HRTs</option>
-          {['HRT1','HRT2','HRT3','HRT4','HRT5','HRT6','HRT7','HRT8'].map(h => (
-            <option key={h} value={h}>{h}</option>
-          ))}
-        </select>
+        {user.full_access && (
+          <select value={filterHRT} onChange={e => { setFilterHRT(e.target.value); setPage(1); }}
+            className="px-3 py-2 rounded-lg text-xs text-white outline-none"
+            style={{ background: 'var(--ccmc-panel)', border: '1px solid var(--ccmc-border)' }}>
+            <option value="">All HRTs</option>
+            {['HRT1','HRT2','HRT3','HRT4','HRT5','HRT6','HRT7','HRT8'].map(h => (
+              <option key={h} value={h}>{h}</option>
+            ))}
+          </select>
+        )}
         <button onClick={load}
           className="px-3 py-2 rounded-lg text-xs font-semibold"
           style={{ background: 'rgba(25,118,210,0.2)', border: '1px solid rgba(25,118,210,0.4)', color: '#42A5F5' }}>

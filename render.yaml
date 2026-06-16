@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: ccmc-maternal-tracker
+    env: python
+    region: singapore
+    plan: free
+    pythonVersion: "3.11.0"
+    buildCommand: |
+      pip install -r backend_maternal/requirements.txt
+      npm ci --legacy-peer-deps
+      npm run build
+    startCommand: cd backend_maternal && python app.py
+    healthCheckPath: /api/health
+    envVars:
+      - key: EXCEL_URL
+        value: https://docs.google.com/spreadsheets/d/1T1sthQZftwJEyve2wuyAwVZ55sr8TvgwhQJFEdEmAmA/export?format=xlsx
+      - key: PYTHON_UNBUFFERED
+        value: "1"

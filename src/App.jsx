@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useTheme } from './ThemeContext';
 import LoginPage            from './components/LoginPage';
 import Sidebar              from './components/Sidebar';
@@ -27,6 +27,9 @@ export default function App() {
   const [syncing,    setSyncing]    = useState(false);
   const [backendOK,  setBackendOK]  = useState(false);
   const [notifications, setNotifications] = useState([]);
+
+  // Auto-sync: tracks backend sync_count to detect Excel reloads
+  const syncCountRef = useRef(0);
 
   // Patient drawer state (global — any page can open it)
   const [drawerUid,  setDrawerUid]  = useState(null);
@@ -98,6 +101,40 @@ export default function App() {
     if (user) loadStats();
   }, [user, loadStats]);
 
+  // ── Auto-sync: poll /api/sync-status every 30s ─────────────────────────
+  // When the backend detects an Excel file change and reloads, sync_count
+  // increments. We pick that up here and refresh the UI automatically.
+  useEffect(() => {
+    if (!user) return;
+    const checkSync = async () => {
+      try {
+        const r = await fetch(`${API}/sync-status`);
+        if (!r.ok) return;
+        const d = await r.json();
+        if (d.sync_count > syncCountRef.current && syncCountRef.current > 0) {
+          await loadStats();
+          setLastSync(new Date().toLocaleTimeString());
+          pushNotification(
+            'Data Auto-Updated',
+            `Excel reloaded — ${(d.records || 0).toLocaleString()} records now live.`,
+            'SUCCESS'
+          );
+        }
+        syncCountRef.current = d.sync_count;
+      } catch { /* silent — backend may be restarting */ }
+    };
+    checkSync();
+    const t = setInterval(checkSync, 30000);
+    return () => clearInterval(t);
+  }, [user, loadStats]);
+
+  // ── Periodic stats refresh every 60 s (catches manual Excel saves) ─────
+  useEffect(() => {
+    if (!user) return;
+    const t = setInterval(() => { loadStats(); }, 60000);
+    return () => clearInterval(t);
+  }, [user, loadStats]);
+
   // Opens the patient drawer overlay on any page
   const openPatient = (uid) => {
     setDrawerUid(uid);
@@ -117,7 +154,7 @@ export default function App() {
     switch (activePage) {
       case 'overview':
         return <DashboardOverview stats={stats} user={user} onRefresh={handleRefresh}
-                  syncing={syncing} setActivePage={setActivePage} />;
+                  syncing={syncing} setActivePage={setActivePage} openPatient={openPatient} />;
       case 'executive':
         return <ExecutiveAnalytics user={user} />;
       case 'validation':

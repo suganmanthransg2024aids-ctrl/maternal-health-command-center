@@ -18,14 +18,22 @@ export default function FollowUpTracking({ user }) {
   const [loading, setLoading] = useState(false);
   const [filterStatus, setFilterStatus] = useState('');
   const [filterHRT,    setFilterHRT]    = useState('');
+  const [filterPHC,    setFilterPHC]    = useState('');
+  const [phcList,      setPhcList]      = useState([]);
   const [fuModal,  setFuModal]  = useState(null);
   const [saving,   setSaving]   = useState(false);
+
+  useEffect(() => {
+    fetch(`${API}/phcs?role=${user.role}`)
+      .then(r => r.json()).then(d => setPhcList(d)).catch(() => {});
+  }, [user.role]);
 
   const load = useCallback(() => {
     setLoading(true);
     const p = new URLSearchParams({ role: user.role });
     if (filterStatus) p.set('status', filterStatus);
     if (filterHRT)    p.set('hrt', filterHRT);
+    if (filterPHC)    p.set('phc', filterPHC);
     fetch(`${API}/followups?${p}`)
       .then(r => r.json())
       .then(d => {
@@ -34,7 +42,7 @@ export default function FollowUpTracking({ user }) {
         setStatusCounts(d.status_counts || {});
         setLoading(false);
       }).catch(() => setLoading(false));
-  }, [user.role, filterStatus, filterHRT]);
+  }, [user.role, filterStatus, filterHRT, filterPHC]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -87,13 +95,21 @@ export default function FollowUpTracking({ user }) {
       </div>
 
       {/* Filters */}
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap">
         <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
           className="px-3 py-2 rounded-lg text-xs text-white outline-none"
           style={{ background: 'var(--ccmc-panel)', border: '1px solid rgba(30,58,95,0.7)' }}>
           <option value="">All Statuses</option>
           {['Completed','Pending','Scheduled','Missed','Overdue'].map(s => (
             <option key={s} value={s}>{s}</option>
+          ))}
+        </select>
+        <select value={filterPHC} onChange={e => setFilterPHC(e.target.value)}
+          className="px-3 py-2 rounded-lg text-xs text-white outline-none"
+          style={{ background: 'var(--ccmc-panel)', border: '1px solid rgba(30,58,95,0.7)' }}>
+          <option value="">All PHCs</option>
+          {phcList.map(p => (
+            <option key={p.phc_key} value={p.phc_key}>{p.phc_display} ({p.count})</option>
           ))}
         </select>
         {user.full_access && (

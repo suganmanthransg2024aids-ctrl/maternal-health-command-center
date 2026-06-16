@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Phone, Filter, RefreshCw, X, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import HRTCallPerformance from './HRTCallPerformance';
 
 const API = '/api';
 
@@ -29,14 +30,22 @@ export default function CallTracking({ user }) {
   const [statusCounts, setStatusCounts] = useState({});
   const [filterStatus, setFilterStatus] = useState('');
   const [filterHRT,    setFilterHRT]    = useState('');
+  const [filterPHC,    setFilterPHC]    = useState('');
+  const [phcList,      setPhcList]      = useState([]);
   const [callModal, setCallModal] = useState(null);
   const [saving,    setSaving]   = useState(false);
+
+  useEffect(() => {
+    fetch(`${API}/phcs?role=${user.role}`)
+      .then(r => r.json()).then(d => setPhcList(d)).catch(() => {});
+  }, [user.role]);
 
   const load = useCallback(() => {
     setLoading(true);
     const p = new URLSearchParams({ role: user.role });
     if (filterStatus) p.set('status', filterStatus);
     if (filterHRT)    p.set('hrt', filterHRT);
+    if (filterPHC)    p.set('phc', filterPHC);
     fetch(`${API}/calls?${p}`)
       .then(r => r.json())
       .then(d => {
@@ -45,7 +54,7 @@ export default function CallTracking({ user }) {
         setStatusCounts(d.status_counts || {});
         setLoading(false);
       }).catch(() => setLoading(false));
-  }, [user.role, filterStatus, filterHRT]);
+  }, [user.role, filterStatus, filterHRT, filterPHC]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -94,6 +103,9 @@ export default function CallTracking({ user }) {
         </button>
       </div>
 
+      {/* HRT Daily Call Activity */}
+      <HRTCallPerformance user={user} />
+
       {/* Status summary cards */}
       <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
         {['Connected','No Response','Pending','Escalated','Follow-Up Required'].map(s => (
@@ -119,6 +131,14 @@ export default function CallTracking({ user }) {
           <option value="">All Statuses</option>
           {CALL_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
           <option value="Pending">Pending</option>
+        </select>
+        <select value={filterPHC} onChange={e => setFilterPHC(e.target.value)}
+          className="px-3 py-2 rounded-lg text-xs text-white outline-none"
+          style={{ background: 'var(--ccmc-panel)', border: '1px solid rgba(30,58,95,0.7)' }}>
+          <option value="">All PHCs</option>
+          {phcList.map(p => (
+            <option key={p.phc_key} value={p.phc_key}>{p.phc_display} ({p.count})</option>
+          ))}
         </select>
         {user.full_access && (
           <select value={filterHRT} onChange={e => setFilterHRT(e.target.value)}

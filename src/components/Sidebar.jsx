@@ -2,7 +2,7 @@ import React from 'react';
 import {
   LayoutDashboard, ShieldCheck, Users, Activity, Baby,
   Phone, CalendarCheck, Bell, BarChart2, FileText,
-  LogOut, Heart, TrendingUp,
+  LogOut, TrendingUp,
 } from 'lucide-react';
 
 const NAV_BASE = [
@@ -50,10 +50,18 @@ export default function Sidebar({ activePage, setActivePage, user, onLogout, sta
       >
         <div className="flex items-center gap-2.5 mb-3">
           <div
-            className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-            style={{ background: 'linear-gradient(135deg, #0F4C81, #1976D2)' }}
+            className="flex-shrink-0 rounded-full overflow-hidden"
+            style={{
+              width: 40, height: 40,
+              border: '2px solid rgba(66,165,245,0.5)',
+              boxShadow: '0 0 0 1px rgba(25,118,210,0.2), 0 0 16px rgba(25,118,210,0.45), 0 4px 14px rgba(0,0,0,0.4)',
+            }}
           >
-            <Heart className="w-4 h-4 text-white" />
+            <img
+              src="/images/mother-baby.png"
+              alt="Maternal Health"
+              style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 15%' }}
+            />
           </div>
           <div>
             <div className="text-[11px] font-bold tracking-wider leading-none" style={{ color: 'var(--ccmc-text)' }}>

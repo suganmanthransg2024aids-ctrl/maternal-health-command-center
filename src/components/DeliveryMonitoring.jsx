@@ -5,19 +5,23 @@ const API = '/api';
 
 /* ── AN Timeline tabs ───────────────────────────────────────── */
 const AN_TABS = [
-  { id: 'an_today',  label: 'Due Today',       color: '#DC2626', urgent: true },
-  { id: 'an_1_3',   label: '1–3 Days',         color: '#EF4444' },
-  { id: 'an_4_7',   label: '4–7 Days',         color: '#F97316' },
-  { id: 'an_8_14',  label: '8–14 Days',        color: '#EAB308' },
-  { id: 'an_15_30', label: '15–30 Days',       color: '#3B82F6' },
-  { id: 'an_30plus',label: 'Beyond 30 Days',   color: '#6366F1' },
+  { id: 'an_today',  label: 'Due Today',      color: '#DC2626', urgent: true },
+  { id: 'an_w7',    label: 'Within 7 Days',   color: '#EF4444' },
+  { id: 'an_8_14',  label: '8–14 Days',       color: '#F97316' },
+  { id: 'an_15_30', label: '15–30 Days',      color: '#EAB308' },
+  { id: 'an_31_60', label: '31–60 Days',      color: '#3B82F6' },
+  { id: 'an_61_90', label: '61–90 Days',      color: '#6366F1' },
+  { id: 'an_90plus',label: '> 90 Days',       color: '#8B5CF6' },
 ];
 
 /* ── PN tabs ────────────────────────────────────────────────── */
 const PN_TABS = [
-  { id: 'pn_0_7',   label: 'Day 0–7',    color: '#22C55E',  desc: 'Within 7 days of delivery' },
-  { id: 'pn_8_14',  label: 'Day 8–14',   color: '#34D399',  desc: '8–14 days post delivery'   },
-  { id: 'pn_15_42', label: 'Day 15–42',  color: '#6EE7B7',  desc: '15–42 days post delivery'  },
+  { id: 'pn_1_7',   label: 'Day 1–7',    color: '#EF4444',  desc: 'Within 7 days of delivery (actual date)' },
+  { id: 'pn_8_14',  label: 'Day 8–14',   color: '#F97316',  desc: '8–14 days post delivery (actual date)'   },
+  { id: 'pn_15_21', label: 'Day 15–21',  color: '#22C55E',  desc: '15–21 days post delivery' },
+  { id: 'pn_21_28', label: 'Day 21–28',  color: '#34D399',  desc: '21–28 days post delivery' },
+  { id: 'pn_28_42', label: 'Day 28–42',  color: '#6EE7B7',  desc: '28–42 days post delivery' },
+  { id: 'pn_42plus',label: '> 42 Days',  color: '#A7F3D0',  desc: 'Beyond 42 days post delivery' },
 ];
 
 const RISK_BADGE = {
@@ -146,7 +150,7 @@ function PHCSummaryBar({ data, max, color }) {
 export default function DeliveryMonitoring({ user, openPatient }) {
   const [data,    setData]    = useState(null);
   const [anTab,   setAnTab]   = useState('an_today');
-  const [pnTab,   setPnTab]   = useState('pn_0_7');
+  const [pnTab,   setPnTab]   = useState('pn_1_7');
   const [loading, setLoading] = useState(true);
 
   const load = () => {
@@ -168,9 +172,10 @@ export default function DeliveryMonitoring({ user, openPatient }) {
   const anColor = AN_TABS.find(t => t.id === anTab)?.color || '#EF4444';
   const pnColor = PN_TABS.find(t => t.id === pnTab)?.color || '#22C55E';
 
-  const totalAN = (counts.an_today||0)+(counts.an_1_3||0)+(counts.an_4_7||0)
-                + (counts.an_8_14||0)+(counts.an_15_30||0)+(counts.an_30plus||0);
-  const totalPN = (counts.pn_0_7||0)+(counts.pn_8_14||0)+(counts.pn_15_42||0);
+  const totalAN = (counts.an_today||0)+(counts.an_w7||0)+(counts.an_8_14||0)
+                + (counts.an_15_30||0)+(counts.an_31_60||0)+(counts.an_61_90||0)+(counts.an_90plus||0);
+  const totalPN = (counts.pn_1_7||0)+(counts.pn_8_14||0)+(counts.pn_15_21||0)
+                + (counts.pn_21_28||0)+(counts.pn_28_42||0)+(counts.pn_42plus||0);
 
   const maxAnPhc = Math.max(...anPHCSummary.map(d => d.count), 1);
   const maxPnPhc = Math.max(...pnPHCSummary.map(d => d.count), 1);
@@ -199,7 +204,7 @@ export default function DeliveryMonitoring({ user, openPatient }) {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
           { label: 'Due Today',          val: counts.an_today,  color: '#DC2626', icon: AlertTriangle, urgent: true },
-          { label: 'AN Due ≤7 Days',     val: (counts.an_today||0)+(counts.an_1_3||0)+(counts.an_4_7||0),
+          { label: 'AN Due ≤7 Days',     val: (counts.an_today||0)+(counts.an_w7||0),
             color: '#EF4444', icon: Clock },
           { label: 'AN Total (All EDD)', val: totalAN,           color: '#3B82F6', icon: Baby },
           { label: 'PN Total Delivered', val: totalPN,           color: '#22C55E', icon: Heart },
@@ -335,7 +340,7 @@ export default function DeliveryMonitoring({ user, openPatient }) {
             </div>
 
             {/* PN Summary cards */}
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
               {PN_TABS.map(t => (
                 <button key={t.id} onClick={() => setPnTab(t.id)}
                   className="rounded-xl p-3 text-center transition-all"
