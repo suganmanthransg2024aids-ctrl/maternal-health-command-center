@@ -66,18 +66,18 @@ USERS = {
               "phcs": ["CTM", "PATTUNOOL", "NANJUNDAPURAM", "NEELIKONAMPALAYAM"], "full_access": False},
     "HRT2":  {"password": "hrt2@2024",  "role": "HRT2",  "name": "Girija",
               "phcs": ["VVM", "RATHINAPURI", "RK BAI", "TELUNGUPALAYAM", "SOWRIPALAYAM"], "full_access": False},
-    "HRT3":  {"password": "hrt3@2024",  "role": "HRT3",  "name": "Swetha",
-              "phcs": ["GANAPATHY", "RAJA STREET", "THUDIYALUR", "49 GOUNDAMPALAYAM", "MANIYAKARAMPALAYAM"], "full_access": False},
-    "HRT4":  {"password": "hrt4@2024",  "role": "HRT4",  "name": "Abarna V",
-              "phcs": ["GANAPATHY MANAGAR UPHC", "SELVAPURAM", "VELLAKINAR", "PEELAMEDU", "SLM"], "full_access": False},
-    "HRT5":  {"password": "hrt5@2024",  "role": "HRT5",  "name": "Nivetha",
+    "HRT3":  {"password": "hrt3@2024",  "role": "HRT3",  "name": "Nivetha",
               "phcs": ["KK PUDUR", "KURUCHI", "SN PALAYAM", "MM HOME", "MM", "MM PHC", "MPHC"], "full_access": False},
-    "HRT6":  {"password": "hrt6@2024",  "role": "HRT6",  "name": "Pavithra",
-              "phcs": ["KUNIYAMUTHUR", "VADAVALLI", "THONDAMUTHUR", "JRM", "KALVEERAMPALAYAM"], "full_access": False},
-    "HRT7":  {"password": "hrt7@2024",  "role": "HRT7",  "name": "Ishwarya",
-              "phcs": ["VILANKURICHI"], "full_access": False},
-    "HRT8":  {"password": "hrt8@2024",  "role": "HRT8",  "name": "Pavithraa M",
+    "HRT4":  {"password": "hrt4@2024",  "role": "HRT4",  "name": "Pavithraa M",
               "phcs": ["UPPILIPALAYAM", "RAMANATHAPURAM", "SINGANALLUR", "PODANUR"], "full_access": False},
+    "HRT5":  {"password": "hrt5@2024",  "role": "HRT5",  "name": "Pavithra",
+              "phcs": ["KUNIYAMUTHUR", "VADAVALLI", "THONDAMUTHUR", "JRM", "KALVEERAMPALAYAM"], "full_access": False},
+    "HRT6":  {"password": "hrt6@2024",  "role": "HRT6",  "name": "Ishwarya",
+              "phcs": ["VILANKURICHI"], "full_access": False},
+    "HRT7":  {"password": "hrt7@2024",  "role": "HRT7",  "name": "Swetha",
+              "phcs": ["GANAPATHY", "RAJA STREET", "THUDIYALUR", "49 GOUNDAMPALAYAM", "MANIYAKARAMPALAYAM"], "full_access": False},
+    "HRT8":  {"password": "hrt8@2024",  "role": "HRT8",  "name": "Abarna V",
+              "phcs": ["GANAPATHY MANAGAR UPHC", "SELVAPURAM", "VELLAKINAR", "PEELAMEDU", "SLM"], "full_access": False},
 }
 
 # ── PHC → HRT Mapping ──────────────────────────────────────────────────────
@@ -91,33 +91,33 @@ PHC_MAP = {
     "RK BAI":                 {"hrt_code": "HRT2", "hrt_name": "Girija",      "phc_display": "RK Bhai"},
     "TELUNGUPALAYAM":         {"hrt_code": "HRT2", "hrt_name": "Girija",      "phc_display": "Telungupalayam"},
     "SOWRIPALAYAM":           {"hrt_code": "HRT2", "hrt_name": "Girija",      "phc_display": "Sowripalayam"},
-    "GANAPATHY":              {"hrt_code": "HRT3", "hrt_name": "Swetha",      "phc_display": "Ganapathy"},
-    "RAJA STREET":            {"hrt_code": "HRT3", "hrt_name": "Swetha",      "phc_display": "Raja Street"},
-    "THUDIYALUR":             {"hrt_code": "HRT3", "hrt_name": "Swetha",      "phc_display": "Thudiyalur"},
-    "49 GOUNDAMPALAYAM":      {"hrt_code": "HRT3", "hrt_name": "Swetha",      "phc_display": "Goundampalayam"},
-    "MANIYAKARAMPALAYAM":     {"hrt_code": "HRT3", "hrt_name": "Swetha",      "phc_display": "Maniyakaranpalayam"},
-    "GANAPATHY MANAGAR UPHC": {"hrt_code": "HRT4", "hrt_name": "Abarna V",    "phc_display": "Ganapathy Managar"},
-    "SELVAPURAM":             {"hrt_code": "HRT4", "hrt_name": "Abarna V",    "phc_display": "Selvapuram"},
-    "VELLAKINAR":             {"hrt_code": "HRT4", "hrt_name": "Abarna V",    "phc_display": "Vellakinar"},
-    "PEELAMEDU":              {"hrt_code": "HRT4", "hrt_name": "Abarna V",    "phc_display": "Peelamedu"},
-    "SLM":                    {"hrt_code": "HRT4", "hrt_name": "Abarna V",    "phc_display": "SLM Home"},
-    "KK PUDUR":               {"hrt_code": "HRT5", "hrt_name": "Nivetha",     "phc_display": "KK Pudur"},
-    "KURUCHI":                {"hrt_code": "HRT5", "hrt_name": "Nivetha",     "phc_display": "Kuruchi"},
-    "SN PALAYAM":             {"hrt_code": "HRT5", "hrt_name": "Nivetha",     "phc_display": "Seeranaikenpalayam"},
-    "MM HOME":                {"hrt_code": "HRT5", "hrt_name": "Nivetha",     "phc_display": "MM Home"},
-    "MM":                     {"hrt_code": "HRT5", "hrt_name": "Nivetha",     "phc_display": "MM Home"},
-    "MM PHC":                 {"hrt_code": "HRT5", "hrt_name": "Nivetha",     "phc_display": "MM Home"},
-    "MPHC":                   {"hrt_code": "HRT5", "hrt_name": "Nivetha",     "phc_display": "MM Home"},
-    "KUNIYAMUTHUR":           {"hrt_code": "HRT6", "hrt_name": "Pavithra",    "phc_display": "Kuniyamuthur"},
-    "VADAVALLI":              {"hrt_code": "HRT6", "hrt_name": "Pavithra",    "phc_display": "Vadavalli"},
-    "THONDAMUTHUR":           {"hrt_code": "HRT6", "hrt_name": "Pavithra",    "phc_display": "Thondamuthur"},
-    "JRM":                    {"hrt_code": "HRT6", "hrt_name": "Pavithra",    "phc_display": "JRM Centre"},
-    "KALVEERAMPALAYAM":       {"hrt_code": "HRT6", "hrt_name": "Pavithra",    "phc_display": "Kalveerampalayam"},
-    "VILANKURICHI":           {"hrt_code": "HRT7", "hrt_name": "Ishwarya",    "phc_display": "Vilankuruchi"},
-    "UPPILIPALAYAM":          {"hrt_code": "HRT8", "hrt_name": "Pavithraa M", "phc_display": "Uppilipalayam"},
-    "RAMANATHAPURAM":         {"hrt_code": "HRT8", "hrt_name": "Pavithraa M", "phc_display": "Ramanathapuram"},
-    "SINGANALLUR":            {"hrt_code": "HRT8", "hrt_name": "Pavithraa M", "phc_display": "Singanallur"},
-    "PODANUR":                {"hrt_code": "HRT8", "hrt_name": "Pavithraa M", "phc_display": "Podanur"},
+    "KK PUDUR":               {"hrt_code": "HRT3", "hrt_name": "Nivetha",     "phc_display": "KK Pudur"},
+    "KURUCHI":                {"hrt_code": "HRT3", "hrt_name": "Nivetha",     "phc_display": "Kuruchi"},
+    "SN PALAYAM":             {"hrt_code": "HRT3", "hrt_name": "Nivetha",     "phc_display": "Seeranaikenpalayam"},
+    "MM HOME":                {"hrt_code": "HRT3", "hrt_name": "Nivetha",     "phc_display": "MM Home"},
+    "MM":                     {"hrt_code": "HRT3", "hrt_name": "Nivetha",     "phc_display": "MM Home"},
+    "MM PHC":                 {"hrt_code": "HRT3", "hrt_name": "Nivetha",     "phc_display": "MM Home"},
+    "MPHC":                   {"hrt_code": "HRT3", "hrt_name": "Nivetha",     "phc_display": "MM Home"},
+    "UPPILIPALAYAM":          {"hrt_code": "HRT4", "hrt_name": "Pavithraa M", "phc_display": "Uppilipalayam"},
+    "RAMANATHAPURAM":         {"hrt_code": "HRT4", "hrt_name": "Pavithraa M", "phc_display": "Ramanathapuram"},
+    "SINGANALLUR":            {"hrt_code": "HRT4", "hrt_name": "Pavithraa M", "phc_display": "Singanallur"},
+    "PODANUR":                {"hrt_code": "HRT4", "hrt_name": "Pavithraa M", "phc_display": "Podanur"},
+    "KUNIYAMUTHUR":           {"hrt_code": "HRT5", "hrt_name": "Pavithra",    "phc_display": "Kuniyamuthur"},
+    "VADAVALLI":              {"hrt_code": "HRT5", "hrt_name": "Pavithra",    "phc_display": "Vadavalli"},
+    "THONDAMUTHUR":           {"hrt_code": "HRT5", "hrt_name": "Pavithra",    "phc_display": "Thondamuthur"},
+    "JRM":                    {"hrt_code": "HRT5", "hrt_name": "Pavithra",    "phc_display": "JRM Centre"},
+    "KALVEERAMPALAYAM":       {"hrt_code": "HRT5", "hrt_name": "Pavithra",    "phc_display": "Kalveerampalayam"},
+    "VILANKURICHI":           {"hrt_code": "HRT6", "hrt_name": "Ishwarya",    "phc_display": "Vilankuruchi"},
+    "GANAPATHY":              {"hrt_code": "HRT7", "hrt_name": "Swetha",      "phc_display": "Ganapathy"},
+    "RAJA STREET":            {"hrt_code": "HRT7", "hrt_name": "Swetha",      "phc_display": "Raja Street"},
+    "THUDIYALUR":             {"hrt_code": "HRT7", "hrt_name": "Swetha",      "phc_display": "Thudiyalur"},
+    "49 GOUNDAMPALAYAM":      {"hrt_code": "HRT7", "hrt_name": "Swetha",      "phc_display": "Goundampalayam"},
+    "MANIYAKARAMPALAYAM":     {"hrt_code": "HRT7", "hrt_name": "Swetha",      "phc_display": "Maniyakaranpalayam"},
+    "GANAPATHY MANAGAR UPHC": {"hrt_code": "HRT8", "hrt_name": "Abarna V",    "phc_display": "Ganapathy Managar"},
+    "SELVAPURAM":             {"hrt_code": "HRT8", "hrt_name": "Abarna V",    "phc_display": "Selvapuram"},
+    "VELLAKINAR":             {"hrt_code": "HRT8", "hrt_name": "Abarna V",    "phc_display": "Vellakinar"},
+    "PEELAMEDU":              {"hrt_code": "HRT8", "hrt_name": "Abarna V",    "phc_display": "Peelamedu"},
+    "SLM":                    {"hrt_code": "HRT8", "hrt_name": "Abarna V",    "phc_display": "SLM Home"},
     "SHEET45":                {"hrt_code": "UNASSIGNED", "hrt_name": "Unassigned", "phc_display": "Other"},
 }
 
@@ -641,15 +641,37 @@ def login():
     password = body.get("password", "").strip()
     user = USERS.get(username)
     if user and user["password"] == password:
+        phc_displays = [PHC_MAP.get(p, {}).get("phc_display", p) for p in user["phcs"]
+                        if PHC_MAP.get(p, {}).get("hrt_code") == user["role"]]
+        print(f"[LOGIN] username={username} role={user['role']} name={user['name']} "
+              f"full_access={user['full_access']} phcs={user['phcs']}", flush=True)
         return jsonify({
-            "success": True,
-            "role":    user["role"],
-            "name":    user["name"],
-            "phcs":    user["phcs"],
+            "success":     True,
+            "role":        user["role"],
+            "name":        user["name"],
+            "phcs":        user["phcs"],
             "full_access": user["full_access"],
-            "username": username,
+            "username":    username,
         })
+    print(f"[LOGIN FAILED] username={username}", flush=True)
     return jsonify({"success": False, "message": "Invalid credentials"}), 401
+
+@app.route("/api/me")
+def me():
+    """Return identity of the currently specified role (used for session validation)."""
+    role = request.args.get("role", "").upper()
+    user = next((u for u in USERS.values() if u["role"] == role), None)
+    if not user:
+        return jsonify({"error": "Unknown role"}), 404
+    phc_info = [{"phc_key": p, "phc_display": PHC_MAP.get(p, {}).get("phc_display", p)}
+                for p in user["phcs"]]
+    return jsonify({
+        "role":        user["role"],
+        "name":        user["name"],
+        "full_access": user["full_access"],
+        "phcs":        phc_info,
+        "hrt_code":    user["role"],
+    })
 
 @app.route("/api/refresh", methods=["POST"])
 def refresh():
