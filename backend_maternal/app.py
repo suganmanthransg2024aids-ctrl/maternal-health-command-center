@@ -42,8 +42,8 @@ if os.path.exists(_cfg_file):
 EXCEL_URL = os.environ.get('EXCEL_URL', '').strip()
 
 if EXCEL_URL:
-    # Cloud mode: file downloaded to /tmp at startup
-    EXCEL_PATH = '/tmp/ccmc_data.xlsx'
+    # Cloud mode: Windows-safe temp path
+    EXCEL_PATH = os.path.join(BASE_DIR, 'ccmc_data_cache.xlsx')
 else:
     _default_excel = os.path.join(BASE_DIR, '..', '..', '..', 'Downloads',
                                   'ccmc maternal',
