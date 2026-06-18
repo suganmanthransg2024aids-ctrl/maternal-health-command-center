@@ -41,6 +41,11 @@ if exist "venv\Scripts\activate.bat" (
 )
 echo.
 
+REM ── Set environment variables ─────────────────────────────────────────────
+set EXCEL_URL=https://docs.google.com/spreadsheets/d/1T1sthQZftwJEyve2wuyAwVZ55sr8TvgwhQJFEdEmAmA/export?format=xlsx
+set PORT=8001
+set PYTHONUNBUFFERED=1
+
 REM ── Start Flask server ────────────────────────────────────────────────────
 echo  [3/4] Starting CCMC server...
 if exist "backend_maternal\server.log" del /f /q "backend_maternal\server.log"
@@ -78,8 +83,8 @@ echo    URL  :  http://localhost:8001
 echo    Log  :  backend_maternal\server.log
 echo.
 echo    Login Credentials:
-echo      DMCHO  ^|  dmcho@2024       (Full access)
-echo      CHO    ^|  cho@2024         (Full access)
+echo      CHO    ^|  cho@2024         (City Health Officer)
+echo      DMCHO  ^|  dmcho@2024       (District MCH Officer)
 echo      HRT1   ^|  hrt1@2024        (Assigned PHCs only)
 echo      HRT2-8 ^|  hrt2@2024 ...
 echo.

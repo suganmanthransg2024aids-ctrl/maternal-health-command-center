@@ -1608,6 +1608,36 @@ def add_followup(uid):
     _save_json(FOLLOWUP_FILE, followups)
     return jsonify({"success": True, "entry": entry})
 
+# ── Delivery Timeline — next 30 days, day-by-day counts ───────────────────
+@app.route("/api/delivery-timeline")
+def delivery_timeline():
+    role = request.args.get("role", "DMCHO")
+    df   = filter_by_role(get_data(), role)
+    today = datetime.date.today()
+
+    # Only antenatal mothers with EDD in the next 30 days
+    an_df = df[(df["is_delivered"] == False) & (df["days_to_edd"].between(0, 30))]
+
+    timeline = []
+    for day in range(0, 31):
+        day_df    = an_df[an_df["days_to_edd"] == day]
+        count     = int(len(day_df))
+        critical  = int((day_df["risk_category"] == "Critical").sum())
+        very_high = int((day_df["risk_category"] == "Very High").sum())
+        high      = int((day_df["risk_category"] == "High").sum())
+        date_obj  = today + datetime.timedelta(days=day)
+        timeline.append({
+            "day":       day,
+            "date":      date_obj.strftime("%d %b"),
+            "weekday":   date_obj.strftime("%a"),
+            "count":     count,
+            "critical":  critical,
+            "very_high": very_high,
+            "high":      high,
+        })
+    return jsonify({"timeline": timeline, "total": int(len(an_df))})
+
+
 # ── Static React frontend ──────────────────────────────────────────────────
 @app.route("/", defaults={"path": ""})
 @app.route("/<path:path>")

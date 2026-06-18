@@ -212,8 +212,11 @@ export default function App() {
           toggleTheme={toggleTheme}
         />
         <main
-          className="flex-1 overflow-y-auto p-6"
-          style={{ background: 'var(--ccmc-bg)' }}
+          className="flex-1 overflow-y-auto"
+          style={{
+            background: 'var(--ccmc-bg)',
+            padding: '28px 28px',
+          }}
         >
           {renderPage()}
         </main>

@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
-import { Bell, RefreshCw, Database, Clock, AlertTriangle, CheckCircle, Info, Sun, Moon } from 'lucide-react';
+import {
+  Bell, RefreshCw, CheckCircle, AlertTriangle, Info,
+  Sun, Moon, X, Wifi, WifiOff,
+} from 'lucide-react';
 
 export default function Header({ user, backendOK, lastSync, syncing, onRefresh, notifications, clearNotifications, stats, theme, toggleTheme }) {
   const [showBell, setShowBell] = useState(false);
@@ -7,141 +10,159 @@ export default function Header({ user, backendOK, lastSync, syncing, onRefresh, 
   const dark   = theme !== 'bright';
 
   const typeIcon = (type) => {
-    if (type === 'SUCCESS') return <CheckCircle className="w-3.5 h-3.5 text-green-400" />;
-    if (type === 'ERROR')   return <AlertTriangle className="w-3.5 h-3.5 text-red-400" />;
-    return <Info className="w-3.5 h-3.5 text-blue-400" />;
+    if (type === 'SUCCESS') return <CheckCircle className="w-3.5 h-3.5" style={{ color: '#22C55E' }} />;
+    if (type === 'ERROR')   return <AlertTriangle className="w-3.5 h-3.5" style={{ color: '#EF4444' }} />;
+    return <Info className="w-3.5 h-3.5" style={{ color: '#3B9FFF' }} />;
   };
 
   return (
     <header
-      className="h-14 flex items-center justify-between px-6 flex-shrink-0 print:hidden"
+      className="flex items-center justify-between px-6 flex-shrink-0 print:hidden"
       style={{
+        height: 56,
         background: 'var(--ccmc-panel)',
         borderBottom: '1px solid var(--ccmc-border)',
-        transition: 'background 0.25s, border-color 0.25s',
+        transition: 'background 0.3s, border-color 0.3s',
       }}
     >
-      {/* Left: page title */}
-      <div className="flex items-center gap-3">
+      {/* ── Left: breadcrumb + status ───────────────────────────────── */}
+      <div className="flex items-center gap-4">
+        {/* Status pill */}
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full"
+          style={{
+            background: backendOK ? 'rgba(34,197,94,0.08)' : 'rgba(245,158,11,0.08)',
+            border: `1px solid ${backendOK ? 'rgba(34,197,94,0.2)' : 'rgba(245,158,11,0.2)'}`,
+          }}>
+          {backendOK
+            ? <Wifi className="w-3 h-3" style={{ color: '#22C55E' }} />
+            : <WifiOff className="w-3 h-3" style={{ color: '#FBBF24' }} />
+          }
+          <div className="live-dot" style={{ background: backendOK ? '#22C55E' : '#FBBF24', animation: backendOK ? undefined : 'none' }} />
+          <span className="text-[11px] font-semibold" style={{ color: backendOK ? '#22C55E' : '#FBBF24' }}>
+            {backendOK ? 'Live' : 'Offline'}
+          </span>
+          {lastSync && (
+            <span className="text-[10px] hidden md:block" style={{ color: 'var(--ccmc-text-hint)' }}>
+              · {lastSync}
+            </span>
+          )}
+        </div>
+
+        {/* Page title */}
         <div>
-          <div className="text-xs font-bold tracking-wider" style={{ color: 'var(--ccmc-text)' }}>
-            MATERNAL HEALTH COMMAND CENTER
+          <div className="text-[13px] font-semibold" style={{ color: 'var(--ccmc-text)' }}>
+            Maternal Health Command Center
           </div>
-          <div className="text-[10px] font-medium" style={{ color: 'var(--ccmc-text-hint)' }}>
-            Coimbatore City Municipal Corporation · {user?.full_access ? 'Full Access' : `Restricted: ${user?.phcs?.join(', ')}`}
+          <div className="text-[10px] hidden md:block" style={{ color: 'var(--ccmc-text-hint)' }}>
+            {user?.full_access ? 'Full Access' : `Restricted: ${user?.phcs?.join(', ')}`}
           </div>
         </div>
       </div>
 
-      {/* Center: quick stats */}
+      {/* ── Center: live stats ─────────────────────────────────────── */}
       {stats && (
-        <div className="hidden md:flex items-center gap-4 text-[11px] font-semibold">
-          <span style={{ color: 'var(--ccmc-text-sec)' }}>
-            <span style={{ color: 'var(--ccmc-text)' }}>{stats.total_mothers?.toLocaleString()}</span> Mothers
-          </span>
-          <span className="w-px h-4" style={{ background: 'var(--ccmc-border-s)' }} />
-          <span style={{ color: 'var(--ccmc-text-sec)' }}>
-            <span style={{ color: '#EF4444' }}>{stats.critical}</span> Critical
-          </span>
-          <span className="w-px h-4" style={{ background: 'var(--ccmc-border-s)' }} />
-          <span style={{ color: 'var(--ccmc-text-sec)' }}>
-            <span style={{ color: '#F97316' }}>{stats.due_7_days}</span> Due ≤7d
-          </span>
+        <div className="hidden lg:flex items-center gap-1">
+          {[
+            { label: 'Total', value: stats.total_mothers?.toLocaleString(), color: '#3B9FFF' },
+            { label: 'Critical', value: stats.critical?.toLocaleString(), color: '#EF4444' },
+            { label: 'Due ≤7d', value: stats.due_7_days?.toLocaleString(), color: '#F97316' },
+          ].map(({ label, value, color }, i) => (
+            <React.Fragment key={label}>
+              {i > 0 && <div className="w-px h-4 mx-2" style={{ background: 'var(--ccmc-border-s)' }} />}
+              <div className="text-center px-3">
+                <div className="text-[15px] font-bold leading-none" style={{ color }}>{value || '—'}</div>
+                <div className="text-[9px] font-semibold mt-0.5 uppercase tracking-wider" style={{ color: 'var(--ccmc-text-hint)' }}>{label}</div>
+              </div>
+            </React.Fragment>
+          ))}
         </div>
       )}
 
-      {/* Right: controls */}
+      {/* ── Right: controls ────────────────────────────────────────── */}
       <div className="flex items-center gap-2">
+
         {/* Theme toggle */}
         <button
           onClick={toggleTheme}
-          title={dark ? 'Switch to Bright Mode' : 'Switch to Dark Mode'}
-          className="p-1.5 rounded-lg transition-all"
-          style={{
-            background: dark ? 'rgba(250,204,21,0.12)' : 'rgba(15,76,129,0.15)',
-            border: dark ? '1px solid rgba(250,204,21,0.3)' : '1px solid rgba(25,118,210,0.3)',
-            color: dark ? '#FDE047' : '#1976D2',
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.8'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
+          title={dark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+          className="btn-ghost p-2 rounded-lg"
+          style={{ padding: '7px' }}
         >
-          {dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          {dark
+            ? <Sun className="w-4 h-4" style={{ color: '#FBBF24' }} />
+            : <Moon className="w-4 h-4" style={{ color: '#1B6BD4' }} />
+          }
         </button>
-
-        {/* DB status */}
-        <div
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wide"
-          style={{
-            background: backendOK ? 'rgba(22,163,74,0.15)' : 'rgba(245,158,11,0.15)',
-            border: `1px solid ${backendOK ? 'rgba(22,163,74,0.3)' : 'rgba(245,158,11,0.3)'}`,
-            color: backendOK ? '#4ADE80' : '#FBBF24',
-          }}
-        >
-          <Database className="w-3 h-3" />
-          <div className="w-1.5 h-1.5 rounded-full"
-            style={{ background: backendOK ? '#4ADE80' : '#FBBF24', animation: backendOK ? 'pulse 2s infinite' : 'none' }} />
-          {backendOK ? 'EXCEL DB LIVE' : 'OFFLINE'}
-        </div>
-
-        {/* Last sync */}
-        {lastSync && (
-          <div className="hidden md:flex items-center gap-1 text-[10px] font-medium" style={{ color: 'var(--ccmc-text-hint)' }}>
-            <Clock className="w-3 h-3" />
-            {lastSync}
-          </div>
-        )}
 
         {/* Refresh */}
         <button
-          onClick={onRefresh} disabled={syncing} title="Reload Excel database"
-          className="p-1.5 rounded-lg transition-all"
-          style={{ background: 'rgba(25,118,210,0.15)', border: '1px solid rgba(25,118,210,0.3)', color: '#42A5F5' }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(25,118,210,0.3)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(25,118,210,0.15)'; }}
+          onClick={onRefresh}
+          disabled={syncing}
+          title="Reload Excel database"
+          className="btn-ghost p-2 rounded-lg"
+          style={{ padding: '7px' }}
         >
-          <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`}
+            style={{ color: syncing ? '#3B9FFF' : 'var(--ccmc-text-sec)' }} />
         </button>
 
         {/* Bell */}
         <div className="relative">
-          <button onClick={() => setShowBell(!showBell)}
-            className="relative p-1.5 rounded-lg transition-all"
-            style={{ background: 'var(--ccmc-hover)', color: 'var(--ccmc-text-sec)' }}>
-            <Bell className="w-4 h-4" />
+          <button
+            onClick={() => setShowBell(!showBell)}
+            className="btn-ghost p-2 rounded-lg relative"
+            style={{ padding: '7px' }}
+          >
+            <Bell className="w-4 h-4" style={{ color: unread > 0 ? '#3B9FFF' : 'var(--ccmc-text-sec)' }} />
             {unread > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full text-[9px] font-bold text-white flex items-center justify-center"
-                style={{ background: '#EF4444' }}>
+              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full text-[9px] font-bold text-white flex items-center justify-center"
+                style={{ background: '#EF4444', lineHeight: 1 }}>
                 {Math.min(unread, 9)}
               </span>
             )}
           </button>
 
           {showBell && (
-            <div className="absolute right-0 mt-2 w-80 rounded-xl overflow-hidden z-50"
-              style={{ background: 'var(--ccmc-panel)', border: '1px solid var(--ccmc-border)', boxShadow: '0 20px 40px rgba(0,0,0,0.3)' }}>
-              <div className="flex items-center justify-between px-4 py-3 border-b"
-                style={{ borderColor: 'var(--ccmc-border)' }}>
-                <span className="text-xs font-bold uppercase tracking-wide" style={{ color: 'var(--ccmc-text)' }}>
-                  System Notifications
+            <div className="absolute right-0 mt-2 w-80 rounded-2xl overflow-hidden z-50 fade-in"
+              style={{
+                background: 'var(--ccmc-panel)',
+                border: '1px solid var(--ccmc-border)',
+                boxShadow: '0 20px 60px rgba(0,0,0,0.35)',
+              }}>
+              <div className="flex items-center justify-between px-5 py-3.5"
+                style={{ borderBottom: '1px solid var(--ccmc-border)' }}>
+                <span className="text-[12px] font-semibold" style={{ color: 'var(--ccmc-text)' }}>
+                  Notifications
                 </span>
-                {unread > 0 && (
-                  <button onClick={() => { clearNotifications(); setShowBell(false); }}
-                    className="text-[10px] font-bold" style={{ color: '#42A5F5' }}>
-                    Clear All
+                <div className="flex items-center gap-3">
+                  {unread > 0 && (
+                    <button
+                      onClick={() => { clearNotifications(); setShowBell(false); }}
+                      className="text-[11px] font-semibold"
+                      style={{ color: '#3B9FFF' }}
+                    >
+                      Clear all
+                    </button>
+                  )}
+                  <button onClick={() => setShowBell(false)} style={{ color: 'var(--ccmc-text-hint)' }}>
+                    <X className="w-3.5 h-3.5" />
                   </button>
-                )}
+                </div>
               </div>
-              <div className="max-h-64 overflow-y-auto divide-y" style={{ borderColor: 'var(--ccmc-border)' }}>
+              <div className="max-h-72 overflow-y-auto">
                 {notifications.length === 0 ? (
-                  <div className="px-4 py-6 text-center text-xs" style={{ color: 'var(--ccmc-text-hint)' }}>
+                  <div className="px-5 py-8 text-center text-[12px]" style={{ color: 'var(--ccmc-text-hint)' }}>
                     No new notifications
                   </div>
                 ) : notifications.slice(0, 10).map(n => (
-                  <div key={n.id} className="px-4 py-3 flex gap-2.5">
-                    {typeIcon(n.type)}
+                  <div key={n.id} className="px-4 py-3 flex gap-3 transition-colors"
+                    style={{ borderBottom: '1px solid var(--ccmc-border)' }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--ccmc-hover)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}>
+                    <div className="mt-0.5 flex-shrink-0">{typeIcon(n.type)}</div>
                     <div>
-                      <div className="text-xs font-semibold leading-tight" style={{ color: 'var(--ccmc-text)' }}>{n.title}</div>
-                      <div className="text-[10px] mt-0.5" style={{ color: 'var(--ccmc-text-sec)' }}>{n.message}</div>
+                      <div className="text-[12px] font-semibold leading-tight" style={{ color: 'var(--ccmc-text)' }}>{n.title}</div>
+                      <div className="text-[11px] mt-0.5 leading-relaxed" style={{ color: 'var(--ccmc-text-hint)' }}>{n.message}</div>
                     </div>
                   </div>
                 ))}
