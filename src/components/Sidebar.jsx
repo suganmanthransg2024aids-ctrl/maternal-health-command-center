@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTheme } from '../ThemeContext';
 import {
   LayoutDashboard, ShieldCheck, Users, Activity, Baby,
   Phone, CalendarCheck, Bell, BarChart2, FileText,
@@ -9,26 +10,26 @@ const NAV_SECTIONS = [
   {
     label: 'Overview',
     items: [
-      { id: 'overview',   label: 'Dashboard',          icon: LayoutDashboard },
+      { id: 'overview',   label: 'Dashboard',           icon: LayoutDashboard },
     ],
   },
   {
     label: 'Operations',
     items: [
-      { id: 'patients',   label: 'Patient Explorer',   icon: Users },
-      { id: 'risk',       label: 'Risk Intelligence',  icon: Activity },
-      { id: 'delivery',   label: 'Delivery Monitoring',icon: Baby },
-      { id: 'calls',      label: 'Call Tracking',      icon: Phone },
-      { id: 'followups',  label: 'Follow-Up Tracking', icon: CalendarCheck },
-      { id: 'alerts',     label: 'Alerts Center',      icon: Bell },
+      { id: 'patients',   label: 'Patient Explorer',    icon: Users },
+      { id: 'risk',       label: 'Risk Intelligence',   icon: Activity },
+      { id: 'delivery',   label: 'Delivery Monitoring', icon: Baby },
+      { id: 'calls',      label: 'Call Tracking',       icon: Phone },
+      { id: 'followups',  label: 'Follow-Up Tracking',  icon: CalendarCheck },
+      { id: 'alerts',     label: 'Alerts Center',       icon: Bell },
     ],
   },
   {
     label: 'Analytics',
     items: [
-      { id: 'phc',        label: 'PHC Analytics',      icon: BarChart2 },
-      { id: 'validation', label: 'Data Validation',    icon: ShieldCheck },
-      { id: 'reports',    label: 'Reports & Exports',  icon: FileText },
+      { id: 'phc',        label: 'PHC Analytics',       icon: BarChart2 },
+      { id: 'validation', label: 'Data Validation',     icon: ShieldCheck },
+      { id: 'reports',    label: 'Reports & Exports',   icon: FileText },
     ],
   },
 ];
@@ -40,7 +41,7 @@ const EXEC_SECTION = {
   ],
 };
 
-const ROLE_COLOR = {
+const ROLE_COLOR_DARK = {
   DMCHO: '#3B9FFF', CHO: '#34D399',
   HRT1: '#F472B6', HRT2: '#A78BFA', HRT3: '#60A5FA',
   HRT4: '#FBBF24', HRT5: '#34D399', HRT6: '#F87171',
@@ -55,30 +56,36 @@ const ROLE_BG = {
 };
 
 export default function Sidebar({ activePage, setActivePage, user, onLogout, stats }) {
-  const roleColor = ROLE_COLOR[user?.role] || '#3B9FFF';
-  const roleBg    = ROLE_BG[user?.role]    || 'rgba(59,159,255,0.15)';
-  const isExec    = user?.full_access === true;
+  const { theme } = useTheme();
+  const dark = theme !== 'bright';
 
-  const sections = isExec ? [EXEC_SECTION, ...NAV_SECTIONS] : NAV_SECTIONS;
+  const roleColor       = ROLE_COLOR_DARK[user?.role] || '#3B9FFF';
+  const roleBg          = ROLE_BG[user?.role] || 'rgba(59,159,255,0.15)';
+  const isExec          = user?.full_access === true;
+  const sections        = isExec ? [EXEC_SECTION, ...NAV_SECTIONS] : NAV_SECTIONS;
+  const activeNavAccent = dark ? '#3B9FFF' : '#0F766E';
 
   return (
     <aside
       className="flex flex-col select-none print:hidden flex-shrink-0"
       style={{
-        width: 224,
+        width: 228,
         background: 'var(--ccmc-panel)',
-        borderRight: '1px solid var(--ccmc-border)',
+        borderRight: dark ? '1px solid var(--ccmc-border)' : '1px solid #E2E8F0',
+        boxShadow: dark ? 'none' : '2px 0 16px rgba(0,0,0,0.04)',
         transition: 'background 0.3s',
       }}
     >
       {/* ── Brand ──────────────────────────────────────────────────────── */}
-      <div className="px-4 pt-5 pb-4" style={{ borderBottom: '1px solid var(--ccmc-border)' }}>
-        {/* Mother image + app name */}
+      <div className="px-4 pt-5 pb-4"
+        style={{ borderBottom: dark ? '1px solid var(--ccmc-border)' : '1px solid #F1F5F9' }}>
+
+        {/* Logo + app name */}
         <div className="flex items-center gap-3 mb-4">
           <div className="w-11 h-11 rounded-xl overflow-hidden flex-shrink-0"
             style={{
-              border: '1.5px solid rgba(59,159,255,0.35)',
-              boxShadow: '0 2px 10px rgba(0,0,0,0.35)',
+              border: dark ? '1.5px solid rgba(59,159,255,0.35)' : '1.5px solid rgba(15,118,110,0.25)',
+              boxShadow: dark ? '0 2px 10px rgba(0,0,0,0.35)' : '0 2px 10px rgba(15,118,110,0.12)',
             }}>
             <img
               src="/images/mother-baby.png"
@@ -86,7 +93,9 @@ export default function Sidebar({ activePage, setActivePage, user, onLogout, sta
               style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 10%' }}
               onError={(e) => {
                 e.target.style.display = 'none';
-                e.target.parentElement.style.background = 'linear-gradient(135deg, #0F4C81, #1B6BD4)';
+                e.target.parentElement.style.background = dark
+                  ? 'linear-gradient(135deg, #0F4C81, #1B6BD4)'
+                  : 'linear-gradient(135deg, #0F766E, #14B8A6)';
                 e.target.parentElement.style.display = 'flex';
                 e.target.parentElement.style.alignItems = 'center';
                 e.target.parentElement.style.justifyContent = 'center';
@@ -95,52 +104,77 @@ export default function Sidebar({ activePage, setActivePage, user, onLogout, sta
             />
           </div>
           <div>
-            <div className="text-[13px] font-bold leading-tight" style={{ color: 'var(--ccmc-text)' }}>
+            <div className="text-[13px] font-bold leading-tight"
+              style={{ color: 'var(--ccmc-text)' }}>
               CCMC Health
             </div>
-            <div className="text-[10px] font-medium mt-0.5" style={{ color: 'var(--ccmc-text-hint)' }}>
-              Maternal Tracker
+            <div className="text-[10px] font-semibold mt-0.5"
+              style={{ color: dark ? 'var(--ccmc-text-hint)' : '#0F766E' }}>
+              {dark ? 'Maternal Tracker' : 'Maternal Intelligence'}
             </div>
           </div>
         </div>
 
-        {/* User profile */}
+        {/* User profile chip */}
         <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl"
-          style={{ background: roleBg, border: `1px solid ${roleColor}25` }}>
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center text-[11px] font-bold text-white flex-shrink-0"
-            style={{ background: `linear-gradient(135deg, ${roleColor}CC, ${roleColor})` }}>
+          style={{
+            background: dark ? roleBg : 'linear-gradient(135deg, #0F766E 0%, #14B8A6 100%)',
+            border: dark ? `1px solid ${roleColor}25` : 'none',
+            boxShadow: dark ? 'none' : '0 3px 14px rgba(15,118,110,0.28)',
+          }}>
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center text-[11px] font-bold flex-shrink-0"
+            style={{
+              background: dark
+                ? `linear-gradient(135deg, ${roleColor}CC, ${roleColor})`
+                : 'rgba(255,255,255,0.2)',
+              color: '#FFFFFF',
+            }}>
             {user?.role?.slice(0, 2)}
           </div>
           <div className="min-w-0 flex-1">
-            <div className="text-[12px] font-semibold truncate leading-tight" style={{ color: 'var(--ccmc-text)' }}>
+            <div className="text-[12px] font-semibold truncate leading-tight"
+              style={{ color: dark ? 'var(--ccmc-text)' : '#FFFFFF' }}>
               {user?.name}
             </div>
-            <div className="text-[10px] font-bold mt-0.5" style={{ color: roleColor }}>
+            <div className="text-[10px] font-bold mt-0.5"
+              style={{ color: dark ? roleColor : 'rgba(255,255,255,0.8)' }}>
               {user?.role}
             </div>
           </div>
-          <div className="live-dot flex-shrink-0" />
+          <div className="live-dot flex-shrink-0"
+            style={{ background: dark ? '#22C55E' : 'rgba(255,255,255,0.65)' }} />
         </div>
       </div>
 
       {/* ── Quick stats strip ──────────────────────────────────────────── */}
       {stats && (
-        <div className="px-4 py-3 grid grid-cols-2 gap-2" style={{ borderBottom: '1px solid var(--ccmc-border)' }}>
+        <div className="px-4 py-3 grid grid-cols-2 gap-2"
+          style={{ borderBottom: dark ? '1px solid var(--ccmc-border)' : '1px solid #F1F5F9' }}>
           <div className="rounded-lg px-3 py-2 text-center"
-            style={{ background: 'rgba(59,159,255,0.07)', border: '1px solid rgba(59,159,255,0.12)' }}>
-            <div className="text-[15px] font-bold leading-none" style={{ color: 'var(--ccmc-text)' }}>
+            style={{
+              background: dark ? 'rgba(59,159,255,0.07)' : '#EFF6FF',
+              border: dark ? '1px solid rgba(59,159,255,0.12)' : '1px solid #BFDBFE',
+            }}>
+            <div className="text-[15px] font-bold leading-none"
+              style={{ color: dark ? 'var(--ccmc-text)' : '#1D4ED8' }}>
               {stats.total_mothers?.toLocaleString() || '—'}
             </div>
-            <div className="text-[9px] font-semibold mt-1 uppercase tracking-wider" style={{ color: 'var(--ccmc-text-hint)' }}>
+            <div className="text-[9px] font-semibold mt-1 uppercase tracking-wider"
+              style={{ color: dark ? 'var(--ccmc-text-hint)' : '#3B82F6' }}>
               Mothers
             </div>
           </div>
           <div className="rounded-lg px-3 py-2 text-center"
-            style={{ background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.14)' }}>
-            <div className="text-[15px] font-bold leading-none" style={{ color: '#EF4444' }}>
+            style={{
+              background: dark ? 'rgba(239,68,68,0.07)' : '#FEF2F2',
+              border: dark ? '1px solid rgba(239,68,68,0.14)' : '1px solid #FECACA',
+            }}>
+            <div className="text-[15px] font-bold leading-none"
+              style={{ color: dark ? '#EF4444' : '#DC2626' }}>
               {stats.critical?.toLocaleString() || '—'}
             </div>
-            <div className="text-[9px] font-semibold mt-1 uppercase tracking-wider" style={{ color: 'var(--ccmc-text-hint)' }}>
+            <div className="text-[9px] font-semibold mt-1 uppercase tracking-wider"
+              style={{ color: dark ? 'var(--ccmc-text-hint)' : '#EF4444' }}>
               Critical
             </div>
           </div>
@@ -155,7 +189,9 @@ export default function Sidebar({ activePage, setActivePage, user, onLogout, sta
             <div className="space-y-0.5">
               {section.items.map(({ id, label, icon: Icon, execOnly }) => {
                 const isActive = activePage === id || (id === 'patients' && activePage === 'patient-profile');
-                const itemAccent = execOnly ? '#34D399' : '#3B9FFF';
+                const itemAccent = execOnly
+                  ? (dark ? '#34D399' : '#059669')
+                  : activeNavAccent;
                 return (
                   <button
                     key={id}
@@ -170,12 +206,18 @@ export default function Sidebar({ activePage, setActivePage, user, onLogout, sta
                     <span className="flex-1 truncate">{label}</span>
                     {execOnly && (
                       <span className="chip flex-shrink-0"
-                        style={{ background: 'rgba(52,211,153,0.12)', color: '#34D399', border: '1px solid rgba(52,211,153,0.2)', fontSize: '9px', padding: '2px 6px' }}>
+                        style={{
+                          background: dark ? 'rgba(52,211,153,0.12)' : '#DCFCE7',
+                          color: dark ? '#34D399' : '#15803D',
+                          border: dark ? '1px solid rgba(52,211,153,0.2)' : '1px solid #BBF7D0',
+                          fontSize: '9px', padding: '2px 6px',
+                        }}>
                         EXEC
                       </span>
                     )}
                     {isActive && !execOnly && (
-                      <ChevronRight className="w-3 h-3 flex-shrink-0" style={{ color: itemAccent, opacity: 0.6 }} />
+                      <ChevronRight className="w-3 h-3 flex-shrink-0"
+                        style={{ color: itemAccent, opacity: 0.6 }} />
                     )}
                   </button>
                 );
@@ -186,19 +228,25 @@ export default function Sidebar({ activePage, setActivePage, user, onLogout, sta
       </nav>
 
       {/* ── Footer ─────────────────────────────────────────────────────── */}
-      <div className="p-3" style={{ borderTop: '1px solid var(--ccmc-border)' }}>
+      <div className="p-3"
+        style={{ borderTop: dark ? '1px solid var(--ccmc-border)' : '1px solid #F1F5F9' }}>
         <button
           onClick={onLogout}
           className="nav-item w-full"
-          style={{ color: '#EF4444' }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(239,68,68,0.08)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+          style={{ color: dark ? '#EF4444' : '#DC2626' }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = dark ? 'rgba(239,68,68,0.08)' : '#FEF2F2';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'transparent';
+          }}
         >
           <LogOut className="w-4 h-4 flex-shrink-0" style={{ color: 'inherit' }} />
           <span>Sign Out</span>
         </button>
-        <div className="text-center text-[9px] mt-2 font-medium" style={{ color: 'var(--ccmc-text-hint)', opacity: 0.5 }}>
-          CCMC · Maternal Health · 2024
+        <div className="text-center text-[9px] mt-2 font-medium"
+          style={{ color: 'var(--ccmc-text-hint)', opacity: dark ? 0.5 : 0.8 }}>
+          {dark ? 'CCMC · Maternal Health · 2024' : 'Coimbatore City Municipal Corp · 2024'}
         </div>
       </div>
     </aside>

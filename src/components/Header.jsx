@@ -15,13 +15,27 @@ export default function Header({ user, backendOK, lastSync, syncing, onRefresh, 
     return <Info className="w-3.5 h-3.5" style={{ color: '#3B9FFF' }} />;
   };
 
+  const liveOkBg    = dark ? 'rgba(34,197,94,0.08)'   : '#DCFCE7';
+  const liveOkBd    = dark ? 'rgba(34,197,94,0.2)'    : 'none';
+  const liveOkClr   = dark ? '#22C55E'                : '#15803D';
+  const liveOffBg   = dark ? 'rgba(245,158,11,0.08)'  : '#FEF9C3';
+  const liveOffBd   = dark ? 'rgba(245,158,11,0.2)'   : 'none';
+  const liveOffClr  = dark ? '#FBBF24'                : '#92400E';
+
+  const statColors = dark
+    ? { total: '#3B9FFF', critical: '#EF4444', due: '#F97316' }
+    : { total: '#2563EB', critical: '#DC2626', due: '#EA580C' };
+
   return (
     <header
       className="flex items-center justify-between px-6 flex-shrink-0 print:hidden"
       style={{
-        height: 56,
-        background: 'var(--ccmc-panel)',
-        borderBottom: '1px solid var(--ccmc-border)',
+        height: 60,
+        background: dark
+          ? 'var(--ccmc-panel)'
+          : 'linear-gradient(90deg, #FFFFFF 0%, #F0F9FF 50%, #ECFDF5 100%)',
+        borderBottom: dark ? '1px solid var(--ccmc-border)' : '1px solid #E2E8F0',
+        boxShadow: dark ? 'none' : '0 1px 0 rgba(255,255,255,0.8), 0 2px 16px rgba(0,0,0,0.04)',
         transition: 'background 0.3s, border-color 0.3s',
       }}
     >
@@ -30,15 +44,18 @@ export default function Header({ user, backendOK, lastSync, syncing, onRefresh, 
         {/* Status pill */}
         <div className="flex items-center gap-2 px-3 py-1.5 rounded-full"
           style={{
-            background: backendOK ? 'rgba(34,197,94,0.08)' : 'rgba(245,158,11,0.08)',
-            border: `1px solid ${backendOK ? 'rgba(34,197,94,0.2)' : 'rgba(245,158,11,0.2)'}`,
+            background: backendOK ? liveOkBg : liveOffBg,
+            border: `1px solid ${backendOK ? liveOkBd : liveOffBd}`,
           }}>
           {backendOK
-            ? <Wifi className="w-3 h-3" style={{ color: '#22C55E' }} />
-            : <WifiOff className="w-3 h-3" style={{ color: '#FBBF24' }} />
+            ? <Wifi className="w-3 h-3" style={{ color: liveOkClr }} />
+            : <WifiOff className="w-3 h-3" style={{ color: liveOffClr }} />
           }
-          <div className="live-dot" style={{ background: backendOK ? '#22C55E' : '#FBBF24', animation: backendOK ? undefined : 'none' }} />
-          <span className="text-[11px] font-semibold" style={{ color: backendOK ? '#22C55E' : '#FBBF24' }}>
+          <div className="live-dot" style={{
+            background: backendOK ? (dark ? '#22C55E' : '#10B981') : (dark ? '#FBBF24' : '#F59E0B'),
+            animation: backendOK ? undefined : 'none',
+          }} />
+          <span className="text-[11px] font-semibold" style={{ color: backendOK ? liveOkClr : liveOffClr }}>
             {backendOK ? 'Live' : 'Offline'}
           </span>
           {lastSync && (
@@ -50,11 +67,11 @@ export default function Header({ user, backendOK, lastSync, syncing, onRefresh, 
 
         {/* Page title */}
         <div>
-          <div className="text-[13px] font-semibold" style={{ color: 'var(--ccmc-text)' }}>
-            Maternal Health Command Center
+          <div className="text-[13px] font-bold" style={{ color: 'var(--ccmc-text)' }}>
+            {dark ? 'Maternal Health Command Center' : 'CCMC Healthcare Intelligence Center'}
           </div>
           <div className="text-[10px] hidden md:block" style={{ color: 'var(--ccmc-text-hint)' }}>
-            {user?.full_access ? 'Full Access' : `Restricted: ${user?.phcs?.join(', ')}`}
+            {user?.full_access ? (dark ? 'Full Access' : 'Executive Dashboard · Full Access') : `Restricted: ${user?.phcs?.join(', ')}`}
           </div>
         </div>
       </div>
@@ -63,14 +80,14 @@ export default function Header({ user, backendOK, lastSync, syncing, onRefresh, 
       {stats && (
         <div className="hidden lg:flex items-center gap-1">
           {[
-            { label: 'Total', value: stats.total_mothers?.toLocaleString(), color: '#3B9FFF' },
-            { label: 'Critical', value: stats.critical?.toLocaleString(), color: '#EF4444' },
-            { label: 'Due ≤7d', value: stats.due_7_days?.toLocaleString(), color: '#F97316' },
+            { label: 'Total Mothers', value: stats.total_mothers?.toLocaleString(), color: statColors.total },
+            { label: 'Critical',      value: stats.critical?.toLocaleString(),       color: statColors.critical },
+            { label: 'Due ≤ 7 Days',  value: stats.due_7_days?.toLocaleString(),     color: statColors.due },
           ].map(({ label, value, color }, i) => (
             <React.Fragment key={label}>
-              {i > 0 && <div className="w-px h-4 mx-2" style={{ background: 'var(--ccmc-border-s)' }} />}
-              <div className="text-center px-3">
-                <div className="text-[15px] font-bold leading-none" style={{ color }}>{value || '—'}</div>
+              {i > 0 && <div className="w-px h-5 mx-3" style={{ background: 'var(--ccmc-border-s)' }} />}
+              <div className="text-center px-2">
+                <div className="text-[16px] font-bold leading-none" style={{ color, fontFamily: 'Poppins, sans-serif' }}>{value || '—'}</div>
                 <div className="text-[9px] font-semibold mt-0.5 uppercase tracking-wider" style={{ color: 'var(--ccmc-text-hint)' }}>{label}</div>
               </div>
             </React.Fragment>
