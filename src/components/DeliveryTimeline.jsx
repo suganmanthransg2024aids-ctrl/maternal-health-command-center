@@ -43,7 +43,7 @@ export default function DeliveryTimeline({ user, setActivePage }) {
     { label: 'Today',    days: timeline.slice(0,  1),  color: '#EF4444' },
     { label: 'Week 1',   days: timeline.slice(1,  8),  color: '#F97316' },
     { label: 'Week 2',   days: timeline.slice(8,  15), color: '#A78BFA' },
-    { label: 'Week 3',   days: timeline.slice(15, 22), color: '#3B9FFF' },
+    { label: 'Week 3',   days: timeline.slice(15, 22), color: '#60A5FA' },
     { label: 'Week 4+',  days: timeline.slice(22, 31), color: '#22C55E' },
   ].map(w => ({ ...w, count: w.days.reduce((s, d) => s + d.count, 0) }));
 
@@ -67,7 +67,7 @@ export default function DeliveryTimeline({ user, setActivePage }) {
         <button
           onClick={() => setActivePage('delivery')}
           className="flex items-center gap-1 text-[12px] font-semibold"
-          style={{ color: '#3B9FFF' }}>
+          style={{ color: '#60A5FA' }}>
           Full View <ChevronRight className="w-3.5 h-3.5" />
         </button>
       </div>
@@ -117,7 +117,7 @@ export default function DeliveryTimeline({ user, setActivePage }) {
               const barColor = d.day === 0 ? '#EF4444'
                 : d.day <= 7  ? '#F97316'
                 : d.day <= 14 ? '#A78BFA'
-                : d.day <= 21 ? '#3B9FFF'
+                : d.day <= 21 ? '#60A5FA'
                 : '#22C55E';
 
               return (
@@ -198,7 +198,7 @@ export default function DeliveryTimeline({ user, setActivePage }) {
             { label: 'Today',  color: '#EF4444' },
             { label: '≤7 Days', color: '#F97316' },
             { label: 'Week 2', color: '#A78BFA' },
-            { label: 'Week 3', color: '#3B9FFF' },
+            { label: 'Week 3', color: '#60A5FA' },
             { label: 'Week 4+',color: '#22C55E' },
           ].map(({ label, color }) => (
             <div key={label} className="flex items-center gap-1.5">

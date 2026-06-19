@@ -40,10 +40,18 @@ const HRT_COLORS_BRIGHT = {
 };
 
 /* ── Premium KPI Card ─────────────────────────────────────────────────────── */
-function KPICard({ icon: Icon, label, value, color, sub, onClick }) {
+function KPICard({ icon: Icon, label, value, color, sub, onClick, gradient, iconBg }) {
   const [hovered, setHovered] = useState(false);
   const { theme } = useTheme();
   const bright = theme === 'bright';
+
+  const topAccent = bright && gradient
+    ? `linear-gradient(90deg, ${gradient[0]}, ${gradient[1]})`
+    : `linear-gradient(90deg, transparent, ${color}, transparent)`;
+
+  const iconBgStyle = bright && iconBg
+    ? `linear-gradient(135deg, ${iconBg[0]}, ${iconBg[1]})`
+    : `${color}${bright ? '12' : '15'}`;
 
   return (
     <div
@@ -54,7 +62,7 @@ function KPICard({ icon: Icon, label, value, color, sub, onClick }) {
       style={{
         borderColor: hovered ? `${color}40` : 'var(--ccmc-border)',
         boxShadow: hovered
-          ? `0 8px 32px rgba(0,0,0,0.2), 0 0 0 1px ${color}20`
+          ? `0 8px 32px rgba(0,0,0,0.15), 0 0 0 1px ${color}20`
           : 'var(--ccmc-card-shadow)',
         transform: hovered ? 'translateY(-3px)' : 'translateY(0)',
         cursor: onClick ? 'pointer' : 'default',
@@ -62,22 +70,23 @@ function KPICard({ icon: Icon, label, value, color, sub, onClick }) {
       }}
     >
       {/* Gradient top accent bar */}
-      <div className="absolute top-0 left-0 right-0 rounded-t-2xl transition-all"
+      <div className="absolute top-0 left-0 right-0 rounded-t-2xl"
         style={{
           height: hovered ? 3 : 2,
-          background: `linear-gradient(90deg, transparent, ${color}, transparent)`,
-          opacity: hovered ? 1 : bright ? 0.7 : 0.4,
+          background: topAccent,
+          opacity: hovered ? 1 : bright ? 0.85 : 0.4,
+          transition: 'height 0.2s, opacity 0.2s',
         }} />
 
       {/* Icon + arrow */}
       <div className="flex items-start justify-between mb-4">
         <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
-          style={{ background: bright ? `${color}12` : `${color}15` }}>
+          style={{ background: iconBgStyle }}>
           <Icon className="w-5 h-5" style={{ color }} />
         </div>
         {onClick && (
-          <ArrowUpRight className="w-3.5 h-3.5 transition-opacity"
-            style={{ color: bright ? color : 'var(--ccmc-text-hint)', opacity: hovered ? 1 : bright ? 0.3 : 0 }} />
+          <ArrowUpRight className="w-3.5 h-3.5"
+            style={{ color: bright ? color : 'var(--ccmc-text-hint)', opacity: hovered ? 0.8 : bright ? 0.25 : 0, transition: 'opacity 0.2s' }} />
         )}
       </div>
 
@@ -108,7 +117,7 @@ function RiskBar({ label, count, total, color, track, onClick }) {
       onClick={onClick}
       className="flex items-center gap-4 px-3 py-2.5 rounded-xl transition-all"
       style={{ cursor: onClick ? 'pointer' : 'default' }}
-      onMouseEnter={(e) => { if (onClick) { e.currentTarget.style.background = track; }}}
+      onMouseEnter={(e) => { if (onClick) e.currentTarget.style.background = track; }}
       onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
     >
       <div className="w-24 flex-shrink-0 flex items-center gap-2">
@@ -119,9 +128,7 @@ function RiskBar({ label, count, total, color, track, onClick }) {
         <div className="progress-fill" style={{ width: `${pct}%`, background: color }} />
       </div>
       <div className="w-14 text-right">
-        <span className="text-[13px] font-bold" style={{ color }}>
-          {(count || 0).toLocaleString()}
-        </span>
+        <span className="text-[13px] font-bold" style={{ color }}>{(count || 0).toLocaleString()}</span>
       </div>
       <div className="w-9 text-right">
         <span className="text-[11px] font-semibold" style={{ color: 'var(--ccmc-text-hint)' }}>{pct}%</span>
@@ -131,27 +138,50 @@ function RiskBar({ label, count, total, color, track, onClick }) {
 }
 
 /* ── Operational Intel Card ───────────────────────────────────────────────── */
-function IntelCard({ label, value, color, sub, onClick, urgent }) {
+function IntelCard({ label, value, color, sub, onClick, urgent, gradient }) {
   const { theme } = useTheme();
   const bright = theme === 'bright';
+
+  const topAccent = bright && gradient
+    ? `linear-gradient(90deg, ${gradient[0]}, ${gradient[1]})`
+    : null;
+
   return (
     <button
       onClick={onClick}
-      className="text-left rounded-xl p-4 transition-all"
-      style={{ background: `${color}${bright ? '0D' : '09'}`, border: `1px solid ${color}${bright ? '25' : '20'}` }}
+      className="text-left rounded-xl transition-all relative overflow-hidden"
+      style={{
+        padding: '16px',
+        background: bright ? '#FFFFFF' : `${color}09`,
+        border: bright ? '1px solid #E2E8F0' : `1px solid ${color}20`,
+        boxShadow: bright ? '0 1px 3px rgba(0,0,0,0.04)' : 'none',
+      }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.background = `${color}${bright ? '18' : '15'}`;
-        e.currentTarget.style.borderColor = `${color}${bright ? '45' : '40'}`;
-        e.currentTarget.style.transform = bright ? 'translateY(-1px)' : 'none';
-        e.currentTarget.style.boxShadow = bright ? `0 4px 16px ${color}20` : 'none';
+        if (bright) {
+          e.currentTarget.style.boxShadow = `0 4px 16px ${color}20, 0 1px 3px rgba(0,0,0,0.06)`;
+          e.currentTarget.style.borderColor = `${color}35`;
+          e.currentTarget.style.transform = 'translateY(-1px)';
+        } else {
+          e.currentTarget.style.background = `${color}15`;
+          e.currentTarget.style.borderColor = `${color}40`;
+        }
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.background = `${color}${bright ? '0D' : '09'}`;
-        e.currentTarget.style.borderColor = `${color}${bright ? '25' : '20'}`;
-        e.currentTarget.style.transform = 'none';
-        e.currentTarget.style.boxShadow = 'none';
+        if (bright) {
+          e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)';
+          e.currentTarget.style.borderColor = '#E2E8F0';
+          e.currentTarget.style.transform = 'none';
+        } else {
+          e.currentTarget.style.background = `${color}09`;
+          e.currentTarget.style.borderColor = `${color}20`;
+        }
       }}
     >
+      {/* Gradient top accent (bright mode only) */}
+      {bright && topAccent && (
+        <div className="absolute top-0 left-0 right-0" style={{ height: 2, background: topAccent }} />
+      )}
+
       <div className="flex items-start justify-between mb-2">
         <div className="text-[22px] font-bold leading-none" style={{ color, fontFamily: 'Poppins, sans-serif' }}>
           {typeof value === 'number' ? value.toLocaleString() : value}
@@ -208,34 +238,32 @@ export default function DashboardOverview({ stats, user, onRefresh, syncing, set
     purple: '#A78BFA',
   };
 
-  const RISK_TIERS  = bright ? RISK_TIERS_BRIGHT  : RISK_TIERS_DARK;
-  const HRT_COLORS  = bright ? HRT_COLORS_BRIGHT  : HRT_COLORS_DARK;
+  const RISK_TIERS = bright ? RISK_TIERS_BRIGHT : RISK_TIERS_DARK;
+  const HRT_COLORS = bright ? HRT_COLORS_BRIGHT : HRT_COLORS_DARK;
 
   // PHC table value colors
   const phcClr = bright
     ? { critical: '#DC2626', veryHigh: '#EA580C', dueSoon: '#7C3AED', delivered: '#059669' }
     : { critical: '#FCA5A5', veryHigh: '#FDBA74', dueSoon: '#C4B5FD', delivered: '#86EFAC' };
 
-  // Chip colors for PHC table HRT badge
   const hrtChipBg  = bright ? '#EFF6FF' : 'rgba(59,159,255,0.12)';
   const hrtChipClr = bright ? '#2563EB' : '#3B9FFF';
   const hrtChipBd  = bright ? '1px solid #BFDBFE' : '1px solid rgba(59,159,255,0.2)';
 
-  // Section card style
   const cardStyle = {
     background: 'var(--ccmc-panel)',
     border: bright ? '1px solid #E2E8F0' : '1px solid var(--ccmc-border)',
     boxShadow: bright ? '0 1px 3px rgba(0,0,0,0.04), 0 6px 20px rgba(0,0,0,0.04)' : 'none',
   };
 
-  // Intel cards with theme-aware colors
+  // Intel cards with per-card gradient accents
   const intelCards = [
-    { label: 'Due Today',     value: s.due_today ?? '—',           color: C.red,    sub: 'Deliveries today',    onClick: drill('due_today',       'Mothers Due Today'),        urgent: (s.due_today || 0) > 0 },
-    { label: 'Due ≤ 7 Days',  value: s.due_7_days ?? '—',          color: C.orange, sub: 'Upcoming deliveries', onClick: drill('due_7_days',      'Mothers Due ≤7 Days') },
-    { label: 'Critical',      value: s.critical ?? '—',            color: C.red,    sub: 'Highest risk cases',  onClick: drill('critical',        'Critical Risk Mothers') },
-    { label: 'Follow-Ups',    value: s.followups_due_today ?? '—', color: C.purple, sub: 'Visits today',        onClick: drill('followups_today', 'Follow-Ups Due Today') },
-    { label: 'Calls Pending', value: s.calls_pending_today ?? '—', color: C.blue,   sub: 'Pending today',       onClick: drill('calls_pending',   'Calls Pending Today') },
-    { label: 'Data Issues',   value: s.validation_issues ?? '—',   color: C.amber,  sub: 'Validation problems', onClick: () => setActivePage('validation') },
+    { label: 'Due Today',     value: s.due_today ?? '—',           color: C.red,    gradient: ['#EA580C', '#FB923C'], sub: 'Deliveries today',    onClick: drill('due_today',       'Mothers Due Today'),        urgent: (s.due_today || 0) > 0 },
+    { label: 'Due ≤ 7 Days',  value: s.due_7_days ?? '—',          color: C.orange, gradient: ['#F97316', '#FB923C'], sub: 'Upcoming deliveries', onClick: drill('due_7_days',      'Mothers Due ≤7 Days') },
+    { label: 'Critical',      value: s.critical ?? '—',            color: C.red,    gradient: ['#DC2626', '#EF4444'], sub: 'Highest risk cases',  onClick: drill('critical',        'Critical Risk Mothers') },
+    { label: 'Follow-Ups',    value: s.followups_due_today ?? '—', color: C.purple, gradient: ['#7C3AED', '#A78BFA'], sub: 'Visits today',        onClick: drill('followups_today', 'Follow-Ups Due Today') },
+    { label: 'Calls Pending', value: s.calls_pending_today ?? '—', color: C.blue,   gradient: ['#2563EB', '#60A5FA'], sub: 'Pending today',       onClick: drill('calls_pending',   'Calls Pending Today') },
+    { label: 'Data Issues',   value: s.validation_issues ?? '—',   color: C.amber,  gradient: ['#D97706', '#FBBF24'], sub: 'Validation problems', onClick: () => setActivePage('validation') },
   ];
 
   return (
@@ -245,12 +273,7 @@ export default function DashboardOverview({ stats, user, onRefresh, syncing, set
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-[22px] font-bold leading-tight"
-            style={{
-              color: 'var(--ccmc-text)',
-              fontFamily: 'Poppins, sans-serif',
-              letterSpacing: '-0.3px',
-              fontWeight: bright ? 800 : 700,
-            }}>
+            style={{ color: 'var(--ccmc-text)', fontFamily: 'Poppins, sans-serif', letterSpacing: '-0.3px', fontWeight: bright ? 800 : 700 }}>
             {bright ? 'Command Center Overview' : 'Dashboard Overview'}
           </h1>
           <p className="text-[12px] mt-0.5" style={{ color: 'var(--ccmc-text-hint)' }}>
@@ -259,32 +282,34 @@ export default function DashboardOverview({ stats, user, onRefresh, syncing, set
             &nbsp;· click any card to drill down
           </p>
         </div>
-        <button
-          onClick={onRefresh}
-          disabled={syncing}
-          className="btn-ghost flex items-center gap-2"
-          style={{ fontSize: '12px' }}
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${syncing ? 'animate-spin' : ''}`}
-            style={{ color: syncing ? C.teal : 'inherit' }} />
+        <button onClick={onRefresh} disabled={syncing} className="btn-ghost flex items-center gap-2" style={{ fontSize: '12px' }}>
+          <RefreshCw className={`w-3.5 h-3.5 ${syncing ? 'animate-spin' : ''}`} style={{ color: syncing ? C.teal : 'inherit' }} />
           {syncing ? 'Syncing…' : 'Sync Data'}
         </button>
       </div>
 
       {/* ── Primary KPI row ─────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <KPICard icon={Users}      label="Total Mothers"  value={s.total_mothers?.toLocaleString()} color={C.blue}   sub="All registered records"    onClick={drill('total',      'All Mothers')} />
-        <KPICard icon={ShieldAlert} label="Critical Risk" value={s.critical?.toLocaleString()}       color={C.red}    sub="Highest priority cases"    onClick={drill('critical',   'Critical Risk Mothers')} />
-        <KPICard icon={Baby}        label="Due ≤ 7 Days"  value={s.due_7_days?.toLocaleString()}     color={C.orange} sub="Upcoming deliveries"       onClick={drill('due_7_days', 'Mothers Due ≤7 Days')} />
-        <KPICard icon={Heart}       label="Delivered"     value={s.delivered?.toLocaleString()}       color={C.green}  sub="Successful deliveries"     onClick={drill('delivered',  'Delivered Mothers')} />
+        <KPICard icon={Users}      label="Total Mothers" value={s.total_mothers?.toLocaleString()} color={C.blue}   sub="All registered records"  onClick={drill('total',      'All Mothers')}
+          gradient={['#2563EB','#3B82F6']} iconBg={['#EFF6FF','#DBEAFE']} />
+        <KPICard icon={ShieldAlert} label="Critical Risk" value={s.critical?.toLocaleString()}     color={C.red}    sub="Highest priority cases"  onClick={drill('critical',   'Critical Risk Mothers')}
+          gradient={['#DC2626','#EF4444']} iconBg={['#FEF2F2','#FECACA']} />
+        <KPICard icon={Baby}        label="Due ≤ 7 Days"  value={s.due_7_days?.toLocaleString()}   color={C.orange} sub="Upcoming deliveries"     onClick={drill('due_7_days', 'Mothers Due ≤7 Days')}
+          gradient={['#F97316','#FB923C']} iconBg={['#FFF7ED','#FED7AA']} />
+        <KPICard icon={Heart}       label="Delivered"     value={s.delivered?.toLocaleString()}     color={C.green}  sub="Successful deliveries"   onClick={drill('delivered',  'Delivered Mothers')}
+          gradient={['#059669','#10B981']} iconBg={['#ECFDF5','#D1FAE5']} />
       </div>
 
       {/* ── Secondary KPI row ───────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <KPICard icon={TrendingUp}  label="Very High Risk"  value={s.very_high?.toLocaleString()}      color={C.redAlt} onClick={drill('very_high',     'Very High Risk Mothers')} />
-        <KPICard icon={Calendar}    label="Due ≤ 30 Days"   value={s.due_30_days?.toLocaleString()}    color={C.blueLt} onClick={drill('due_30_days',   'Mothers Due ≤30 Days')} />
-        <KPICard icon={Phone}       label="No Phone"        value={s.missing_phone?.toLocaleString()}  color={C.amber}  onClick={drill('missing_phone', 'Mothers Missing Phone')} />
-        <KPICard icon={AlertCircle} label="Postdated EDD"   value={s.postdated_edd?.toLocaleString()}  color={C.rose}   onClick={() => setShowPostdated(true)} />
+        <KPICard icon={TrendingUp}  label="Very High Risk"  value={s.very_high?.toLocaleString()}     color={C.redAlt} onClick={drill('very_high',     'Very High Risk Mothers')}
+          gradient={['#B91C1C','#EF4444']} iconBg={['#FEF2F2','#FECACA']} />
+        <KPICard icon={Calendar}    label="Due ≤ 30 Days"   value={s.due_30_days?.toLocaleString()}   color={C.blueLt} onClick={drill('due_30_days',   'Mothers Due ≤30 Days')}
+          gradient={['#2563EB','#60A5FA']} iconBg={['#EFF6FF','#DBEAFE']} />
+        <KPICard icon={Phone}       label="No Phone"         value={s.missing_phone?.toLocaleString()} color={C.amber}  onClick={drill('missing_phone', 'Mothers Missing Phone')}
+          gradient={['#D97706','#FBBF24']} iconBg={['#FFF7ED','#FED7AA']} />
+        <KPICard icon={AlertCircle} label="Postdated EDD"    value={s.postdated_edd?.toLocaleString()} color={C.rose}   onClick={() => setShowPostdated(true)}
+          gradient={['#E11D48','#FB7185']} iconBg={['#FEF2F2','#FECACA']} />
       </div>
 
       {/* ── Operational intel strip ─────────────────────────────────── */}
@@ -296,13 +321,11 @@ export default function DashboardOverview({ stats, user, onRefresh, syncing, set
               {bright ? 'Operational Intelligence' : 'Live Operational Intelligence'}
             </h2>
           </div>
-          <span className="text-[11px]" style={{ color: 'var(--ccmc-text-hint)' }}>
-            Click any card to view patients
-          </span>
+          <span className="text-[11px]" style={{ color: 'var(--ccmc-text-hint)' }}>Click any card to view patients</span>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          {intelCards.map(({ label, value, color, sub, onClick, urgent }) => (
-            <IntelCard key={label} label={label} value={value} color={color} sub={sub} onClick={onClick} urgent={urgent} />
+          {intelCards.map(({ label, value, color, sub, onClick, urgent, gradient }) => (
+            <IntelCard key={label} label={label} value={value} color={color} sub={sub} onClick={onClick} urgent={urgent} gradient={gradient} />
           ))}
         </div>
       </div>
@@ -321,27 +344,16 @@ export default function DashboardOverview({ stats, user, onRefresh, syncing, set
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-2">
               <Activity className="w-4 h-4" style={{ color: C.teal }} />
-              <h2 className="text-[14px] font-bold" style={{ color: 'var(--ccmc-text)' }}>
-                Risk Distribution
-              </h2>
+              <h2 className="text-[14px] font-bold" style={{ color: 'var(--ccmc-text)' }}>Risk Distribution</h2>
             </div>
-            <span className="text-[11px]" style={{ color: 'var(--ccmc-text-hint)' }}>
-              {s.total_mothers?.toLocaleString()} total
-            </span>
+            <span className="text-[11px]" style={{ color: 'var(--ccmc-text-hint)' }}>{s.total_mothers?.toLocaleString()} total</span>
           </div>
           <div className="space-y-1">
             {RISK_TIERS.map(({ key, color, track }) => {
               const metricKey = key.toLowerCase().replace(' ', '_');
               return (
-                <RiskBar
-                  key={key}
-                  label={key}
-                  count={riskDist[key] || 0}
-                  total={totalForPct}
-                  color={color}
-                  track={track}
-                  onClick={drill(metricKey, `${key} Risk Mothers`)}
-                />
+                <RiskBar key={key} label={key} count={riskDist[key] || 0} total={totalForPct}
+                  color={color} track={track} onClick={drill(metricKey, `${key} Risk Mothers`)} />
               );
             })}
           </div>
@@ -353,9 +365,7 @@ export default function DashboardOverview({ stats, user, onRefresh, syncing, set
             style={{ borderBottom: bright ? '1px solid #F1F5F9' : '1px solid var(--ccmc-border)' }}>
             <div className="flex items-center gap-2">
               <Bell className="w-4 h-4" style={{ color: C.red }} />
-              <h2 className="text-[14px] font-bold" style={{ color: 'var(--ccmc-text)' }}>
-                Priority Alerts
-              </h2>
+              <h2 className="text-[14px] font-bold" style={{ color: 'var(--ccmc-text)' }}>Priority Alerts</h2>
             </div>
             <span className="chip"
               style={{
@@ -368,36 +378,23 @@ export default function DashboardOverview({ stats, user, onRefresh, syncing, set
           </div>
           <div className="divide-y" style={{ borderColor: bright ? '#F1F5F9' : 'var(--ccmc-border)', maxHeight: 256, overflowY: 'auto' }}>
             {p1Alerts.length === 0 ? (
-              <div className="px-6 py-8 text-center text-[12px]" style={{ color: 'var(--ccmc-text-hint)' }}>
-                Loading alerts…
-              </div>
+              <div className="px-6 py-8 text-center text-[12px]" style={{ color: 'var(--ccmc-text-hint)' }}>Loading alerts…</div>
             ) : p1Alerts.map((a, i) => (
-              <div
-                key={i}
-                onClick={() => openPatient(a.uid)}
+              <div key={i} onClick={() => openPatient(a.uid)}
                 className="flex items-center gap-3 px-5 py-3.5 cursor-pointer transition-colors"
                 onMouseEnter={(e) => { e.currentTarget.style.background = bright ? '#FEF2F2' : 'rgba(239,68,68,0.05)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-              >
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}>
                 <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: C.red }} />
                 <div className="min-w-0 flex-1">
-                  <div className="text-[12px] font-semibold truncate" style={{ color: 'var(--ccmc-text)' }}>
-                    {a.mother_name || 'Unknown'}
-                  </div>
-                  <div className="text-[11px]" style={{ color: 'var(--ccmc-text-hint)' }}>
-                    {a.phc_display} · {a.alert_type}
-                  </div>
+                  <div className="text-[12px] font-semibold truncate" style={{ color: 'var(--ccmc-text)' }}>{a.mother_name || 'Unknown'}</div>
+                  <div className="text-[11px]" style={{ color: 'var(--ccmc-text-hint)' }}>{a.phc_display} · {a.alert_type}</div>
                 </div>
                 <span className="badge-critical flex-shrink-0">{a.risk_category}</span>
               </div>
             ))}
           </div>
-          <div className="px-5 py-3.5"
-            style={{ borderTop: bright ? '1px solid #F1F5F9' : '1px solid var(--ccmc-border)' }}>
-            <button
-              onClick={() => setActivePage('alerts')}
-              className="btn-ghost w-full text-center text-[12px] py-2"
-            >
+          <div className="px-5 py-3.5" style={{ borderTop: bright ? '1px solid #F1F5F9' : '1px solid var(--ccmc-border)' }}>
+            <button onClick={() => setActivePage('alerts')} className="btn-ghost w-full text-center text-[12px] py-2">
               View all {alerts.length} alerts →
             </button>
           </div>
@@ -411,13 +408,9 @@ export default function DashboardOverview({ stats, user, onRefresh, syncing, set
             style={{ borderBottom: bright ? '1px solid #F1F5F9' : '1px solid var(--ccmc-border)' }}>
             <div className="flex items-center gap-2">
               <Phone className="w-4 h-4" style={{ color: C.teal }} />
-              <h2 className="text-[14px] font-bold" style={{ color: 'var(--ccmc-text)' }}>
-                HRT Performance — Today
-              </h2>
+              <h2 className="text-[14px] font-bold" style={{ color: 'var(--ccmc-text)' }}>HRT Performance — Today</h2>
             </div>
-            <span className="text-[11px]" style={{ color: 'var(--ccmc-text-hint)' }}>
-              Connected · Pending · Follow-ups
-            </span>
+            <span className="text-[11px]" style={{ color: 'var(--ccmc-text-hint)' }}>Connected · Pending · Follow-ups</span>
           </div>
           <div className="p-5 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
             {hrtCallData.map(h => {
@@ -425,10 +418,7 @@ export default function DashboardOverview({ stats, user, onRefresh, syncing, set
               const pct = h.total_mothers > 0 ? Math.round((h.calls_connected / h.total_mothers) * 100) : 0;
               return (
                 <div key={h.hrt_code} className="rounded-xl p-3 text-center"
-                  style={{
-                    background: bright ? `${c}10` : `${c}09`,
-                    border: `1px solid ${c}${bright ? '30' : '22'}`,
-                  }}>
+                  style={{ background: bright ? `${c}10` : `${c}09`, border: `1px solid ${c}${bright ? '30' : '22'}` }}>
                   <div className="text-[11px] font-bold mb-0.5" style={{ color: c }}>{h.hrt_code}</div>
                   <div className="text-[9px] mb-3 truncate" style={{ color: 'var(--ccmc-text-hint)' }}>{h.hrt_name}</div>
                   <div className="space-y-1.5 text-left">
@@ -444,7 +434,7 @@ export default function DashboardOverview({ stats, user, onRefresh, syncing, set
                     ))}
                   </div>
                   <div className="mt-3 progress-track">
-                    <div className="progress-fill" style={{ width: `${pct}%`, background: bright ? '#059669' : '#22C55E' }} />
+                    <div className="progress-fill" style={{ width: `${pct}%`, background: bright ? 'linear-gradient(90deg, #059669, #10B981)' : '#22C55E' }} />
                   </div>
                   <div className="text-[9px] mt-1" style={{ color: 'var(--ccmc-text-hint)' }}>{pct}% done</div>
                 </div>
@@ -463,12 +453,9 @@ export default function DashboardOverview({ stats, user, onRefresh, syncing, set
           style={{ borderBottom: bright ? '1px solid #F1F5F9' : '1px solid var(--ccmc-border)' }}>
           <div className="flex items-center gap-2">
             <BarChart2 className="w-4 h-4" style={{ color: C.teal }} />
-            <h2 className="text-[14px] font-bold" style={{ color: 'var(--ccmc-text)' }}>
-              PHC Performance Summary
-            </h2>
+            <h2 className="text-[14px] font-bold" style={{ color: 'var(--ccmc-text)' }}>PHC Performance Summary</h2>
           </div>
-          <button onClick={() => setActivePage('phc')}
-            className="text-[12px] font-semibold" style={{ color: C.teal }}>
+          <button onClick={() => setActivePage('phc')} className="text-[12px] font-semibold" style={{ color: C.teal }}>
             Full Analytics →
           </button>
         </div>
@@ -488,23 +475,13 @@ export default function DashboardOverview({ stats, user, onRefresh, syncing, set
             </thead>
             <tbody>
               {phcData.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="text-center py-8" style={{ color: 'var(--ccmc-text-hint)' }}>
-                    Loading PHC data…
-                  </td>
-                </tr>
+                <tr><td colSpan={8} className="text-center py-8" style={{ color: 'var(--ccmc-text-hint)' }}>Loading PHC data…</td></tr>
               ) : phcData.map(p => (
-                <tr
-                  key={p.phc_key}
-                  style={{ cursor: 'pointer' }}
-                  onClick={() => setDrillDown({ metric: `phc:${p.phc_key}`, title: `${p.phc_display} — All Mothers` })}
-                >
+                <tr key={p.phc_key} style={{ cursor: 'pointer' }}
+                  onClick={() => setDrillDown({ metric: `phc:${p.phc_key}`, title: `${p.phc_display} — All Mothers` })}>
                   <td className="font-semibold" style={{ color: 'var(--ccmc-text)' }}>{p.phc_display}</td>
                   <td>
-                    <span className="chip mr-2"
-                      style={{ background: hrtChipBg, color: hrtChipClr, border: hrtChipBd }}>
-                      {p.hrt_code}
-                    </span>
+                    <span className="chip mr-2" style={{ background: hrtChipBg, color: hrtChipClr, border: hrtChipBd }}>{p.hrt_code}</span>
                     <span className="text-[11px]" style={{ color: 'var(--ccmc-text-hint)' }}>{p.hrt_name}</span>
                   </td>
                   <td className="text-right font-bold" style={{ color: 'var(--ccmc-text)' }}>{p.total}</td>
@@ -513,9 +490,7 @@ export default function DashboardOverview({ stats, user, onRefresh, syncing, set
                   <td className="text-right font-semibold" style={{ color: phcClr.dueSoon }}>{p.due_soon}</td>
                   <td className="text-right font-semibold" style={{ color: phcClr.delivered }}>{p.delivered}</td>
                   <td className="text-right">
-                    <span className={p.risk_pct > 50 ? 'badge-critical' : p.risk_pct > 25 ? 'badge-very-high' : 'badge-low'}>
-                      {p.risk_pct}%
-                    </span>
+                    <span className={p.risk_pct > 50 ? 'badge-critical' : p.risk_pct > 25 ? 'badge-very-high' : 'badge-low'}>{p.risk_pct}%</span>
                   </td>
                 </tr>
               ))}
@@ -526,20 +501,13 @@ export default function DashboardOverview({ stats, user, onRefresh, syncing, set
 
       {/* ── Modals ─────────────────────────────────────────────────── */}
       {showPostdated && (
-        <PostdatedEDDModal
-          user={user}
-          onClose={() => setShowPostdated(false)}
-          openPatient={(uid) => { setShowPostdated(false); openPatient(uid); }}
-        />
+        <PostdatedEDDModal user={user} onClose={() => setShowPostdated(false)}
+          openPatient={(uid) => { setShowPostdated(false); openPatient(uid); }} />
       )}
       {drillDown && (
-        <DrillDownModal
-          metric={drillDown.metric}
-          title={drillDown.title}
-          user={user}
+        <DrillDownModal metric={drillDown.metric} title={drillDown.title} user={user}
           onClose={() => setDrillDown(null)}
-          openPatient={(uid) => { setDrillDown(null); openPatient(uid); }}
-        />
+          openPatient={(uid) => { setDrillDown(null); openPatient(uid); }} />
       )}
     </div>
   );

@@ -63,7 +63,7 @@ export default function Sidebar({ activePage, setActivePage, user, onLogout, sta
   const roleBg          = ROLE_BG[user?.role] || 'rgba(59,159,255,0.15)';
   const isExec          = user?.full_access === true;
   const sections        = isExec ? [EXEC_SECTION, ...NAV_SECTIONS] : NAV_SECTIONS;
-  const activeNavAccent = dark ? '#3B9FFF' : '#0F766E';
+  const activeNavAccent = dark ? '#3B9FFF' : '#2563EB';
 
   return (
     <aside

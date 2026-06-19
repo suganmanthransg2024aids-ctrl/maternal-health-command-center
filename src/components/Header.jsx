@@ -15,7 +15,7 @@ export default function Header({ user, backendOK, lastSync, syncing, onRefresh, 
     return <Info className="w-3.5 h-3.5" style={{ color: '#3B9FFF' }} />;
   };
 
-  const liveOkBg    = dark ? 'rgba(34,197,94,0.08)'   : '#DCFCE7';
+  const liveOkBg    = dark ? 'rgba(34,197,94,0.08)'   : 'linear-gradient(135deg, #DCFCE7 0%, #F0FDF4 100%)';
   const liveOkBd    = dark ? 'rgba(34,197,94,0.2)'    : 'none';
   const liveOkClr   = dark ? '#22C55E'                : '#15803D';
   const liveOffBg   = dark ? 'rgba(245,158,11,0.08)'  : '#FEF9C3';

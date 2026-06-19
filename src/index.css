@@ -423,16 +423,16 @@ html, body, #root {
   color: #64748B;
 }
 [data-theme="bright"] .nav-item:hover {
-  background: rgba(15,118,110,0.07);
-  color: #0F766E;
+  background: rgba(37,99,235,0.06);
+  color: #1D4ED8;
 }
 [data-theme="bright"] .nav-item.active {
-  background: rgba(15,118,110,0.1);
-  color: #0F766E;
+  background: linear-gradient(90deg, #DBEAFE 0%, #EFF6FF 100%);
+  color: #1D4ED8;
   font-weight: 600;
 }
 [data-theme="bright"] .nav-item.active::before {
-  background: linear-gradient(180deg, #0F766E, #14B8A6);
+  background: linear-gradient(180deg, #2563EB, #3B82F6);
 }
 
 /* ── Bright: nav section label ─────────────────────────────────────────────── */
