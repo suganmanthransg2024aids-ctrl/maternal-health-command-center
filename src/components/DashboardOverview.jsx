@@ -8,6 +8,7 @@ import PostdatedEDDModal  from './PostdatedEDDModal';
 import DrillDownModal     from './DrillDownModal';
 import HRTCallPerformance from './HRTCallPerformance';
 import DeliveryTimeline   from './DeliveryTimeline';
+import PHCPieCharts       from './PHCPieCharts';
 
 const API = '/api';
 
@@ -277,6 +278,9 @@ export default function DashboardOverview({ stats, user, onRefresh, syncing, set
 
       {/* ── Delivery Timeline ──────────────────────────────────────── */}
       <DeliveryTimeline user={user} setActivePage={setActivePage} />
+
+      {/* ── PHC Pie Charts (CHO / DMCHO only) ──────────────────────── */}
+      <PHCPieCharts user={user} />
 
       {/* ── Two-column section ─────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">

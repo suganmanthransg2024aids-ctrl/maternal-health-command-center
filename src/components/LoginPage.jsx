@@ -314,7 +314,7 @@ export default function LoginPage({ onLogin }) {
                           <option value="CHO">CHO — City Health Officer</option>
                           <option value="DMCHO">DMCHO — District MCH Officer</option>
                         </optgroup>
-                        <optgroup label="Health Resource Team" style={{ background: dark ? '#0B1628' : '#F8FAFC' }}>
+                        <optgroup label="Tracking Team" style={{ background: dark ? '#0B1628' : '#F8FAFC' }}>
                           <option value="HRT1">HRT1 — Abarna D</option>
                           <option value="HRT2">HRT2 — Girija</option>
                           <option value="HRT3">HRT3 — Nivetha</option>
