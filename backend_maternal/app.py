@@ -701,13 +701,14 @@ def sync_status_api():
 
 @app.route("/api/patients")
 def patients():
-    role    = request.args.get("role", "DMCHO")
-    phc     = request.args.get("phc", "")
-    hrt     = request.args.get("hrt", "")
-    search  = request.args.get("search", "").strip().lower()
-    risk_cat= request.args.get("risk_category", "")
-    page    = int(request.args.get("page", 1))
-    per_page= int(request.args.get("per_page", 50))
+    role        = request.args.get("role", "DMCHO")
+    phc         = request.args.get("phc", "")
+    hrt         = request.args.get("hrt", "")
+    search      = request.args.get("search", "").strip().lower()
+    risk_cat    = request.args.get("risk_category", "")
+    risk_factor = request.args.get("risk_factor", "").strip().upper()
+    page        = int(request.args.get("page", 1))
+    per_page    = int(request.args.get("per_page", 50))
 
     df = filter_by_role(get_data(), role)
     if phc:
@@ -716,6 +717,10 @@ def patients():
         df = df[df["hrt_code"] == hrt.upper()]
     if risk_cat:
         df = df[df["risk_category"] == risk_cat]
+    if risk_factor:
+        df = df[df["risk_factors"].apply(
+            lambda fl: any(str(f).strip().upper() == risk_factor for f in (fl or []))
+        )]
     if search:
         mask = (df["mother_name"].str.lower().str.contains(search, na=False) |
                 df["cell_no"].str.contains(search, na=False) |
@@ -1636,6 +1641,47 @@ def delivery_timeline():
             "high":      high,
         })
     return jsonify({"timeline": timeline, "total": int(len(an_df))})
+
+
+@app.route("/api/risk-factor-analytics")
+def api_risk_factor_analytics():
+    """Return per-risk-factor patient counts, grouped by risk tier, for charts."""
+    role = request.args.get("role", "DMCHO")
+    df = filter_by_role(get_data(), role)
+    if df is None or df.empty:
+        return jsonify([])
+
+    from collections import Counter, defaultdict
+
+    # Aggregate factors across all tiers
+    factor_total  = Counter()
+    factor_by_tier = defaultdict(lambda: defaultdict(int))
+    TIERS = ["Critical", "Very High", "High", "Moderate", "Low"]
+
+    for _, row in df.iterrows():
+        factors = row.get("risk_factors") or []
+        cat     = row.get("risk_category", "Low")
+        if isinstance(factors, str):
+            try:
+                import json as _json
+                factors = _json.loads(factors)
+            except Exception:
+                factors = [f.strip() for f in factors.split(",") if f.strip()]
+        for f in (factors or []):
+            fn = str(f).strip().upper()
+            if fn:
+                factor_total[fn] += 1
+                factor_by_tier[fn][cat] += 1
+
+    result = []
+    for factor, total in sorted(factor_total.items(), key=lambda x: -x[1]):
+        tier_counts = {t: factor_by_tier[factor].get(t, 0) for t in TIERS}
+        result.append({
+            "factor":     factor,
+            "total":      total,
+            "tier_counts": tier_counts,
+        })
+    return jsonify(result)
 
 
 # ── Static React frontend ──────────────────────────────────────────────────
