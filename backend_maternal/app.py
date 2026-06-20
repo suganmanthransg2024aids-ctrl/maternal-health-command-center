@@ -294,6 +294,177 @@ HIGH_RISK_WEIGHTS = {
     "emergency": 4, "critical": 5,
 }
 
+# ── Canonical Risk Factor Definitions ─────────────────────────────────────────
+# Each entry: name, group, color, keywords (matched against high_risk_raw lower),
+#             anemia_severity (special flag for anemia sub-classification)
+CANONICAL_FACTORS = [
+    # Obstetric History
+    {"name": "Previous LSCS",              "group": "Obstetric",    "color": "#7C3AED",
+     "keywords": ["lscs", "prev.lscs", "previous lscs", "prelscs", "c-section", "pre lscs"]},
+    {"name": "Bad Obstetric History (BOH)","group": "Obstetric",    "color": "#9333EA",
+     "keywords": ["bad obstetric history", "boh"]},
+    {"name": "IUD / Stillbirth",           "group": "Obstetric",    "color": "#6D28D9",
+     "keywords": ["iufd", "stillbirth", " iud"]},
+    {"name": "Multiple Pregnancy",         "group": "Obstetric",    "color": "#8B5CF6",
+     "keywords": ["multiple pregnancy", "twin", "triplet"]},
+    {"name": "IVF Pregnancy",              "group": "Obstetric",    "color": "#A78BFA",
+     "keywords": ["ivf"]},
+    {"name": "Malpresentation / Breech",   "group": "Obstetric",    "color": "#C4B5FD",
+     "keywords": ["malpresentation", "mal-presentation", "breech"]},
+    {"name": "Preterm",                    "group": "Obstetric",    "color": "#DDD6FE",
+     "keywords": ["preterm", "premature"]},
+    {"name": "Prolonged Pregnancy",        "group": "Obstetric",    "color": "#EDE9FE",
+     "keywords": ["prolonged", "post-term", "post date", "postdate", "post term"]},
+    {"name": "FGR / IUGR",                "group": "Fetal",        "color": "#5B21B6",
+     "keywords": ["fgr", "iugr", "growth restriction"]},
+    {"name": "APH (Antepartum Hemorrhage)","group": "Hemorrhage",   "color": "#7F1D1D",
+     "keywords": ["antepartum hemorrhage", "aph", "placenta previa", "placenta praevia"]},
+    # Maternal Factors
+    {"name": "Elderly Primi (Age > 35)",   "group": "Maternal",     "color": "#EA580C",
+     "keywords": ["elderly primi", ">35", "age >35", "age above 35", "elderly"]},
+    {"name": "Short Stature (< 145 cm)",   "group": "Maternal",     "color": "#C2410C",
+     "keywords": ["height less than 145", "short stature", "short primi"]},
+    {"name": "Weight Issues",              "group": "Maternal",     "color": "#D97706",
+     "keywords": ["weight below 40", "weight above 90", "underweight", "weight above 70"]},
+    # Hypertensive
+    {"name": "PIH / Eclampsia",            "group": "Hypertensive", "color": "#DC2626",
+     "keywords": ["pih", "pre-eclampsia", "eclampsia"]},
+    {"name": "Chronic Hypertension",       "group": "Hypertensive", "color": "#B91C1C",
+     "keywords": ["chronic hypertension", "chronic htn", "chronic bp"]},
+    # Metabolic
+    {"name": "Hypothyroidism / Thyroid",   "group": "Metabolic",    "color": "#0F766E",
+     "keywords": ["hypothyroidism", "thyroid", "tsh", "hypothyroid"]},
+    {"name": "GDM / Diabetes",             "group": "Metabolic",    "color": "#0891B2",
+     "keywords": ["gdm", "gestational diabetes", "diabetes", "diabetic", "gct"]},
+    # Blood Disorders — anemia severity matched in order; patient gets exactly one bucket
+    {"name": "Severe Anemia",              "group": "Blood",        "color": "#991B1B",
+     "keywords": [], "anemia_severity": "severe", "hb_max": 7.0},
+    {"name": "Moderate Anemia",            "group": "Blood",        "color": "#C2410C",
+     "keywords": [], "anemia_severity": "moderate", "hb_min": 7.0, "hb_max": 10.0},
+    {"name": "Mild Anemia",                "group": "Blood",        "color": "#D97706",
+     "keywords": [], "anemia_severity": "mild",   "hb_min": 10.0, "hb_max": 11.0},
+    {"name": "Anemia (Unclassified)",      "group": "Blood",        "color": "#FBBF24",
+     "keywords": [], "anemia_severity": "unclassified"},
+    {"name": "Rh Isoimmunization",         "group": "Blood",        "color": "#F87171",
+     "keywords": ["rh isoimmunization", "rh negative", "rh -ve", "rh-negative", "isoimmunization"]},
+    {"name": "Thalassemia / Sickle Cell",  "group": "Blood",        "color": "#EF4444",
+     "keywords": ["thalassemia", "sickle cell", "beta thalassemia", "thalassaemia"]},
+    # Cardiac
+    {"name": "Heart Disease",              "group": "Cardiac",      "color": "#BE185D",
+     "keywords": ["heart disease", "cardiac", "congenital heart"]},
+    {"name": "Chronic Heart Disease",      "group": "Cardiac",      "color": "#9D174D",
+     "keywords": ["chronic heart disease", "chronic cardiac", "rheumatic heart"]},
+    # Infections
+    {"name": "HIV / VDRL Positive",        "group": "Infection",    "color": "#1D4ED8",
+     "keywords": ["hiv", "vdrl", "syphilis"]},
+    # Respiratory
+    {"name": "Asthma",                     "group": "Respiratory",  "color": "#2563EB",
+     "keywords": ["asthma", "bronchial asthma"]},
+    # Renal / Hepatic
+    {"name": "Renal Disease",              "group": "Renal",        "color": "#1E40AF",
+     "keywords": ["renal disease", "kidney", "renal failure", "ckd", "nephropathy"]},
+    {"name": "Liver Disease",              "group": "Hepatic",      "color": "#0E7490",
+     "keywords": ["liver disease", "jaundice", "hepatitis"]},
+    # Neurological / Mental
+    {"name": "Epilepsy",                   "group": "Neurological", "color": "#312E81",
+     "keywords": ["epilepsy", "seizure"]},
+    {"name": "Anxiety / Mental Health",    "group": "Mental",       "color": "#4C1D95",
+     "keywords": ["anxiety", "mental health", "depression", "psychiatric"]},
+    # Vascular
+    {"name": "DVT",                        "group": "Vascular",     "color": "#6D28D9",
+     "keywords": ["deep vein thrombosis", "dvt"]},
+    # Chronic / Other
+    {"name": "Chronic Medical Disorders",  "group": "Chronic",      "color": "#64748B",
+     "keywords": ["rheumatoid arthritis", "autoimmune", "chronic kidney", "chronic liver",
+                  "chronic renal", "chronic disease", "sle", "lupus"]},
+]
+
+import re as _re
+
+def _extract_hb_value(row):
+    """Parse numeric HB value from the hb column or raw text."""
+    hb_str = str(row.get("hb", "") or "")
+    m = _re.search(r"([0-9]+\.?[0-9]*)", hb_str)
+    if m:
+        try:
+            v = float(m.group(1))
+            if 3.0 < v < 20.0:   # sanity range for HB
+                return v
+        except Exception:
+            pass
+    raw = str(row.get("high_risk_raw", "") or "").lower()
+    m = _re.search(r"hb[:\s\-\.]*([0-9]+\.?[0-9]*)", raw)
+    if m:
+        try:
+            v = float(m.group(1))
+            if 3.0 < v < 20.0:
+                return v
+        except Exception:
+            pass
+    return None
+
+def _anemia_bucket(raw, hb_val):
+    """Return canonical anemia sub-category string, or None if no anemia."""
+    has_anemia = "anemia" in raw or "anaemia" in raw
+    if not has_anemia:
+        return None
+    # Text-based severity (most reliable)
+    if "severe" in raw:
+        return "Severe Anemia"
+    if "moderate" in raw:
+        return "Moderate Anemia"
+    if "mild" in raw:
+        return "Mild Anemia"
+    # HB-based severity
+    if hb_val is not None:
+        if hb_val < 7.0:
+            return "Severe Anemia"
+        if hb_val < 10.0:
+            return "Moderate Anemia"
+        if hb_val < 11.0:
+            return "Mild Anemia"
+    return "Anemia (Unclassified)"
+
+def _get_canonical_factors(row):
+    """Return list of canonical factor names that apply to this patient row."""
+    raw = str(row.get("high_risk_raw", "") or "").lower().strip()
+    if not raw or raw in ("nan", "nil", "-"):
+        return []
+
+    hb_val  = _extract_hb_value(row)
+    matched = []
+    anemia_done = False
+
+    for fdef in CANONICAL_FACTORS:
+        name = fdef["name"]
+        sev  = fdef.get("anemia_severity")
+
+        if sev is not None:
+            # Anemia sub-classification — one bucket per patient
+            if anemia_done:
+                continue
+            bucket = _anemia_bucket(raw, hb_val)
+            if bucket is None:
+                continue
+            # Does this fdef's severity match the bucket?
+            bucket_matches = {
+                "severe":        "Severe Anemia",
+                "moderate":      "Moderate Anemia",
+                "mild":          "Mild Anemia",
+                "unclassified":  "Anemia (Unclassified)",
+            }
+            if bucket == bucket_matches.get(sev):
+                matched.append(name)
+                anemia_done = True
+            continue
+
+        # Standard keyword match
+        if any(kw in raw for kw in fdef["keywords"]):
+            matched.append(name)
+
+    return matched
+
+
 def _parse_risk(high_risk_text):
     if not high_risk_text or str(high_risk_text).strip() in ("", "nan", "NIL", "Nil", "-"):
         return 0, [], "Low"
@@ -706,7 +877,7 @@ def patients():
     hrt         = request.args.get("hrt", "")
     search      = request.args.get("search", "").strip().lower()
     risk_cat    = request.args.get("risk_category", "")
-    risk_factor = request.args.get("risk_factor", "").strip().upper()
+    risk_factor = request.args.get("risk_factor", "").strip()
     page        = int(request.args.get("page", 1))
     per_page    = int(request.args.get("per_page", 50))
 
@@ -718,9 +889,8 @@ def patients():
     if risk_cat:
         df = df[df["risk_category"] == risk_cat]
     if risk_factor:
-        df = df[df["risk_factors"].apply(
-            lambda fl: any(str(f).strip().upper() == risk_factor for f in (fl or []))
-        )]
+        # Support both legacy raw keywords AND canonical factor names
+        df = df[df.apply(lambda row: risk_factor in _get_canonical_factors(row), axis=1)]
     if search:
         mask = (df["mother_name"].str.lower().str.contains(search, na=False) |
                 df["cell_no"].str.contains(search, na=False) |
@@ -1645,42 +1815,40 @@ def delivery_timeline():
 
 @app.route("/api/risk-factor-analytics")
 def api_risk_factor_analytics():
-    """Return per-risk-factor patient counts, grouped by risk tier, for charts."""
+    """Return canonical risk factor counts with per-tier breakdown."""
     role = request.args.get("role", "DMCHO")
     df = filter_by_role(get_data(), role)
     if df is None or df.empty:
         return jsonify([])
 
-    from collections import Counter, defaultdict
-
-    # Aggregate factors across all tiers
-    factor_total  = Counter()
-    factor_by_tier = defaultdict(lambda: defaultdict(int))
+    from collections import defaultdict
     TIERS = ["Critical", "Very High", "High", "Moderate", "Low"]
+    factor_total      = defaultdict(int)
+    factor_by_tier    = defaultdict(lambda: defaultdict(int))
 
     for _, row in df.iterrows():
-        factors = row.get("risk_factors") or []
-        cat     = row.get("risk_category", "Low")
-        if isinstance(factors, str):
-            try:
-                import json as _json
-                factors = _json.loads(factors)
-            except Exception:
-                factors = [f.strip() for f in factors.split(",") if f.strip()]
-        for f in (factors or []):
-            fn = str(f).strip().upper()
-            if fn:
-                factor_total[fn] += 1
-                factor_by_tier[fn][cat] += 1
+        cat = row.get("risk_category", "Low")
+        for fname in _get_canonical_factors(row):
+            factor_total[fname]          += 1
+            factor_by_tier[fname][cat]   += 1
 
+    # Return in display order of CANONICAL_FACTORS (skip zero-count factors)
     result = []
-    for factor, total in sorted(factor_total.items(), key=lambda x: -x[1]):
-        tier_counts = {t: factor_by_tier[factor].get(t, 0) for t in TIERS}
+    seen   = set()
+    for fdef in CANONICAL_FACTORS:
+        name = fdef["name"]
+        if name in seen or factor_total.get(name, 0) == 0:
+            continue
+        seen.add(name)
         result.append({
-            "factor":     factor,
-            "total":      total,
-            "tier_counts": tier_counts,
+            "factor":      name,
+            "group":       fdef["group"],
+            "color":       fdef["color"],
+            "total":       factor_total[name],
+            "tier_counts": {t: factor_by_tier[name].get(t, 0) for t in TIERS},
         })
+
+    result.sort(key=lambda x: -x["total"])
     return jsonify(result)
 
 
