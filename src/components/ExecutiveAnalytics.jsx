@@ -190,10 +190,11 @@ export default function ExecutiveAnalytics({ user }) {
 
         <SectionBox title="Due Soon by PHC (≤7 Days)" icon={AlertTriangle} iconColor="#EAB308">
           <div className="space-y-1">
-            {phcData.filter(d => (d.due_soon || 0) > 0).slice(0, 15).map(d => (
-              <HBar key={d.phc} label={d.phc} value={d.due_soon || 0} max={Math.max(...phcData.map(x => x.due_soon || 0), 1)} color="#EAB308" />
+            {upcomingPhc.filter(d => (d.due_7 || 0) > 0).slice(0, 15).map(d => (
+              <HBar key={d.phc} label={d.phc} value={d.due_7 || 0}
+                max={Math.max(...upcomingPhc.map(x => x.due_7 || 0), 1)} color="#EAB308" />
             ))}
-            {phcData.filter(d => (d.due_soon || 0) > 0).length === 0 && (
+            {upcomingPhc.filter(d => (d.due_7 || 0) > 0).length === 0 && (
               <p className="text-xs text-center py-4" style={{ color: 'var(--ccmc-text-hint)' }}>No upcoming deliveries</p>
             )}
           </div>
