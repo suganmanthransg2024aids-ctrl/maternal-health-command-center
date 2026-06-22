@@ -1730,7 +1730,14 @@ def hrt_call_performance():
             if entry.get("next_visit_date") == fu_date
         )
 
-        deo_c = _deo_calls_for(hrt_code, date_filter or today_str)
+        deo_c      = _deo_calls_for(hrt_code, date_filter or today_str)
+        deo_source = False
+        # Use DEO record when no system calls are logged for this date
+        if deo_c is not None and attempted == 0:
+            connected  = deo_c
+            attempted  = deo_c
+            pending    = max(0, total_mothers - deo_c)
+            deo_source = True
         result.append({
             "hrt_code":           hrt_code,
             "hrt_name":           hrt_name,
@@ -1749,6 +1756,7 @@ def hrt_call_performance():
             "last_call_date":     last_call_date,
             "last_call_time":     last_call_time,
             "deo_calls":          deo_c,
+            "deo_source":         deo_source,
         })
 
     result.sort(key=lambda x: x["hrt_code"])

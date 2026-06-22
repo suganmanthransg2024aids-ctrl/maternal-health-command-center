@@ -351,16 +351,20 @@ export default function DashboardOverview({ stats, user, onRefresh, syncing, set
           </div>
           <div className="p-5 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
             {hrtCallData.map(h => {
-              const c = HRT_COLORS[h.hrt_code] || C.blue;
+              const c   = HRT_COLORS[h.hrt_code] || C.blue;
               const pct = h.total_mothers > 0 ? Math.round((h.calls_connected / h.total_mothers) * 100) : 0;
+              const connColor = h.deo_source ? '#06B6D4' : (bright ? '#059669' : '#22C55E');
               return (
                 <div key={h.hrt_code} className="rounded-xl p-3 text-center"
                   style={{ background: bright ? `${c}10` : `${c}09`, border: `1px solid ${c}${bright ? '30' : '22'}` }}>
                   <div className="text-[11px] font-bold mb-0.5" style={{ color: c }}>{h.hrt_code}</div>
-                  <div className="text-[9px] mb-3 truncate" style={{ color: 'var(--ccmc-text-hint)' }}>{h.hrt_name}</div>
-                  <div className="space-y-1.5 text-left">
+                  <div className="text-[9px] truncate" style={{ color: 'var(--ccmc-text-hint)' }}>{h.hrt_name}</div>
+                  {h.deo_source && (
+                    <div className="text-[8px] font-bold mb-1" style={{ color: '#06B6D4' }}>MCH Record</div>
+                  )}
+                  <div className={`space-y-1.5 text-left ${h.deo_source ? '' : 'mt-3'}`}>
                     {[
-                      { label: 'Connected', value: h.calls_connected, color: bright ? '#059669' : '#22C55E' },
+                      { label: 'Connected', value: h.calls_connected, color: connColor },
                       { label: 'Pending',   value: h.calls_pending,   color: 'var(--ccmc-text-hint)' },
                       { label: 'FU Due',    value: h.followups_due,   color: bright ? '#D97706' : '#F59E0B' },
                     ].map(({ label, value, color }) => (
@@ -371,7 +375,7 @@ export default function DashboardOverview({ stats, user, onRefresh, syncing, set
                     ))}
                   </div>
                   <div className="mt-3 progress-track">
-                    <div className="progress-fill" style={{ width: `${pct}%`, background: bright ? 'linear-gradient(90deg, #059669, #10B981)' : '#22C55E' }} />
+                    <div className="progress-fill" style={{ width: `${pct}%`, background: h.deo_source ? '#06B6D4' : (bright ? 'linear-gradient(90deg,#059669,#10B981)' : '#22C55E') }} />
                   </div>
                   <div className="text-[9px] mt-1" style={{ color: 'var(--ccmc-text-hint)' }}>{pct}% done</div>
                 </div>
