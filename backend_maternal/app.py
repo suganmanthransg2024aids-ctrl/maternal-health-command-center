@@ -294,89 +294,185 @@ HIGH_RISK_WEIGHTS = {
     "emergency": 4, "critical": 5,
 }
 
-# ── Canonical Risk Factor Definitions ─────────────────────────────────────────
-# Each entry: name, group, color, keywords (matched against high_risk_raw lower),
-#             anemia_severity (special flag for anemia sub-classification)
+# ── Canonical Risk Factor Definitions (Official CCMC Classification) ──────────
+# Based on official Tamil Nadu maternal health risk register categories.
+# Keywords matched against high_risk_raw column (lowercased). Order preserved.
+# Exclude: Typhoid (excluded per reporting policy)
 CANONICAL_FACTORS = [
-    # Obstetric History
-    {"name": "Previous LSCS",              "group": "Obstetric",    "color": "#7C3AED",
-     "keywords": ["lscs", "prev.lscs", "previous lscs", "prelscs", "c-section", "pre lscs"]},
-    {"name": "Bad Obstetric History (BOH)","group": "Obstetric",    "color": "#9333EA",
-     "keywords": ["bad obstetric history", "boh"]},
-    {"name": "IUD / Stillbirth",           "group": "Obstetric",    "color": "#6D28D9",
-     "keywords": ["iufd", "stillbirth", " iud"]},
-    {"name": "Multiple Pregnancy",         "group": "Obstetric",    "color": "#8B5CF6",
-     "keywords": ["multiple pregnancy", "twin", "triplet"]},
-    {"name": "IVF Pregnancy",              "group": "Obstetric",    "color": "#A78BFA",
-     "keywords": ["ivf"]},
-    {"name": "Malpresentation / Breech",   "group": "Obstetric",    "color": "#C4B5FD",
-     "keywords": ["malpresentation", "mal-presentation", "breech"]},
-    {"name": "Preterm",                    "group": "Obstetric",    "color": "#DDD6FE",
-     "keywords": ["preterm", "premature"]},
-    {"name": "Prolonged Pregnancy",        "group": "Obstetric",    "color": "#EDE9FE",
-     "keywords": ["prolonged", "post-term", "post date", "postdate", "post term"]},
-    {"name": "FGR / IUGR",                "group": "Fetal",        "color": "#5B21B6",
-     "keywords": ["fgr", "iugr", "growth restriction"]},
-    {"name": "APH (Antepartum Hemorrhage)","group": "Hemorrhage",   "color": "#7F1D1D",
-     "keywords": ["antepartum hemorrhage", "aph", "placenta previa", "placenta praevia"]},
-    # Maternal Factors
-    {"name": "Elderly Primi (Age > 35)",   "group": "Maternal",     "color": "#EA580C",
-     "keywords": ["elderly primi", ">35", "age >35", "age above 35", "elderly"]},
-    {"name": "Short Stature (< 145 cm)",   "group": "Maternal",     "color": "#C2410C",
-     "keywords": ["height less than 145", "short stature", "short primi"]},
-    {"name": "Weight Issues",              "group": "Maternal",     "color": "#D97706",
-     "keywords": ["weight below 40", "weight above 90", "underweight", "weight above 70"]},
-    # Hypertensive
-    {"name": "PIH / Eclampsia",            "group": "Hypertensive", "color": "#DC2626",
-     "keywords": ["pih", "pre-eclampsia", "eclampsia"]},
-    {"name": "Chronic Hypertension",       "group": "Hypertensive", "color": "#B91C1C",
-     "keywords": ["chronic hypertension", "chronic htn", "chronic bp"]},
-    # Metabolic
-    {"name": "Hypothyroidism / Thyroid",   "group": "Metabolic",    "color": "#0F766E",
-     "keywords": ["hypothyroidism", "thyroid", "tsh", "hypothyroid"]},
-    {"name": "GDM / Diabetes",             "group": "Metabolic",    "color": "#0891B2",
-     "keywords": ["gdm", "gestational diabetes", "diabetes", "diabetic", "gct"]},
-    # Blood Disorders — anemia severity matched in order; patient gets exactly one bucket
-    {"name": "Severe Anemia",              "group": "Blood",        "color": "#991B1B",
+    # ── Surgical / Obstetric History ──────────────────────────────────────────
+    {"name": "Previous LSCS / Assisted",
+     "group": "Surgical", "color": "#7C3AED",
+     "keywords": ["previous lscs","prev.lscs","prev lscs","prelscs","pre lscs","lscs",
+                  "previous lscs/assisted","previous lscs / assisted","assisted delivery",
+                  "forceps","vacuum extraction"]},
+    {"name": "Previous Bad Obstetric History (BOH)",
+     "group": "Obstetric", "color": "#9333EA",
+     "keywords": ["previous bad obstetric history","bad obstetric history","boh"," hob",
+                  "multipara (>/ gravida 4 ) / hob","hob,"]},
+    {"name": "Intra Uterine Death (IUD)",
+     "group": "Obstetric", "color": "#6D28D9",
+     "keywords": ["intra uterine death","intrauterine death","iufd"," iud ","iud,",",iud",
+                  "intra-uterine death","still birth","stillbirth"]},
+    {"name": "Multiple Pregnancy",
+     "group": "Obstetric", "color": "#8B5CF6",
+     "keywords": ["multiple pregnancy","twin pregnancy","triplet","twin gestation"]},
+    {"name": "IVF / Pregnancy After Prolonged Infertility",
+     "group": "Obstetric", "color": "#A78BFA",
+     "keywords": ["ivf","in vitro","prolonged infertility","infertility treatment",
+                  "pregnancy after prolonged infertility","subfertility"]},
+    {"name": "Ectopic Pregnancy",
+     "group": "Obstetric", "color": "#C4B5FD",
+     "keywords": ["ectopic pregnancy","ectopic","ectopic gestation"]},
+    {"name": "Vesicular Mole",
+     "group": "Obstetric", "color": "#DDD6FE",
+     "keywords": ["vesicular mole","hydatidiform mole","molar pregnancy","vesicular"]},
+    {"name": "Congenital Malformation",
+     "group": "Fetal", "color": "#5B21B6",
+     "keywords": ["congenital malformation","congenital anomaly","congenital defect",
+                  "birth defect","neural tube defect","malformation"]},
+    {"name": "IUGR (Intra Uterine Growth Restriction)",
+     "group": "Fetal", "color": "#4C1D95",
+     "keywords": ["iugr","fgr","growth restriction","intrauterine growth restriction",
+                  "intra uterine growth restriction","foetal growth restriction"]},
+    {"name": "APH - Placenta Previa / Abruptio Placenta",
+     "group": "Hemorrhage", "color": "#7F1D1D",
+     "keywords": ["antepartum hemorrhage","antepartum haemorrhage","aph","placenta previa",
+                  "placenta praevia","abruptio placenta","placental abruption"]},
+    {"name": "Abnormal Presentation (>37 Weeks)",
+     "group": "Obstetric", "color": "#6D28D9",
+     "keywords": ["malpresentation","mal-presentation","transverse lie","abnormal presentation",
+                  "transverse","oblique lie","face presentation"]},
+    {"name": "Post Dated Pregnancy (>42 Weeks)",
+     "group": "Obstetric", "color": "#8B5CF6",
+     "keywords": ["post dated pregnancy","post-dated","postdated","beyond 42 weeks",
+                  "post dated","post date","postdate","prolonged pregnancy",
+                  "post term pregnancy","post-term"]},
+    {"name": "Hydramnios > 28 Weeks (Poly / Oligo)",
+     "group": "Obstetric", "color": "#A78BFA",
+     "keywords": ["hydramnios","oligohydramnios","polyhydramnios","poly hydro",
+                  "oligo hydro","poly / oligo","polyhydramnois"]},
+
+    # ── Maternal Factors ──────────────────────────────────────────────────────
+    {"name": "Multipara (>= Gravida 4) / HOB",
+     "group": "Maternal", "color": "#EA580C",
+     "keywords": ["multipara","gravida 4","gravida 5","gravida 6","gravida 7","gravida 8",
+                  "gravida 9","multipara (>/ gravida 4"," hob","hob,",",hob",
+                  "high obstetric background"]},
+    {"name": "Elderly Primi (>35yrs)",
+     "group": "Maternal", "color": "#C2410C",
+     "keywords": ["elderly primi","elderly primigravida",">35yrs",">35 yrs","age >35",
+                  "age>35","age above 35","elderly primi (>35","elderly"]},
+    {"name": "Teenage Pregnancy (<19yrs)",
+     "group": "Maternal", "color": "#D97706",
+     "keywords": ["teenage pregnancy","teenage","<19years","<19yrs","<19 years",
+                  "teen age","adolescent pregnancy","age <19","age below 19"]},
+    {"name": "Short Primi (Height < 145 cm)",
+     "group": "Maternal", "color": "#92400E",
+     "keywords": ["short primi","height less than 145","short stature","height < 145",
+                  "height below 145","short primigravida"]},
+    {"name": "Weight Above 70 Kg",
+     "group": "Maternal", "color": "#B45309",
+     "keywords": ["weight above 70","wt above 70","weight > 70","weight above 70 kg",
+                  "obesity","obese","overweight","weight above70","wt > 70"]},
+    {"name": "Weight Below 40 Kg",
+     "group": "Maternal", "color": "#78350F",
+     "keywords": ["weight below 40","wt below 40","underweight","under weight","under wt",
+                  "weight below 40 kg","weight < 40","low weight","under weight"]},
+    {"name": "Differently Abled Mother",
+     "group": "Maternal", "color": "#713F12",
+     "keywords": ["differently abled","handicapped","disabled","physically challenged",
+                  "hearing impaired","visually impaired","deaf","mute","blind","disability"]},
+
+    # ── Hypertensive Disorders ────────────────────────────────────────────────
+    {"name": "PIH / Preeclampsia",
+     "group": "Hypertensive", "color": "#DC2626",
+     "keywords": ["pih/","pih,","pih "," pih","pre-eclampsia","eclampsia",
+                  "preeclampsia","pre eclampsia","pih/ preeclampsia",
+                  "pregnancy induced hypertension","gestational hypertension"]},
+
+    # ── Metabolic / Endocrine ─────────────────────────────────────────────────
+    {"name": "Hypothyroidism",
+     "group": "Metabolic", "color": "#0F766E",
+     "keywords": ["hypothyroidism","hypothyrodism","hypothyroid","hypothyrodsim",
+                  "hypothyroidsm","hypotyroid","hypothrodisam","hypothyridism",
+                  "hypothyrodisam","hypothyoriodism","hypothyroisam","hypo thyroid"]},
+    {"name": "Hyperthyroidism",
+     "group": "Metabolic", "color": "#0891B2",
+     "keywords": ["hyperthyroidism","hyperthyroid","hyper thyroid","thyrotoxicosis",
+                  "graves disease"]},
+    {"name": "GDM",
+     "group": "Metabolic", "color": "#0E7490",
+     "keywords": ["gdm","gestational diabetes mellitus","gestational diabetes",
+                  "gdm on","gdm /","gct positive","impaired glucose"]},
+    {"name": "Diabetes Mellitus",
+     "group": "Metabolic", "color": "#155E75",
+     "keywords": ["diabetes mellitus","pre-existing diabetes","type 1 diabetes",
+                  "type 2 diabetes","diabetic","t2dm","type ii diabetes"]},
+
+    # ── Blood Disorders ───────────────────────────────────────────────────────
+    {"name": "Severe Anaemia (< 7 gm)",
+     "group": "Blood", "color": "#991B1B",
      "keywords": [], "anemia_severity": "severe", "hb_max": 7.0},
-    {"name": "Moderate Anemia",            "group": "Blood",        "color": "#C2410C",
-     "keywords": [], "anemia_severity": "moderate", "hb_min": 7.0, "hb_max": 10.0},
-    {"name": "Mild Anemia",                "group": "Blood",        "color": "#D97706",
-     "keywords": [], "anemia_severity": "mild",   "hb_min": 10.0, "hb_max": 11.0},
-    {"name": "Anemia (Unclassified)",      "group": "Blood",        "color": "#FBBF24",
-     "keywords": [], "anemia_severity": "unclassified"},
-    {"name": "Rh Isoimmunization",         "group": "Blood",        "color": "#F87171",
-     "keywords": ["rh isoimmunization", "rh negative", "rh -ve", "rh-negative", "isoimmunization"]},
-    {"name": "Thalassemia / Sickle Cell",  "group": "Blood",        "color": "#EF4444",
-     "keywords": ["thalassemia", "sickle cell", "beta thalassemia", "thalassaemia"]},
-    # Cardiac
-    {"name": "Heart Disease",              "group": "Cardiac",      "color": "#BE185D",
-     "keywords": ["heart disease", "cardiac", "congenital heart"]},
-    {"name": "Chronic Heart Disease",      "group": "Cardiac",      "color": "#9D174D",
-     "keywords": ["chronic heart disease", "chronic cardiac", "rheumatic heart"]},
-    # Infections
-    {"name": "HIV / VDRL Positive",        "group": "Infection",    "color": "#1D4ED8",
-     "keywords": ["hiv", "vdrl", "syphilis"]},
-    # Respiratory
-    {"name": "Asthma",                     "group": "Respiratory",  "color": "#2563EB",
-     "keywords": ["asthma", "bronchial asthma"]},
-    # Renal / Hepatic
-    {"name": "Renal Disease",              "group": "Renal",        "color": "#1E40AF",
-     "keywords": ["renal disease", "kidney", "renal failure", "ckd", "nephropathy"]},
-    {"name": "Liver Disease",              "group": "Hepatic",      "color": "#0E7490",
-     "keywords": ["liver disease", "jaundice", "hepatitis"]},
-    # Neurological / Mental
-    {"name": "Epilepsy",                   "group": "Neurological", "color": "#312E81",
-     "keywords": ["epilepsy", "seizure"]},
-    {"name": "Anxiety / Mental Health",    "group": "Mental",       "color": "#4C1D95",
-     "keywords": ["anxiety", "mental health", "depression", "psychiatric"]},
-    # Vascular
-    {"name": "DVT",                        "group": "Vascular",     "color": "#6D28D9",
-     "keywords": ["deep vein thrombosis", "dvt"]},
-    # Chronic / Other
-    {"name": "Chronic Medical Disorders",  "group": "Chronic",      "color": "#64748B",
-     "keywords": ["rheumatoid arthritis", "autoimmune", "chronic kidney", "chronic liver",
-                  "chronic renal", "chronic disease", "sle", "lupus"]},
+    {"name": "Rh Isoimmunization",
+     "group": "Blood", "color": "#EF4444",
+     "keywords": ["rh isoimmunization","rh negative","rh -ve","rh-ve","rh -negative",
+                  "rh negative blood","isoimmunization","rh iso","rh(d) negative",
+                  "rh incompatibility"]},
+    {"name": "Haemoglobinopathy",
+     "group": "Blood", "color": "#B91C1C",
+     "keywords": ["haemoglobinopathy","hemoglobinopathy","thalassemia","sickle cell",
+                  "thalassaemia","beta thalassemia","thalassemia trait","hb s","hba2"]},
+
+    # ── Cardiac Disorders ─────────────────────────────────────────────────────
+    {"name": "Heart Diseases Complicating Pregnancy",
+     "group": "Cardiac", "color": "#BE185D",
+     "keywords": ["heart diseases complicating","heart disease","cardiac","rheumatic heart",
+                  "congenital heart","valvular heart","cardiomyopathy","heart failure",
+                  "atrial","ventricular defect"]},
+
+    # ── Neurological ──────────────────────────────────────────────────────────
+    {"name": "Epilepsy",
+     "group": "Neurological", "color": "#312E81",
+     "keywords": ["epilepsy","epileptic","seizure disorder","convulsion","fits"]},
+
+    # ── Infectious Diseases ───────────────────────────────────────────────────
+    {"name": "HIV / AIDS",
+     "group": "Infection", "color": "#1D4ED8",
+     "keywords": ["hiv","aids","hiv positive","hiv/aids","human immunodeficiency"]},
+    {"name": "Scrub Typhus",
+     "group": "Infection", "color": "#2563EB",
+     "keywords": ["scrub typhus","scrub typhus fever","orientia"]},
+    {"name": "H1N1",
+     "group": "Infection", "color": "#3B82F6",
+     "keywords": ["h1n1","swine flu","influenza h1n1","pandemic influenza"]},
+
+    # ── Renal / Hepatic / Respiratory ─────────────────────────────────────────
+    {"name": "Renal Diseases Complicating Pregnancy",
+     "group": "Renal", "color": "#1E40AF",
+     "keywords": ["renal disease","renal diseases complicating","kidney disease",
+                  "renal failure","chronic kidney","ckd","nephropathy","nephrotic",
+                  "glomerulonephritis"]},
+    {"name": "Jaundice / Hepatitis B",
+     "group": "Hepatic", "color": "#0E7490",
+     "keywords": ["jaundice","hepatitis b","hepatitis c","viral hepatitis",
+                  "hepatitis","obstetric cholestasis","intrahepatic cholestasis"]},
+    {"name": "Respiratory Disorders in Pregnancy",
+     "group": "Respiratory", "color": "#0369A1",
+     "keywords": ["asthma","bronchial asthma","respiratory disorder","copd",
+                  "respiratory diseases","bronchitis","respiratory"]},
+
+    # ── Autoimmune / Other ────────────────────────────────────────────────────
+    {"name": "Auto Immune Diseases",
+     "group": "Autoimmune", "color": "#64748B",
+     "keywords": ["autoimmune","auto immune","rheumatoid arthritis","sle","lupus",
+                  "systemic lupus","anti-phospholipid","antiphospholipid"]},
+
+    # ── Mental Health ─────────────────────────────────────────────────────────
+    {"name": "Mental Disorder Complicating Pregnancies",
+     "group": "Mental", "color": "#4C1D95",
+     "keywords": ["mental disorder","mental disorder complicating","mental health",
+                  "anxiety disorder","depression","psychiatric","psychosis",
+                  "schizophrenia","bipolar"]},
 ]
 
 import re as _re
@@ -418,12 +514,12 @@ def _anemia_bucket(raw, hb_val):
     # HB-based severity
     if hb_val is not None:
         if hb_val < 7.0:
-            return "Severe Anemia"
+            return "Severe Anaemia (< 7 gm)"
         if hb_val < 10.0:
-            return "Moderate Anemia"
+            return "Moderate Anaemia"
         if hb_val < 11.0:
-            return "Mild Anemia"
-    return "Anemia (Unclassified)"
+            return "Mild Anaemia"
+    return "Anaemia (Unclassified)"
 
 def _get_canonical_factors(row):
     """Return list of canonical factor names that apply to this patient row."""
@@ -448,10 +544,10 @@ def _get_canonical_factors(row):
                 continue
             # Does this fdef's severity match the bucket?
             bucket_matches = {
-                "severe":        "Severe Anemia",
-                "moderate":      "Moderate Anemia",
-                "mild":          "Mild Anemia",
-                "unclassified":  "Anemia (Unclassified)",
+                "severe":        "Severe Anaemia (< 7 gm)",
+                "moderate":      "Moderate Anaemia",
+                "mild":          "Mild Anaemia",
+                "unclassified":  "Anaemia (Unclassified)",
             }
             if bucket == bucket_matches.get(sev):
                 matched.append(name)
@@ -1049,12 +1145,42 @@ def alerts():
         alert_list(no_phone,  "No Contact Number",      "P3")
     )[:500]
 
+    # ── HRT non-connected call alerts (≥5 non-connected today) ────────────
+    calls_j   = _load_json(CALLS_FILE)
+    today_str = today.strftime("%Y-%m-%d")
+    NON_CONNECTED = {"No Response", "Switched Off", "Busy", "Wrong Number"}
+
+    hrt_nc_alerts = []
+    for hrt_code, grp in df.groupby("hrt_code"):
+        hrt_name  = grp["hrt_name"].iloc[0]
+        nc_count  = 0
+        stat_bkdn = {}
+        for uid in grp["uid"].tolist():
+            hist       = calls_j.get(uid, [])
+            today_hist = [c for c in hist if c.get("date") == today_str]
+            if today_hist:
+                s = today_hist[-1].get("status", "")
+                if s in NON_CONNECTED:
+                    nc_count += 1
+                    stat_bkdn[s] = stat_bkdn.get(s, 0) + 1
+        if nc_count >= 5:
+            hrt_nc_alerts.append({
+                "hrt_code":         hrt_code,
+                "hrt_name":         hrt_name,
+                "not_connected":    nc_count,
+                "status_breakdown": stat_bkdn,
+                "total_mothers":    int(len(grp)),
+                "phcs":             sorted(grp["phc_display"].unique().tolist()),
+            })
+    hrt_nc_alerts.sort(key=lambda x: x["not_connected"], reverse=True)
+
     return jsonify({
-        "total":    len(all_alerts),
-        "critical": len(critical),
-        "due_soon": len(due_soon),
-        "overdue":  len(overdue),
-        "alerts":   all_alerts,
+        "total":         len(all_alerts),
+        "critical":      len(critical),
+        "due_soon":      len(due_soon),
+        "overdue":       len(overdue),
+        "hrt_nc_alerts": hrt_nc_alerts,
+        "alerts":        all_alerts,
     })
 
 @app.route("/api/postdated-edd")
@@ -1544,6 +1670,74 @@ def hrt_call_performance():
     result.sort(key=lambda x: x["hrt_code"])
     return jsonify({"date": date_filter or today_str, "hrts": result, "total_hrts": len(result)})
 
+
+@app.route("/api/hrt-weekly-performance")
+def hrt_weekly_performance():
+    """Per-HRT weekly call activity — Mon–Sun of current week, daily breakdown."""
+    role = request.args.get("role", "DMCHO")
+    df   = filter_by_role(get_data(), role)
+    calls_j = _load_json(CALLS_FILE)
+
+    today      = datetime.date.today()
+    week_start = today - datetime.timedelta(days=today.weekday())          # Monday
+    week_dates = [week_start + datetime.timedelta(days=i) for i in range(7)]
+    today_str  = today.strftime("%Y-%m-%d")
+    NON_CONNECTED = {"No Response", "Switched Off", "Busy", "Wrong Number"}
+
+    result = []
+    for hrt_code, grp in df.groupby("hrt_code"):
+        hrt_name      = grp["hrt_name"].iloc[0]
+        uids          = grp["uid"].tolist()
+        total_mothers = len(uids)
+
+        daily = []
+        week_attempted = week_connected = week_not_connected = 0
+
+        for d in week_dates:
+            date_str  = d.strftime("%Y-%m-%d")
+            attempted = connected = not_connected = 0
+            for uid in uids:
+                hist      = calls_j.get(uid, [])
+                day_calls = [c for c in hist if c.get("date") == date_str]
+                if day_calls:
+                    s = day_calls[-1].get("status", "")
+                    attempted += 1
+                    if s == "Connected":
+                        connected += 1
+                    elif s in NON_CONNECTED:
+                        not_connected += 1
+            daily.append({
+                "date":          date_str,
+                "day":           d.strftime("%a"),
+                "is_today":      date_str == today_str,
+                "is_future":     d > today,
+                "attempted":     attempted,
+                "connected":     connected,
+                "not_connected": not_connected,
+            })
+            week_attempted     += attempted
+            week_connected     += connected
+            week_not_connected += not_connected
+
+        result.append({
+            "hrt_code":           hrt_code,
+            "hrt_name":           hrt_name,
+            "phcs":               sorted(grp["phc_display"].unique().tolist()),
+            "total_mothers":      total_mothers,
+            "daily":              daily,
+            "week_attempted":     week_attempted,
+            "week_connected":     week_connected,
+            "week_not_connected": week_not_connected,
+        })
+
+    result.sort(key=lambda x: x["hrt_code"])
+    return jsonify({
+        "week_start": week_start.strftime("%Y-%m-%d"),
+        "week_end":   (week_start + datetime.timedelta(days=6)).strftime("%Y-%m-%d"),
+        "hrts":       result,
+    })
+
+
 # ── Executive Analytics ────────────────────────────────────────────────────
 @app.route("/api/executive-analytics")
 def executive_analytics():
@@ -1558,10 +1752,12 @@ def executive_analytics():
         hr    = int(grp["risk_category"].isin(["High","Very High","Critical"]).sum())
         crit  = int((grp["risk_category"] == "Critical").sum())
         vh    = int((grp["risk_category"] == "Very High").sum())
+        ds    = int(grp["days_to_edd"].between(0, 7).sum())
         hrt   = grp["hrt_code"].iloc[0] if len(grp) > 0 else ""
         hrt_n = grp["hrt_name"].iloc[0] if len(grp) > 0 else ""
         phc_data.append({"phc": phc, "hrt": hrt, "hrt_name": hrt_n,
-                         "total": total, "high_risk": hr, "critical": crit, "very_high": vh})
+                         "total": total, "high_risk": hr, "critical": crit, "very_high": vh,
+                         "due_soon": ds})
     phc_data.sort(key=lambda x: x["high_risk"], reverse=True)
 
     # ── Risk + Critical by HRT ─────────────────────────────────
