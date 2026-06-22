@@ -417,7 +417,7 @@ export default function LoginPage({ onLogin }) {
                         <div className="w-1.5 h-1.5 rounded-full" style={{ background: '#34D399' }} />
                         <span className="text-[12px] font-bold" style={{ color: dark ? '#34D399' : '#059669' }}>CHO</span>
                       </div>
-                      <code className="text-[11px] font-mono font-semibold" style={{ color: dark ? '#34D399' : '#047857' }}>cho@2024</code>
+                      <code className="text-[11px] font-mono font-semibold" style={{ color: dark ? '#34D399' : '#047857' }}>cho@2026</code>
                     </div>
                   </div>
                 </div>
@@ -432,7 +432,7 @@ export default function LoginPage({ onLogin }) {
                     <div className="flex items-center justify-between px-3 py-2.5"
                       style={{ borderBottom: `1px solid ${dark ? 'rgba(26,53,88,0.5)' : 'rgba(147,197,253,0.25)'}` }}>
                       <span className="text-[11px] font-semibold" style={{ color: textSec }}>DMCHO</span>
-                      <code className="text-[10px] font-mono" style={{ color: dark ? '#3B9FFF' : '#1B6BD4' }}>dmcho@2024</code>
+                      <code className="text-[10px] font-mono" style={{ color: dark ? '#3B9FFF' : '#1B6BD4' }}>dmcho@2026</code>
                     </div>
                   </div>
                 </div>
@@ -445,8 +445,8 @@ export default function LoginPage({ onLogin }) {
                   <div className="rounded-xl overflow-hidden"
                     style={{ border: `1px solid ${dark ? 'rgba(26,53,88,0.5)' : 'rgba(147,197,253,0.35)'}`, background: dark ? 'rgba(26,53,88,0.3)' : 'rgba(219,234,254,0.4)' }}>
                     {[
-                      { user: 'HRT1', pass: 'hrt1@2024' },
-                      { user: 'HRT2', pass: 'hrt2@2024' },
+                      { user: 'HRT1', pass: 'hrt1@2026' },
+                      { user: 'HRT2', pass: 'hrt2@2026' },
                     ].map(({ user, pass }, i, arr) => (
                       <div key={user} className="flex items-center justify-between px-3 py-2"
                         style={{ borderBottom: i < arr.length - 1 ? `1px solid ${dark ? 'rgba(26,53,88,0.5)' : 'rgba(147,197,253,0.25)'}` : 'none' }}>
@@ -468,7 +468,7 @@ export default function LoginPage({ onLogin }) {
           <div className="px-10 py-3 flex items-center justify-between"
             style={{ borderTop: `1px solid ${cardBd}`, background: dark ? 'rgba(6,13,27,0.4)' : 'rgba(237,242,249,0.6)' }}>
             <span className="text-[10px]" style={{ color: textHint }}>Secure Government Healthcare System</span>
-            <span className="text-[10px]" style={{ color: textHint }}>CCMC · Maternal Health · 2024</span>
+            <span className="text-[10px]" style={{ color: textHint }}>CCMC · Maternal Health · 2026</span>
           </div>
         </div>
 

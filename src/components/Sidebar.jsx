@@ -246,7 +246,7 @@ export default function Sidebar({ activePage, setActivePage, user, onLogout, sta
         </button>
         <div className="text-center text-[9px] mt-2 font-medium"
           style={{ color: 'var(--ccmc-text-hint)', opacity: dark ? 0.5 : 0.8 }}>
-          {dark ? 'CCMC · Maternal Health · 2024' : 'Coimbatore City Municipal Corp · 2024'}
+          {dark ? 'CCMC · Maternal Health · 2026' : 'Coimbatore City Municipal Corp · 2026'}
         </div>
       </div>
     </aside>
