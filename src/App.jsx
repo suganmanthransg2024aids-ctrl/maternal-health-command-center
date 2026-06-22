@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { AlertTriangle, X, Phone, Zap } from 'lucide-react';
 import { useTheme } from './ThemeContext';
 import LoginPage            from './components/LoginPage';
 import Sidebar              from './components/Sidebar';
@@ -18,6 +19,57 @@ import PatientDrawer        from './components/PatientDrawer';
 
 const API = '/api';
 
+function LoginAlertToast({ toast, onClose }) {
+  useEffect(() => {
+    const t = setTimeout(onClose, 12000);
+    return () => clearTimeout(t);
+  }, [onClose]);
+
+  if (!toast) return null;
+  const items = [
+    toast.due_today  > 0 && { icon: Zap,           color: '#DC2626', label: `${toast.due_today} mother${toast.due_today > 1 ? 's' : ''} DUE TODAY` },
+    toast.due_3days  > 0 && { icon: AlertTriangle,  color: '#EA580C', label: `${toast.due_3days} due in next 3 days` },
+    toast.nc_5x      > 0 && { icon: Phone,          color: '#60A5FA', label: `${toast.nc_5x} mothers unreachable (5+ attempts)` },
+  ].filter(Boolean);
+
+  if (items.length === 0) return null;
+
+  return (
+    <div className="fixed bottom-5 right-5 z-[9999] w-80 rounded-xl shadow-2xl overflow-hidden"
+      style={{ background: '#0F1729', border: '1px solid rgba(239,68,68,0.4)', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
+      <div className="flex items-center justify-between px-4 py-2.5"
+        style={{ background: 'rgba(239,68,68,0.12)', borderBottom: '1px solid rgba(239,68,68,0.2)' }}>
+        <div className="flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: '#DC2626' }} />
+          <span className="text-xs font-bold" style={{ color: '#FCA5A5', fontFamily: 'Poppins,sans-serif' }}>
+            DASHBOARD ALERTS
+          </span>
+        </div>
+        <button onClick={onClose} className="w-5 h-5 flex items-center justify-center rounded"
+          style={{ color: '#94A3B8' }}>
+          <X className="w-3.5 h-3.5" />
+        </button>
+      </div>
+      <div className="px-4 py-3 space-y-2">
+        {items.map(({ icon: Icon, color, label }, i) => (
+          <div key={i} className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+              style={{ background: `${color}18` }}>
+              <Icon className="w-3.5 h-3.5" style={{ color }} />
+            </div>
+            <span className="text-xs font-semibold" style={{ color: '#E2E8F0' }}>{label}</span>
+          </div>
+        ))}
+      </div>
+      <div className="px-4 pb-3">
+        <p className="text-[10px]" style={{ color: '#475569' }}>
+          Go to Alerts Center for full details
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const { theme, toggleTheme } = useTheme();
   const [user,       setUser]       = useState(null);
@@ -27,6 +79,7 @@ export default function App() {
   const [syncing,    setSyncing]    = useState(false);
   const [backendOK,  setBackendOK]  = useState(false);
   const [notifications, setNotifications] = useState([]);
+  const [loginToast, setLoginToast] = useState(null);
 
   // Auto-sync: tracks backend sync_count to detect Excel reloads
   const syncCountRef = useRef(0);
@@ -42,9 +95,16 @@ export default function App() {
     if (saved) setUser(JSON.parse(saved));
   }, []);
 
-  const handleLogin = (userData) => {
+  const handleLogin = async (userData) => {
     setUser(userData);
     sessionStorage.setItem('hrt_user', JSON.stringify(userData));
+    try {
+      const r = await fetch(`${API}/alerts?role=${userData.role}`);
+      const d = await r.json();
+      if ((d.due_today || 0) + (d.due_3days || 0) + (d.nc_5x_count || 0) > 0) {
+        setLoginToast({ due_today: d.due_today || 0, due_3days: d.due_3days || 0, nc_5x: d.nc_5x_count || 0 });
+      }
+    } catch { /* silent */ }
   };
 
   const handleLogout = () => {
@@ -231,6 +291,9 @@ export default function App() {
           onViewFull={openPatientFullPage}
         />
       )}
+
+      {/* Login alert pop-out */}
+      <LoginAlertToast toast={loginToast} onClose={() => setLoginToast(null)} />
     </div>
   );
 }

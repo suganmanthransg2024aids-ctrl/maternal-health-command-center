@@ -5,6 +5,8 @@ import { useTheme } from '../ThemeContext';
 const API = '/api';
 
 const ALERT_STYLES = {
+  'Due Today':             { color: '#DC2626', bg: 'rgba(220,38,38,0.10)',  border: 'rgba(220,38,38,0.35)',  icon: Zap },
+  'Due Next 3 Days':       { color: '#EA580C', bg: 'rgba(234,88,12,0.09)',  border: 'rgba(234,88,12,0.30)',  icon: AlertTriangle },
   'Delivery Due ≤7 Days':  { color: '#F97316', bg: 'rgba(249,115,22,0.08)', border: 'rgba(249,115,22,0.25)', icon: AlertTriangle },
   'Overdue EDD':           { color: '#EF4444', bg: 'rgba(239,68,68,0.08)',  border: 'rgba(239,68,68,0.2)',   icon: AlertCircle },
   'No Contact Number':     { color: '#EAB308', bg: 'rgba(234,179,8,0.06)',  border: 'rgba(234,179,8,0.2)',   icon: Phone },
@@ -47,6 +49,7 @@ export default function AlertsCenter({ user }) {
   const alerts    = (data?.alerts || []).filter(a => !HIDDEN_ALERT_TYPES.has(a.alert_type) && (!filter || a.alert_type === filter));
   const types     = [...new Set((data?.alerts || []).filter(a => !HIDDEN_ALERT_TYPES.has(a.alert_type)).map(a => a.alert_type))];
   const hrtAlerts = data?.hrt_nc_alerts || [];
+  const nc5x      = data?.nc_5x_mothers || [];
 
   const cardStyle = {
     background: bright ? '#FFFFFF' : 'var(--ccmc-panel)',
@@ -160,17 +163,85 @@ export default function AlertsCenter({ user }) {
 
       {/* ── Patient Alert Summary strip ────────────────────────────── */}
       {data && (
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {[
-            { label: 'Due ≤7 Days',  value: data.due_soon, color: '#F97316' },
-            { label: 'Overdue EDD',  value: data.overdue,  color: '#EF4444' },
-            { label: 'Total Alerts', value: data.total,    color: bright ? '#2563EB' : '#42A5F5' },
-          ].map(({ label, value, color }) => (
-            <div key={label} className="rounded-xl p-4" style={{ ...cardStyle, border: `1px solid ${color}20` }}>
-              <div className="text-2xl font-bold" style={{ color }}>{value?.toLocaleString() ?? '—'}</div>
-              <div className="text-[10px] font-semibold uppercase tracking-wider mt-1" style={{ color: bright ? '#94A3B8' : '#475569' }}>{label}</div>
+            { label: 'Due Today',     value: data.due_today,   color: '#DC2626', pulse: true },
+            { label: 'Due Next 3 Days',value: data.due_3days,  color: '#EA580C' },
+            { label: 'Overdue EDD',   value: data.overdue,     color: '#EF4444' },
+            { label: '5× Not Reached',value: data.nc_5x_count, color: bright ? '#2563EB' : '#60A5FA' },
+          ].map(({ label, value, color, pulse }) => (
+            <div key={label} className="rounded-xl p-4 relative overflow-hidden"
+              style={{ ...cardStyle, border: `1px solid ${color}30` }}>
+              {pulse && value > 0 && (
+                <span className="absolute top-2 right-2 w-2 h-2 rounded-full animate-pulse"
+                  style={{ background: color }} />
+              )}
+              <div className="text-2xl font-bold" style={{ color, fontFamily: 'Poppins,sans-serif' }}>
+                {value?.toLocaleString() ?? '—'}
+              </div>
+              <div className="text-[10px] font-bold uppercase tracking-wider mt-1"
+                style={{ color: bright ? '#64748B' : '#94A3B8' }}>{label}</div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* ── 5× Not-Connected Mothers ──────────────────────────────── */}
+      {nc5x.length > 0 && (
+        <div className="rounded-xl overflow-hidden"
+          style={{
+            background: bright ? '#FFFBEB' : 'rgba(96,165,250,0.05)',
+            border: bright ? '1px solid rgba(37,99,235,0.3)' : '1px solid rgba(96,165,250,0.25)',
+          }}>
+          <div className="flex items-center gap-2 px-5 py-3 border-b"
+            style={{ borderColor: bright ? 'rgba(37,99,235,0.15)' : 'rgba(96,165,250,0.15)', background: bright ? 'rgba(37,99,235,0.05)' : 'rgba(96,165,250,0.07)' }}>
+            <PhoneOff className="w-4 h-4" style={{ color: bright ? '#2563EB' : '#60A5FA' }} />
+            <span className="text-sm font-bold" style={{ color: bright ? '#1D4ED8' : '#93C5FD' }}>
+              Mothers Not Reachable — 5+ Attempts
+            </span>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+              style={{ background: bright ? 'rgba(37,99,235,0.12)' : 'rgba(96,165,250,0.15)', color: bright ? '#2563EB' : '#60A5FA' }}>
+              {nc5x.length} mothers
+            </span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="data-table text-[11px]">
+              <thead>
+                <tr>
+                  <th style={{ color: bright ? '#374151' : '#CBD5E1' }}>Mother Name</th>
+                  <th style={{ color: bright ? '#374151' : '#CBD5E1' }}>PHC</th>
+                  <th style={{ color: bright ? '#374151' : '#CBD5E1' }}>HRT</th>
+                  <th style={{ color: bright ? '#374151' : '#CBD5E1' }}>Phone</th>
+                  <th className="text-right" style={{ color: bright ? '#374151' : '#CBD5E1' }}>Failed Attempts</th>
+                  <th style={{ color: bright ? '#374151' : '#CBD5E1' }}>EDD</th>
+                </tr>
+              </thead>
+              <tbody>
+                {nc5x.slice(0, 50).map((m, i) => (
+                  <tr key={m.uid || i}>
+                    <td className="font-semibold" style={{ color: bright ? '#111827' : '#F1F5F9' }}>{m.mother_name || '—'}</td>
+                    <td style={{ color: bright ? '#4B5563' : '#94A3B8' }}>{m.phc_display}</td>
+                    <td>
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded"
+                        style={{ background: bright ? '#EFF6FF' : 'rgba(96,165,250,0.12)', color: bright ? '#2563EB' : '#93C5FD' }}>
+                        {m.hrt_name}
+                      </span>
+                    </td>
+                    <td style={{ color: bright ? '#4B5563' : '#94A3B8' }}>{m.cell_no || '—'}</td>
+                    <td className="text-right">
+                      <span className="text-[11px] font-bold px-2 py-0.5 rounded-full"
+                        style={{ background: bright ? 'rgba(37,99,235,0.1)' : 'rgba(96,165,250,0.15)', color: bright ? '#1D4ED8' : '#60A5FA' }}>
+                        {m.nc_count}×
+                      </span>
+                    </td>
+                    <td style={{ color: m.days_to_edd != null && m.days_to_edd <= 3 ? '#EF4444' : (bright ? '#4B5563' : '#94A3B8') }}>
+                      {m.days_to_edd != null ? `${m.days_to_edd < 0 ? Math.abs(m.days_to_edd) + 'd overdue' : m.days_to_edd + 'd left'}` : m.edd || '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 

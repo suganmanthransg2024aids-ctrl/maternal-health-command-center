@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Phone, Filter, RefreshCw, X, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { Phone, Filter, RefreshCw, X, Clock, CheckCircle, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import HRTCallPerformance from './HRTCallPerformance';
 
 const API = '/api';
@@ -22,6 +22,88 @@ const STATUS_COLORS = {
   'Pending':             '#94A3B8',
   'No Number':           '#EF4444',
 };
+
+function DEOPerformance() {
+  const [deoData, setDeoData] = useState(null);
+  const [open,    setOpen]    = useState(true);
+
+  useEffect(() => {
+    fetch(`${API}/deo-performance`).then(r => r.json()).then(setDeoData).catch(() => {});
+  }, []);
+
+  if (!deoData) return null;
+  const { month, dates, deos, totals } = deoData;
+
+  return (
+    <div className="rounded-xl overflow-hidden"
+      style={{ background: 'var(--ccmc-panel)', border: '1px solid rgba(66,165,245,0.25)' }}>
+      <button className="w-full flex items-center justify-between px-5 py-3"
+        onClick={() => setOpen(o => !o)}
+        style={{ borderBottom: open ? '1px solid rgba(30,58,95,0.6)' : 'none' }}>
+        <div className="flex items-center gap-2">
+          <Phone className="w-4 h-4" style={{ color: '#42A5F5' }} />
+          <span className="text-sm font-bold text-white" style={{ fontFamily: 'Poppins,sans-serif' }}>
+            MCH Call Center — DEO Connected Calls Per Day
+          </span>
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+            style={{ background: 'rgba(66,165,245,0.12)', color: '#42A5F5' }}>{month}</span>
+        </div>
+        {open ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+      </button>
+
+      {open && (
+        <div className="overflow-x-auto">
+          <table className="data-table text-[11px]">
+            <thead>
+              <tr>
+                <th style={{ color: '#CBD5E1' }}>S.No</th>
+                <th style={{ color: '#CBD5E1' }}>Name</th>
+                {dates.map(d => (
+                  <th key={d} className="text-right" style={{ color: '#CBD5E1', minWidth: 58 }}>{d}</th>
+                ))}
+                <th className="text-right" style={{ color: '#93C5FD' }}>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {deos.map(deo => {
+                const rowTotal = dates.reduce((s, d) => s + (deo.calls[d] || 0), 0);
+                return (
+                  <tr key={deo.sno}>
+                    <td className="text-slate-500 text-center">{deo.sno}</td>
+                    <td className="font-semibold" style={{ color: '#F1F5F9' }}>{deo.name}</td>
+                    {dates.map(d => {
+                      const v = deo.calls[d];
+                      return (
+                        <td key={d} className="text-right font-bold"
+                          style={{ color: v === 0 ? '#475569' : v >= 35 ? '#22C55E' : v >= 25 ? '#F97316' : '#F1F5F9' }}>
+                          {v === 0 ? '–' : v}
+                        </td>
+                      );
+                    })}
+                    <td className="text-right font-bold" style={{ color: '#60A5FA' }}>{rowTotal}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+            <tfoot>
+              <tr style={{ borderTop: '2px solid rgba(66,165,245,0.3)' }}>
+                <td colSpan={2} className="font-bold" style={{ color: '#93C5FD' }}>Daily Total</td>
+                {dates.map(d => (
+                  <td key={d} className="text-right font-bold" style={{ color: '#60A5FA' }}>
+                    {totals[d] || 0}
+                  </td>
+                ))}
+                <td className="text-right font-bold" style={{ color: '#42A5F5' }}>
+                  {Object.values(totals).reduce((s, v) => s + v, 0)}
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function CallTracking({ user }) {
   const [records, setRecords]   = useState([]);
@@ -102,6 +184,9 @@ export default function CallTracking({ user }) {
           Refresh
         </button>
       </div>
+
+      {/* DEO Performance table */}
+      <DEOPerformance />
 
       {/* HRT Call Performance — DMCHO / CHO only */}
       {user.full_access && <HRTCallPerformance user={user} />}

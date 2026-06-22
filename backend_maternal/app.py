@@ -56,6 +56,22 @@ HOST = _cfg.get('host', '0.0.0.0')
 CALLS_FILE    = os.path.join(BASE_DIR, 'call_tracking.json')
 FOLLOWUP_FILE = os.path.join(BASE_DIR, 'followup_data.json')
 
+# ── DEO Call Performance — MCH Call Center June 2026 ──────────────────────
+DEO_PERFORMANCE = {
+    "month": "June 2026",
+    "dates": ["15.06.26","16.06.26","17.06.26","18.06.26","19.06.26","20.06.26","22.06.26"],
+    "deos": [
+        {"sno":1,"name":"M. Pavithraa","calls":{"15.06.26":37,"16.06.26":11,"17.06.26":36,"18.06.26":27,"19.06.26":37,"20.06.26":38,"22.06.26":37}},
+        {"sno":2,"name":"M. Ishwarya", "calls":{"15.06.26":33,"16.06.26":31,"17.06.26":30,"18.06.26":27,"19.06.26":35,"20.06.26":30,"22.06.26":31}},
+        {"sno":3,"name":"Swetha",      "calls":{"15.06.26":38,"16.06.26":30,"17.06.26":31,"18.06.26":26,"19.06.26":35,"20.06.26":38,"22.06.26":37}},
+        {"sno":4,"name":"D. Abarna",   "calls":{"15.06.26":37,"16.06.26":32,"17.06.26":29,"18.06.26":35,"19.06.26":35,"20.06.26":35,"22.06.26":36}},
+        {"sno":5,"name":"V. Abarna",   "calls":{"15.06.26":38,"16.06.26":30,"17.06.26":30,"18.06.26":29,"19.06.26":35,"20.06.26":38,"22.06.26":35}},
+        {"sno":6,"name":"Nivetha",     "calls":{"15.06.26":36,"16.06.26":31,"17.06.26":31,"18.06.26":33,"19.06.26":36,"20.06.26":37,"22.06.26":35}},
+        {"sno":7,"name":"Girija",      "calls":{"15.06.26":34,"16.06.26":30,"17.06.26":15,"18.06.26":0, "19.06.26":0, "20.06.26":32,"22.06.26":32}},
+        {"sno":8,"name":"K. Pavithra", "calls":{"15.06.26":37,"16.06.26":31,"17.06.26":33,"18.06.26":29,"19.06.26":36,"20.06.26":34,"22.06.26":37}},
+    ],
+}
+
 # ── Auth ───────────────────────────────────────────────────────────────────
 USERS = {
     "DMCHO": {"password": "dmcho@2024", "role": "DMCHO", "name": "DMCHO Officer",
@@ -1107,21 +1123,34 @@ def validation():
     df = get_data()
     return jsonify(run_validation(df))
 
+@app.route("/api/deo-performance")
+def deo_performance():
+    dates  = DEO_PERFORMANCE["dates"]
+    deos   = DEO_PERFORMANCE["deos"]
+    totals = {d: sum(deo["calls"].get(d, 0) for deo in deos) for d in dates}
+    return jsonify({
+        "month":  DEO_PERFORMANCE["month"],
+        "dates":  dates,
+        "deos":   deos,
+        "totals": totals,
+    })
+
 @app.route("/api/alerts")
 def alerts():
     role = request.args.get("role", "DMCHO")
     df   = filter_by_role(get_data(), role)
     today= datetime.date.today()
 
-    # Critical risk
-    critical  = df[df["risk_category"] == "Critical"]
-    very_high = df[df["risk_category"] == "Very High"]
-    # EDD within 7 days
-    due_soon  = df[df["days_to_edd"].between(0, 7)]
-    # Overdue EDD
-    overdue   = df[df["days_to_edd"] < 0]
+    # EDD categories — non-overlapping
+    active = df[df["is_delivered"] == False]
+    due_today  = active[active["days_to_edd"] == 0]
+    due_3days  = active[active["days_to_edd"].between(1, 3)]
+    due_4to7   = active[active["days_to_edd"].between(4, 7)]
+    overdue    = active[(active["days_to_edd"].notna()) & (active["days_to_edd"] < 0)]
+    # Legacy broad bucket (for counts)
+    due_soon   = active[active["days_to_edd"].between(0, 7)]
     # Missing phone
-    no_phone  = df[df["cell_no"].str.strip() == ""]
+    no_phone   = df[df["cell_no"].str.strip() == ""]
 
     def alert_list(sub_df, alert_type, priority):
         return [{
@@ -1138,18 +1167,19 @@ def alerts():
         } for _, r in sub_df.iterrows()]
 
     all_alerts = (
-        alert_list(critical,  "Critical Risk Mother",   "P1") +
-        alert_list(due_soon,  "Delivery Due ≤7 Days",   "P1") +
-        alert_list(overdue,   "Overdue EDD",            "P2") +
-        alert_list(very_high, "Very High Risk",         "P2") +
-        alert_list(no_phone,  "No Contact Number",      "P3")
+        alert_list(due_today,  "Due Today",             "P1") +
+        alert_list(due_3days,  "Due Next 3 Days",       "P1") +
+        alert_list(due_4to7,   "Delivery Due ≤7 Days",  "P1") +
+        alert_list(overdue,    "Overdue EDD",            "P2") +
+        alert_list(no_phone,   "No Contact Number",      "P3")
     )[:500]
 
-    # ── HRT non-connected call alerts (≥5 non-connected today) ────────────
-    calls_j   = _load_json(CALLS_FILE)
-    today_str = today.strftime("%Y-%m-%d")
+    # ── Calls data for non-connected analysis ─────────────────────────────
+    calls_j      = _load_json(CALLS_FILE)
+    today_str    = today.strftime("%Y-%m-%d")
     NON_CONNECTED = {"No Response", "Switched Off", "Busy", "Wrong Number"}
 
+    # HRT non-connected call alerts (≥5 non-connected today)
     hrt_nc_alerts = []
     for hrt_code, grp in df.groupby("hrt_code"):
         hrt_name  = grp["hrt_name"].iloc[0]
@@ -1174,12 +1204,38 @@ def alerts():
             })
     hrt_nc_alerts.sort(key=lambda x: x["not_connected"], reverse=True)
 
+    # Mothers with 5+ cumulative non-connected attempts
+    uid_set = set(df["uid"].tolist())
+    nc_5x   = []
+    for uid, hist in calls_j.items():
+        if uid not in uid_set:
+            continue
+        nc_total = sum(1 for c in hist if c.get("status") in NON_CONNECTED)
+        if nc_total >= 5:
+            row = df[df["uid"] == uid]
+            if not row.empty:
+                r = row.iloc[0]
+                nc_5x.append({
+                    "uid":         uid,
+                    "mother_name": r["mother_name"],
+                    "phc_display": r["phc_display"],
+                    "hrt_name":    r["hrt_name"],
+                    "cell_no":     r["cell_no"],
+                    "nc_count":    nc_total,
+                    "edd":         str(r.get("edd", "")),
+                    "days_to_edd": r.get("days_to_edd"),
+                })
+    nc_5x.sort(key=lambda x: x["nc_count"], reverse=True)
+
     return jsonify({
         "total":         len(all_alerts),
-        "critical":      len(critical),
-        "due_soon":      len(due_soon),
-        "overdue":       len(overdue),
+        "due_today":     int(len(due_today)),
+        "due_3days":     int(len(due_3days)),
+        "due_soon":      int(len(due_soon)),
+        "overdue":       int(len(overdue)),
+        "nc_5x_count":   len(nc_5x),
         "hrt_nc_alerts": hrt_nc_alerts,
+        "nc_5x_mothers": nc_5x[:100],
         "alerts":        all_alerts,
     })
 
