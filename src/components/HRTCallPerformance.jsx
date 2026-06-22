@@ -106,7 +106,12 @@ function WeeklyCard({ hrt, maxDay, bright }) {
   const todayD = hrt.daily.find(d => d.is_today);
   const ncToday = todayD ? todayD.not_connected : 0;
   const hasAlert = ncToday >= 5;
-  const pct = hrt.total_mothers > 0 ? Math.round((hrt.week_connected / hrt.total_mothers) * 100) : 0;
+  // Augment week_connected with DEO calls for days where system has no data
+  const deoWeekConnected = hrt.daily.reduce(
+    (s, d) => s + (d.attempted === 0 && d.deo_calls > 0 ? d.deo_calls : 0), 0
+  );
+  const totalConnected = hrt.week_connected + deoWeekConnected;
+  const pct = hrt.total_mothers > 0 ? Math.round((totalConnected / hrt.total_mothers) * 100) : 0;
 
   return (
     <div className="rounded-xl p-4"
@@ -145,10 +150,11 @@ function WeeklyCard({ hrt, maxDay, bright }) {
         {/* Week progress */}
         <div className="text-right flex-shrink-0">
           <div className="text-[11px] font-bold" style={{ color }}>
-            {hrt.week_attempted} <span style={{ color: bright ? '#94A3B8' : '#475569', fontWeight: 400 }}>calls</span>
+            {hrt.week_attempted + deoWeekConnected}{' '}
+            <span style={{ color: bright ? '#94A3B8' : '#475569', fontWeight: 400 }}>calls</span>
           </div>
           <div className="text-[9px]" style={{ color: bright ? '#94A3B8' : '#475569' }}>
-            <span style={{ color: '#22C55E' }}>{hrt.week_connected}✓</span>
+            <span style={{ color: '#22C55E' }}>{totalConnected}✓</span>
             {' '}
             <span style={{ color: '#EF4444' }}>{hrt.week_not_connected}✗</span>
           </div>
@@ -158,7 +164,7 @@ function WeeklyCard({ hrt, maxDay, bright }) {
       {/* Progress bar — weekly connected vs total mothers */}
       <div className="mb-3">
         <div className="flex justify-between text-[9px] mb-1" style={{ color: bright ? '#94A3B8' : '#475569' }}>
-          <span>Week progress: {hrt.week_connected} connected of {hrt.total_mothers} assigned</span>
+          <span>Week: {totalConnected} connected of {hrt.total_mothers} assigned{deoWeekConnected > 0 ? ` (incl. ${deoWeekConnected} DEO)` : ''}</span>
           <span style={{ color }}>{pct}%</span>
         </div>
         <div className="h-1.5 rounded-full overflow-hidden" style={{ background: bright ? '#E2E8F0' : 'rgba(255,255,255,0.08)' }}>
@@ -169,11 +175,17 @@ function WeeklyCard({ hrt, maxDay, bright }) {
       {/* 7-day mini chart */}
       <div className="grid grid-cols-7 gap-1">
         {hrt.daily.map(d => {
-          const barMax = maxDay || 1;
-          const totalH  = Math.round((d.attempted   / barMax) * 44);
-          const connH   = d.attempted > 0 ? Math.round((d.connected     / d.attempted) * totalH) : 0;
-          const ncH     = d.attempted > 0 ? Math.round((d.not_connected / d.attempted) * totalH) : 0;
-          const otherH  = Math.max(totalH - connH - ncH, 0);
+          const isDeoBased = d.attempted === 0 && (d.deo_calls || 0) > 0;
+          const effective  = d.attempted > 0 ? d.attempted : (d.deo_calls || 0);
+          const barMax     = maxDay || 1;
+          const totalH     = Math.round((effective / barMax) * 44);
+          const connH      = d.attempted > 0
+            ? Math.round((d.connected     / d.attempted) * totalH)
+            : (isDeoBased ? totalH : 0);
+          const ncH        = d.attempted > 0
+            ? Math.round((d.not_connected / d.attempted) * totalH)
+            : 0;
+          const otherH     = Math.max(totalH - connH - ncH, 0);
 
           return (
             <div key={d.date} className="flex flex-col items-center gap-0.5">
@@ -192,35 +204,32 @@ function WeeklyCard({ hrt, maxDay, bright }) {
                   <div className="absolute inset-0 flex items-center justify-center">
                     <span className="text-[7px]" style={{ color: bright ? '#CBD5E1' : '#1E293B' }}>—</span>
                   </div>
-                ) : d.attempted === 0 ? (
+                ) : effective === 0 ? (
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-[8px]" style={{ color: bright ? '#CBD5E1' : '#1E293B' }}>0</span>
+                    <span className="text-[8px]" style={{ color: bright ? '#CBD5E1' : '#334155' }}>0</span>
                   </div>
                 ) : (
                   <>
-                    {connH > 0  && <div style={{ height: connH,  background: '#22C55E',           width: '100%', flexShrink: 0 }} />}
-                    {otherH > 0 && <div style={{ height: otherH, background: '#60A5FA',           width: '100%', flexShrink: 0 }} />}
-                    {ncH > 0    && <div style={{ height: ncH,    background: '#EF4444',           width: '100%', flexShrink: 0 }} />}
+                    {connH > 0  && <div style={{ height: connH,  background: isDeoBased ? '#06B6D4' : '#22C55E', width: '100%', flexShrink: 0 }} />}
+                    {otherH > 0 && <div style={{ height: otherH, background: '#60A5FA',                          width: '100%', flexShrink: 0 }} />}
+                    {ncH > 0    && <div style={{ height: ncH,    background: '#EF4444',                          width: '100%', flexShrink: 0 }} />}
                   </>
                 )}
               </div>
-              {/* Attempt count */}
+              {/* Attempt / DEO count */}
               <div className="text-[8px] font-bold"
-                style={{ color: d.is_today ? color : (bright ? '#475569' : '#64748B') }}>
-                {d.is_future ? '' : d.attempted}
+                style={{ color: isDeoBased ? '#06B6D4' : (d.is_today ? color : (bright ? '#475569' : '#64748B')) }}>
+                {d.is_future ? '' : effective}
               </div>
               {/* Connected / missed */}
-              {!d.is_future && d.attempted > 0 && (
+              {!d.is_future && effective > 0 && (
                 <div className="text-[7px] leading-none text-center">
-                  <div style={{ color: '#22C55E' }}>{d.connected}✓</div>
-                  {d.not_connected > 0 && <div style={{ color: '#EF4444' }}>{d.not_connected}✗</div>}
-                </div>
-              )}
-              {/* DEO calls marker */}
-              {d.deo_calls != null && !d.is_future && (
-                <div className="text-[7px] font-bold leading-none text-center mt-0.5"
-                  style={{ color: '#34D399' }}>
-                  {d.deo_calls}
+                  <div style={{ color: isDeoBased ? '#06B6D4' : '#22C55E' }}>
+                    {isDeoBased ? effective : d.connected}✓
+                  </div>
+                  {!isDeoBased && d.not_connected > 0 && (
+                    <div style={{ color: '#EF4444' }}>{d.not_connected}✗</div>
+                  )}
                 </div>
               )}
             </div>
@@ -278,10 +287,12 @@ export default function HRTCallPerformance({ user, defaultDate }) {
     return acc;
   }, {});
 
-  /* max daily calls for weekly scaling */
+  /* max daily calls for weekly scaling — include DEO data when system has none */
   const maxDay = Math.max(
     1,
-    ...weekly.hrts.flatMap(h => h.daily.map(d => d.attempted))
+    ...weekly.hrts.flatMap(h => h.daily.map(d =>
+      d.attempted > 0 ? d.attempted : (d.deo_calls || 0)
+    ))
   );
 
   const panelBorder = bright ? '1px solid rgba(37,99,235,0.25)' : '1px solid rgba(66,165,245,0.35)';
@@ -503,7 +514,7 @@ export default function HRTCallPerformance({ user, defaultDate }) {
                     <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ background: '#22C55E' }} /> Connected</span>
                     <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ background: '#EF4444' }} /> Not Connected</span>
                     <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ background: '#60A5FA' }} /> Other</span>
-                    <span className="flex items-center gap-1"><span className="text-[9px] font-bold" style={{ color: '#34D399' }}>●</span> DEO Calls (MCH record)</span>
+                    <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ background: '#06B6D4' }} /> DEO-sourced (no system log)</span>
                     <span className="flex items-center gap-1.5 ml-2">
                       <AlertTriangle className="w-3 h-3" style={{ color: '#EF4444' }} />
                       Red border = ≥5 missed calls today
@@ -525,8 +536,14 @@ export default function HRTCallPerformance({ user, defaultDate }) {
                       Week Totals (all HRTs)
                     </span>
                     {[
-                      ['Total Calls', weekly.hrts.reduce((s, h) => s + h.week_attempted, 0), '#60A5FA'],
-                      ['Connected',   weekly.hrts.reduce((s, h) => s + h.week_connected, 0), '#22C55E'],
+                      ['Total Calls', weekly.hrts.reduce((s, h) => {
+                        const deo = h.daily.reduce((d2, d) => d2 + (d.attempted === 0 && d.deo_calls > 0 ? d.deo_calls : 0), 0);
+                        return s + h.week_attempted + deo;
+                      }, 0), '#60A5FA'],
+                      ['Connected', weekly.hrts.reduce((s, h) => {
+                        const deo = h.daily.reduce((d2, d) => d2 + (d.attempted === 0 && d.deo_calls > 0 ? d.deo_calls : 0), 0);
+                        return s + h.week_connected + deo;
+                      }, 0), '#22C55E'],
                       ['Not Connected', weekly.hrts.reduce((s, h) => s + h.week_not_connected, 0), '#EF4444'],
                     ].map(([label, val, color]) => (
                       <span key={label} className="text-[11px]" style={{ color: bright ? '#475569' : '#94A3B8' }}>
