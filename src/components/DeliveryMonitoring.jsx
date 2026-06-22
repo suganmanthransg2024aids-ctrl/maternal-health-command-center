@@ -24,16 +24,7 @@ const PN_TABS = [
   { id: 'pn_42plus',label: '> 42 Days',  color: '#A7F3D0',  desc: 'Beyond 42 days post delivery' },
 ];
 
-const RISK_BADGE = {
-  Critical:    { bg: 'rgba(239,68,68,0.15)',  color: '#FCA5A5', border: 'rgba(239,68,68,0.3)'   },
-  'Very High': { bg: 'rgba(249,115,22,0.15)', color: '#FDBA74', border: 'rgba(249,115,22,0.3)'  },
-  High:        { bg: 'rgba(234,179,8,0.15)',  color: '#FDE047', border: 'rgba(234,179,8,0.3)'   },
-  Moderate:    { bg: 'rgba(59,130,246,0.15)', color: '#93C5FD', border: 'rgba(59,130,246,0.3)'  },
-  Low:         { bg: 'rgba(34,197,94,0.15)',  color: '#86EFAC', border: 'rgba(34,197,94,0.3)'   },
-};
-
 function DeliveryCard({ p, openPatient, accentColor }) {
-  const rs    = RISK_BADGE[p.risk_category] || RISK_BADGE.Low;
   const days  = p.days_to_edd;
   const label = days === null ? '—'
               : days === 0   ? 'Due Today!'
@@ -71,12 +62,6 @@ function DeliveryCard({ p, openPatient, accentColor }) {
       </div>
 
       <div className="flex flex-wrap gap-1.5 items-center">
-        {p.risk_category && (
-          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded"
-            style={{ background: rs.bg, color: rs.color, border: `1px solid ${rs.border}` }}>
-            {p.risk_category}
-          </span>
-        )}
         {p.birth_plan && p.birth_plan !== 'nan' && p.birth_plan.trim() && (
           <span className="text-[9px] px-1.5 py-0.5 rounded"
             style={{ background: 'rgba(59,130,246,0.1)', color: '#93C5FD' }}>

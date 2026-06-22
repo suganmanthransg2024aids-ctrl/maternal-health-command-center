@@ -44,10 +44,11 @@ export default function Reports({ user }) {
     exportCSV(`CCMC_Patients_${new Date().toISOString().slice(0,10)}.csv`, r.patients || [], headers);
   };
 
-  const exportCriticalCSV = async () => {
-    const r = await fetch(`${API}/patients?role=${user.role}&risk_category=Critical&per_page=2000`).then(r => r.json());
-    const headers = ['mother_name','phc_display','hrt_name','cell_no','rch_id','risk_score','high_risk_raw','edd','days_to_edd','bp','hb'];
-    exportCSV(`CCMC_CriticalMothers_${new Date().toISOString().slice(0,10)}.csv`, r.patients || [], headers);
+  const exportDueSoonCSV = async () => {
+    const r = await fetch(`${API}/patients?role=${user.role}&per_page=2000`).then(r => r.json());
+    const due = (r.patients || []).filter(p => p.days_to_edd !== null && p.days_to_edd >= 0 && p.days_to_edd <= 7);
+    const headers = ['mother_name','phc_display','hrt_name','cell_no','rch_id','high_risk_raw','edd','days_to_edd','bp','hb'];
+    exportCSV(`CCMC_DueSoon_${new Date().toISOString().slice(0,10)}.csv`, due, headers);
   };
 
   const exportValidationCSV = () => {
@@ -93,10 +94,10 @@ export default function Reports({ user }) {
             action: exportPatientsCSV, label: 'Download CSV',
           },
           {
-            title: 'Critical Mothers Report',
-            desc: 'Only critical-risk mothers with all clinical parameters',
-            color: '#EF4444', icon: Download,
-            action: exportCriticalCSV, label: 'Download Critical CSV',
+            title: 'Due Soon Report',
+            desc: 'Mothers with EDD within 7 days — for immediate follow-up',
+            color: '#F97316', icon: Download,
+            action: exportDueSoonCSV, label: 'Download Due Soon CSV',
           },
           {
             title: 'PHC Performance Report',
@@ -152,15 +153,13 @@ export default function Reports({ user }) {
           </div>
 
           {/* Stats grid */}
-          <div className="grid grid-cols-3 md:grid-cols-5 gap-3">
+          <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
             {[
               { label: 'Total Mothers',   value: stats.total_mothers,  color: '#42A5F5' },
-              { label: 'Critical',        value: stats.critical,        color: '#EF4444' },
-              { label: 'Very High Risk',  value: stats.very_high,       color: '#F97316' },
               { label: 'Due ≤7 Days',     value: stats.due_7_days,      color: '#A78BFA' },
               { label: 'Delivered',       value: stats.delivered,       color: '#22C55E' },
-              { label: 'High Risk Total', value: stats.high_risk,       color: '#F97316' },
               { label: 'Overdue EDD',     value: stats.overdue_edd,     color: '#EF4444' },
+              { label: 'High Risk Mothers', value: stats.high_risk,     color: '#F97316' },
               { label: 'Missing Phone',   value: stats.missing_phone,   color: '#EAB308' },
               { label: 'Due ≤30 Days',    value: stats.due_30_days,     color: '#60A5FA' },
               { label: 'Missing Name',    value: stats.missing_name,    color: '#EAB308' },
@@ -173,20 +172,6 @@ export default function Reports({ user }) {
             ))}
           </div>
 
-          {/* Risk distribution */}
-          {stats.risk_distribution && (
-            <div>
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Risk Distribution</h3>
-              <div className="flex gap-3 flex-wrap">
-                {Object.entries(stats.risk_distribution).map(([cat, count]) => (
-                  <div key={cat} className="flex items-center gap-2">
-                    <span className="text-xs font-semibold text-white">{cat}:</span>
-                    <span className="text-xs font-bold" style={{ color: '#42A5F5' }}>{count?.toLocaleString()}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* Validation summary */}
           {validation && (
@@ -210,8 +195,8 @@ export default function Reports({ user }) {
                 <table className="data-table text-[11px]">
                   <thead>
                     <tr>
-                      <th>PHC</th><th>HRT</th><th>Total</th><th>Critical</th>
-                      <th>V.High</th><th>Delivered</th><th>Due Soon</th><th>Risk%</th>
+                      <th>PHC</th><th>HRT</th><th>Total</th>
+                      <th>Delivered</th><th>Due Soon</th><th>Risk%</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -220,8 +205,6 @@ export default function Reports({ user }) {
                         <td>{p.phc_display}</td>
                         <td>{p.hrt_code} · {p.hrt_name}</td>
                         <td className="text-right font-bold">{p.total}</td>
-                        <td className="text-right" style={{ color: '#FCA5A5' }}>{p.critical}</td>
-                        <td className="text-right" style={{ color: '#FDBA74' }}>{p.very_high}</td>
                         <td className="text-right" style={{ color: '#86EFAC' }}>{p.delivered}</td>
                         <td className="text-right" style={{ color: '#A78BFA' }}>{p.due_soon}</td>
                         <td className="text-right">{p.risk_pct}%</td>

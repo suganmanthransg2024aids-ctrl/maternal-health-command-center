@@ -81,8 +81,8 @@ export default function Header({ user, backendOK, lastSync, syncing, onRefresh, 
         <div className="hidden lg:flex items-center gap-1">
           {[
             { label: 'Total Mothers', value: stats.total_mothers?.toLocaleString(), color: statColors.total },
-            { label: 'Critical',      value: stats.critical?.toLocaleString(),       color: statColors.critical },
             { label: 'Due ≤ 7 Days',  value: stats.due_7_days?.toLocaleString(),     color: statColors.due },
+            { label: 'Overdue EDD',   value: stats.overdue_edd?.toLocaleString(),    color: statColors.critical },
           ].map(({ label, value, color }, i) => (
             <React.Fragment key={label}>
               {i > 0 && <div className="w-px h-5 mx-3" style={{ background: 'var(--ccmc-border-s)' }} />}

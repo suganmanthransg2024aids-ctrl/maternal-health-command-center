@@ -3,14 +3,6 @@ import { X, Search, AlertTriangle, ChevronUp, ChevronDown, Filter } from 'lucide
 
 const API = '/api';
 
-const RISK_BADGE = {
-  Critical:    { bg: 'rgba(239,68,68,0.15)',  color: '#FCA5A5', border: 'rgba(239,68,68,0.3)'  },
-  'Very High': { bg: 'rgba(249,115,22,0.15)', color: '#FDBA74', border: 'rgba(249,115,22,0.3)' },
-  High:        { bg: 'rgba(234,179,8,0.15)',  color: '#FDE047', border: 'rgba(234,179,8,0.3)'  },
-  Moderate:    { bg: 'rgba(59,130,246,0.15)', color: '#93C5FD', border: 'rgba(59,130,246,0.3)' },
-  Low:         { bg: 'rgba(34,197,94,0.15)',  color: '#86EFAC', border: 'rgba(34,197,94,0.3)'  },
-};
-
 const CALL_BADGE = {
   'Connected':    { color: '#86EFAC', bg: 'rgba(34,197,94,0.12)'  },
   'Not Reachable':{ color: '#FDBA74', bg: 'rgba(249,115,22,0.12)' },
@@ -30,7 +22,6 @@ export default function PostdatedEDDModal({ user, onClose, openPatient }) {
   const [search,   setSearch]   = useState('');
   const [phcFilter,setPhcFilter]= useState('');
   const [hrtFilter,setHrtFilter]= useState('');
-  const [riskFilter,setRiskFilter]=useState('');
   const [sortCol,  setSortCol]  = useState('days_past_edd');
   const [sortDir,  setSortDir]  = useState('desc');
 
@@ -43,8 +34,7 @@ export default function PostdatedEDDModal({ user, onClose, openPatient }) {
   }, [user.role]);
 
   const phcOptions  = useMemo(() => [...new Set(mothers.map(m => m.phc_display))].sort(), [mothers]);
-  const hrtOptions  = useMemo(() => [...new Set(mothers.map(m => m.hrt_name))].sort(),    [mothers]);
-  const riskOptions = useMemo(() => ['Critical','Very High','High','Moderate','Low'],       []);
+  const hrtOptions  = useMemo(() => [...new Set(mothers.map(m => m.hrt_name))].sort(), [mothers]);
 
   const toggleSort = (col) => {
     if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
@@ -62,7 +52,6 @@ export default function PostdatedEDDModal({ user, onClose, openPatient }) {
     );
     if (phcFilter)  list = list.filter(m => m.phc_display === phcFilter);
     if (hrtFilter)  list = list.filter(m => m.hrt_name    === hrtFilter);
-    if (riskFilter) list = list.filter(m => m.risk_category === riskFilter);
 
     list = [...list].sort((a, b) => {
       let va = a[sortCol], vb = b[sortCol];
@@ -73,7 +62,7 @@ export default function PostdatedEDDModal({ user, onClose, openPatient }) {
       return 0;
     });
     return list;
-  }, [mothers, search, phcFilter, hrtFilter, riskFilter, sortCol, sortDir]);
+  }, [mothers, search, phcFilter, hrtFilter, sortCol, sortDir]);
 
   const Th = ({ col, label, right }) => (
     <th
@@ -163,16 +152,8 @@ export default function PostdatedEDDModal({ user, onClose, openPatient }) {
             {hrtOptions.map(h => <option key={h} value={h}>{h}</option>)}
           </select>
 
-          {/* Risk filter */}
-          <select value={riskFilter} onChange={e => setRiskFilter(e.target.value)}
-            className="px-2 py-2 rounded-lg text-xs outline-none"
-            style={{ background: 'var(--ccmc-panel)', border: '1px solid var(--ccmc-border)', color: 'var(--ccmc-text)', minWidth: 130 }}>
-            <option value="">All Risk Levels</option>
-            {riskOptions.map(r => <option key={r} value={r}>{r}</option>)}
-          </select>
-
-          {(search || phcFilter || hrtFilter || riskFilter) && (
-            <button onClick={() => { setSearch(''); setPhcFilter(''); setHrtFilter(''); setRiskFilter(''); }}
+          {(search || phcFilter || hrtFilter) && (
+            <button onClick={() => { setSearch(''); setPhcFilter(''); setHrtFilter(''); }}
               className="px-2 py-2 rounded-lg text-[10px] font-semibold"
               style={{ background: 'rgba(239,68,68,0.1)', color: '#FCA5A5', border: '1px solid rgba(239,68,68,0.2)' }}>
               Clear
@@ -207,7 +188,6 @@ export default function PostdatedEDDModal({ user, onClose, openPatient }) {
                   <Th col="hsc_name"           label="Staff Nurse / HSC" />
                   <Th col="edd"                label="EDD" />
                   <Th col="days_past_edd"      label="Days Past" right />
-                  <Th col="risk_category"      label="Risk" />
                   <Th col="call_status"        label="Call Status" />
                   <Th col="followup_status"    label="Follow-Up" />
                   <Th col="last_followup_date" label="Last Follow-Up" />
@@ -215,7 +195,6 @@ export default function PostdatedEDDModal({ user, onClose, openPatient }) {
               </thead>
               <tbody>
                 {filtered.map((m, idx) => {
-                  const rb = RISK_BADGE[m.risk_category] || RISK_BADGE.Low;
                   const cb = CALL_BADGE[m.call_status]  || CALL_BADGE['No Call'];
                   return (
                     <tr key={m.uid}
@@ -291,15 +270,6 @@ export default function PostdatedEDDModal({ user, onClose, openPatient }) {
                         </span>
                       </td>
 
-                      {/* Risk */}
-                      <td className="px-3 py-2.5">
-                        {m.risk_category ? (
-                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded"
-                            style={{ background: rb.bg, color: rb.color, border: `1px solid ${rb.border}` }}>
-                            {m.risk_category}
-                          </span>
-                        ) : <span style={{ color: 'var(--ccmc-text-hint)' }}>—</span>}
-                      </td>
 
                       {/* Call Status */}
                       <td className="px-3 py-2.5">

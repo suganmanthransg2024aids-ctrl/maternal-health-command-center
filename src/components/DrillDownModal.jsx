@@ -3,14 +3,6 @@ import { X, Search, Download, FileText } from 'lucide-react';
 
 const API = '/api';
 
-const RISK_BADGE = {
-  Critical:   { bg: 'rgba(239,68,68,0.18)',   color: '#FCA5A5' },
-  'Very High':{ bg: 'rgba(249,115,22,0.18)',  color: '#FDBA74' },
-  High:       { bg: 'rgba(234,179,8,0.18)',   color: '#FDE047' },
-  Moderate:   { bg: 'rgba(59,130,246,0.18)',  color: '#93C5FD' },
-  Low:        { bg: 'rgba(34,197,94,0.18)',   color: '#86EFAC' },
-};
-
 const CALL_BADGE = {
   'No Call':      { bg: 'rgba(100,116,139,0.18)', color: '#94A3B8' },
   'Answered':     { bg: 'rgba(34,197,94,0.18)',   color: '#86EFAC' },
@@ -29,7 +21,6 @@ const FU_BADGE = {
 
 const SORT_COLS = [
   { key: 'mother_name',    label: 'Mother Name' },
-  { key: 'risk_category',  label: 'Risk' },
   { key: 'days_to_edd',    label: 'Days' },
   { key: 'phc_display',    label: 'PHC' },
   { key: 'call_status',    label: 'Call' },
@@ -51,7 +42,6 @@ function Th({ children, col, sortCol, sortDir, onSort, className = '' }) {
   );
 }
 
-function riskStyle(cat)  { return RISK_BADGE[cat]  || { bg: 'rgba(100,116,139,0.15)', color: '#94A3B8' }; }
 function callStyle(s)    { return CALL_BADGE[s]    || { bg: 'rgba(100,116,139,0.15)', color: '#94A3B8' }; }
 function fuStyle(s)      { return FU_BADGE[s]      || { bg: 'rgba(100,116,139,0.15)', color: '#94A3B8' }; }
 
@@ -73,7 +63,6 @@ export default function DrillDownModal({ metric, title, user, onClose, openPatie
   const [search,     setSearch]     = useState('');
   const [phcFilter,  setPhcFilter]  = useState('');
   const [hrtFilter,  setHrtFilter]  = useState('');
-  const [riskFilter, setRiskFilter] = useState('');
   const [sortCol,    setSortCol]    = useState('mother_name');
   const [sortDir,    setSortDir]    = useState('asc');
 
@@ -94,7 +83,6 @@ export default function DrillDownModal({ metric, title, user, onClose, openPatie
     let out = mothers;
     if (phcFilter)  out = out.filter(m => m.phc_display  === phcFilter);
     if (hrtFilter)  out = out.filter(m => m.hrt_code     === hrtFilter);
-    if (riskFilter) out = out.filter(m => m.risk_category === riskFilter);
     if (search.trim()) {
       const s = search.trim().toLowerCase();
       out = out.filter(m =>
@@ -113,15 +101,15 @@ export default function DrillDownModal({ metric, title, user, onClose, openPatie
         ? String(av).toLowerCase().localeCompare(String(bv).toLowerCase())
         : String(bv).toLowerCase().localeCompare(String(av).toLowerCase());
     });
-  }, [mothers, search, phcFilter, hrtFilter, riskFilter, sortCol, sortDir]);
+  }, [mothers, search, phcFilter, hrtFilter, sortCol, sortDir]);
 
   const toggleSort = (col) => {
     if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
     else { setSortCol(col); setSortDir('asc'); }
   };
 
-  const clearFilters = () => { setSearch(''); setPhcFilter(''); setHrtFilter(''); setRiskFilter(''); };
-  const hasFilters   = search || phcFilter || hrtFilter || riskFilter;
+  const clearFilters = () => { setSearch(''); setPhcFilter(''); setHrtFilter(''); };
+  const hasFilters   = search || phcFilter || hrtFilter;
 
   /* ── CSV Export ─────────────────────────────────────────────────────────── */
   const exportCSV = () => {
@@ -166,7 +154,6 @@ export default function DrillDownModal({ metric, title, user, onClose, openPatie
         <td>${m.phc_display || ''}</td>
         <td>${m.hrt_code || ''}</td>
         <td>${m.hsc_name || ''}</td>
-        <td>${m.risk_category || ''}</td>
         <td>${m.edd || ''}</td>
         <td>${m.is_delivered ? 'Delivered' : (m.days_to_edd != null ? m.days_to_edd + 'd' : '—')}</td>
         <td>${m.call_status || ''}</td>
@@ -187,7 +174,7 @@ export default function DrillDownModal({ metric, title, user, onClose, openPatie
       <p>Exported ${new Date().toLocaleString()} · ${filtered.length} of ${total} mothers</p>
       <table><thead><tr>
         <th>#</th><th>RCH ID</th><th>Mother Name</th><th>Mobile</th>
-        <th>PHC</th><th>HRT</th><th>Staff Nurse</th><th>Risk</th>
+        <th>PHC</th><th>HRT</th><th>Staff Nurse</th>
         <th>EDD</th><th>Days</th><th>Call</th><th>Follow-Up</th>
       </tr></thead><tbody>${rows}</tbody></table>
     </body></html>`);
@@ -279,14 +266,6 @@ export default function DrillDownModal({ metric, title, user, onClose, openPatie
           {hrtOptions.map(h => <option key={h} value={h}>{h}</option>)}
         </select>
 
-        {/* Risk filter */}
-        <select value={riskFilter} onChange={e => setRiskFilter(e.target.value)}
-          className="py-2 pl-3 pr-7 rounded-lg text-xs outline-none appearance-none"
-          style={{ background: 'rgba(30,41,59,0.9)', border: '1px solid rgba(30,58,95,0.9)', color: riskFilter ? '#F1F5F9' : '#64748B' }}>
-          <option value="">All Risk</option>
-          {['Critical','Very High','High','Moderate','Low'].map(r => <option key={r} value={r}>{r}</option>)}
-        </select>
-
         {/* Sort quick-select */}
         <select value={sortCol} onChange={e => setSortCol(e.target.value)}
           className="py-2 pl-3 pr-7 rounded-lg text-xs outline-none appearance-none"
@@ -337,7 +316,6 @@ export default function DrillDownModal({ metric, title, user, onClose, openPatie
                 <Th col="hrt_code"        sortCol={sortCol} sortDir={sortDir} onSort={toggleSort}>HRT</Th>
                 <Th col="hsc_name"        sortCol={sortCol} sortDir={sortDir} onSort={toggleSort}>Staff Nurse</Th>
                 <Th col="gravida"         sortCol={sortCol} sortDir={sortDir} onSort={toggleSort} className="text-center">G</Th>
-                <Th col="risk_category"   sortCol={sortCol} sortDir={sortDir} onSort={toggleSort}>Risk</Th>
                 <Th col="edd"             sortCol={sortCol} sortDir={sortDir} onSort={toggleSort}>EDD</Th>
                 <Th col="days_to_edd"     sortCol={sortCol} sortDir={sortDir} onSort={toggleSort} className="text-right">Days</Th>
                 <Th col="call_status"     sortCol={sortCol} sortDir={sortDir} onSort={toggleSort}>Call</Th>
@@ -346,7 +324,6 @@ export default function DrillDownModal({ metric, title, user, onClose, openPatie
             </thead>
             <tbody>
               {filtered.map((m, i) => {
-                const rs  = riskStyle(m.risk_category);
                 const cs  = callStyle(m.call_status);
                 const fus = fuStyle(m.followup_status);
                 const dl  = dayLabel(m);
@@ -377,12 +354,6 @@ export default function DrillDownModal({ metric, title, user, onClose, openPatie
                       {m.hsc_name || '—'}
                     </td>
                     <td className="px-3 py-2.5 text-center text-slate-400">{m.gravida || '—'}</td>
-                    <td className="px-3 py-2.5">
-                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded"
-                        style={{ background: rs.bg, color: rs.color }}>
-                        {m.risk_category}
-                      </span>
-                    </td>
                     <td className="px-3 py-2.5 font-mono text-[10px] text-slate-400">{m.edd || '—'}</td>
                     <td className="px-3 py-2.5 text-right">
                       <span className="font-bold text-[11px]" style={{ color: dl.color }}>{dl.text}</span>

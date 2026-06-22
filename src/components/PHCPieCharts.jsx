@@ -201,7 +201,7 @@ export default function PHCPieCharts({ user }) {
               <span style={{ color: '#EF4444' }}>High-Risk Mothers by PHC</span>
               <span className="font-normal normal-case tracking-normal text-[10px]"
                 style={{ color: 'var(--ccmc-text-hint)' }}>
-                Critical + Very High + High
+                Mothers with High Risk Factors
               </span>
             </div>
             {riskSlices.length === 0 ? (

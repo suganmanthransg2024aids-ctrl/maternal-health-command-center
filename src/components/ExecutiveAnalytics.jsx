@@ -9,16 +9,8 @@ const HRT_COLORS = {
   HRT7: '#C084FC', HRT8: '#FB923C',
 };
 
-const RISK_COLORS = {
-  Critical:    '#EF4444',
-  'Very High': '#F97316',
-  High:        '#EAB308',
-  Moderate:    '#3B82F6',
-  Low:         '#22C55E',
-};
-
 /* ── Reusable chart primitives ──────────────────────────────── */
-function HBar({ label, value, max, color, badge }) {
+function HBar({ label, value, max, color }) {
   const pct = max > 0 ? Math.min(100, Math.round((value / max) * 100)) : 0;
   return (
     <div className="flex items-center gap-2 py-0.5">
@@ -30,11 +22,6 @@ function HBar({ label, value, max, color, badge }) {
           style={{ width: `${pct}%`, background: color, minWidth: value > 0 ? 4 : 0 }} />
       </div>
       <span className="text-xs font-bold flex-shrink-0 w-8 text-right" style={{ color }}>{value}</span>
-      {badge !== undefined && (
-        <span className="text-[9px] flex-shrink-0 w-14 text-right" style={{ color: '#EF4444' }}>
-          {badge} crit
-        </span>
-      )}
     </div>
   );
 }
@@ -180,10 +167,10 @@ export default function ExecutiveAnalytics({ user }) {
 
       {/* KPI Strip */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        <StatCard icon={Users}       label="Total Mothers"  value={data.total}           color="#42A5F5" />
-        <StatCard icon={ShieldAlert} label="High Risk"      value={data.total_high_risk} color="#F97316" />
-        <StatCard icon={AlertTriangle} label="Critical"     value={data.total_critical}  color="#EF4444" />
-        <StatCard icon={TrendingUp}  label="Very High Risk" value={data.total_very_high} color="#FDBA74" />
+        <StatCard icon={Users}       label="Total Mothers"   value={data.total}           color="#42A5F5" />
+        <StatCard icon={ShieldAlert} label="High Risk Mothers" value={data.total_high_risk} color="#F97316" />
+        <StatCard icon={Activity}    label="Due ≤7 Days"    value={data.due_7_days}      color="#EAB308" />
+        <StatCard icon={TrendingUp}  label="Overdue EDD"    value={data.overdue_edd}     color="#EF4444" />
         <StatCard icon={BarChart2}   label="Active PHCs"    value={data.total_phcs}      color="#A78BFA" />
       </div>
 
@@ -201,13 +188,13 @@ export default function ExecutiveAnalytics({ user }) {
           </div>
         </SectionBox>
 
-        <SectionBox title="Critical Mothers by PHC" icon={AlertTriangle} iconColor="#EF4444">
+        <SectionBox title="Due Soon by PHC (≤7 Days)" icon={AlertTriangle} iconColor="#EAB308">
           <div className="space-y-1">
-            {phcData.filter(d => d.critical > 0).slice(0, 15).map(d => (
-              <HBar key={d.phc} label={d.phc} value={d.critical} max={maxPhcCrit} color="#EF4444" />
+            {phcData.filter(d => (d.due_soon || 0) > 0).slice(0, 15).map(d => (
+              <HBar key={d.phc} label={d.phc} value={d.due_soon || 0} max={Math.max(...phcData.map(x => x.due_soon || 0), 1)} color="#EAB308" />
             ))}
-            {phcData.filter(d => d.critical > 0).length === 0 && (
-              <p className="text-xs text-center py-4" style={{ color: '#86EFAC' }}>No critical cases</p>
+            {phcData.filter(d => (d.due_soon || 0) > 0).length === 0 && (
+              <p className="text-xs text-center py-4" style={{ color: 'var(--ccmc-text-hint)' }}>No upcoming deliveries</p>
             )}
           </div>
         </SectionBox>
@@ -230,7 +217,6 @@ export default function ExecutiveAnalytics({ user }) {
                     </div>
                     <div className="flex items-center gap-3 text-[10px]">
                       <span style={{ color }}>{d.high_risk} HR</span>
-                      <span style={{ color: '#EF4444' }}>{d.critical} crit</span>
                       <span style={{ color: 'var(--ccmc-text-hint)' }}>{pct}%</span>
                     </div>
                   </div>
@@ -244,7 +230,7 @@ export default function ExecutiveAnalytics({ user }) {
           </div>
         </SectionBox>
 
-        <SectionBox title="Critical Cases by HRT" icon={AlertTriangle} iconColor="#EF4444">
+        <SectionBox title="Delivered by HRT" icon={Activity} iconColor="#22C55E">
           <div className="space-y-3">
             {hrtData.map(d => {
               const color = HRT_COLORS[d.hrt] || '#42A5F5';
@@ -259,23 +245,14 @@ export default function ExecutiveAnalytics({ user }) {
                         {d.phcs.length} PHC{d.phcs.length !== 1 ? 's' : ''}
                       </span>
                     </div>
-                    <span className="text-xs font-bold" style={{ color: '#FCA5A5' }}>{d.critical}</span>
+                    <span className="text-xs font-bold" style={{ color: '#86EFAC' }}>{d.delivered ?? 0}</span>
                   </div>
                   <div className="h-2 rounded-full overflow-hidden" style={{ background: 'rgba(30,58,95,0.4)' }}>
                     <div className="h-full rounded-full"
                       style={{
-                        width: `${Math.round((d.critical / Math.max(...hrtData.map(x => x.critical), 1)) * 100)}%`,
-                        background: '#EF4444',
+                        width: `${Math.round(((d.delivered ?? 0) / Math.max(...hrtData.map(x => x.delivered ?? 0), 1)) * 100)}%`,
+                        background: '#22C55E',
                       }} />
-                  </div>
-                  {/* Risk dist mini pills */}
-                  <div className="flex gap-1 mt-1">
-                    {Object.entries(d.risk_dist || {}).map(([cat, cnt]) => (
-                      <span key={cat} className="text-[8px] font-bold px-1 py-0.5 rounded"
-                        style={{ background: `${RISK_COLORS[cat] || '#42A5F5'}20`, color: RISK_COLORS[cat] || '#42A5F5' }}>
-                        {cat}: {cnt}
-                      </span>
-                    ))}
                   </div>
                 </div>
               );
@@ -309,26 +286,8 @@ export default function ExecutiveAnalytics({ user }) {
         </SectionBox>
       </div>
 
-      {/* Risk Category Distribution + Upcoming by PHC */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <SectionBox title="Risk Category Distribution" icon={Activity} iconColor="#42A5F5">
-          <div className="space-y-2">
-            {Object.entries(RISK_COLORS).map(([cat, color]) => (
-              <HBar key={cat} label={cat} value={riskDist[cat] || 0} max={maxRisk} color={color} />
-            ))}
-          </div>
-          <div className="mt-4 flex flex-wrap gap-2">
-            {Object.entries(RISK_COLORS).map(([cat, color]) => (
-              <div key={cat} className="flex items-center gap-1">
-                <div className="w-2 h-2 rounded-full" style={{ background: color }} />
-                <span className="text-[9px]" style={{ color: 'var(--ccmc-text-hint)' }}>
-                  {cat}: <b style={{ color }}>{(riskDist[cat] || 0).toLocaleString()}</b>
-                </span>
-              </div>
-            ))}
-          </div>
-        </SectionBox>
-
+      {/* Upcoming by PHC */}
+      <div className="grid grid-cols-1 gap-4">
         <SectionBox title="Upcoming Deliveries by PHC (Next 30 Days)" icon={BarChart2} iconColor="#A78BFA">
           <div className="space-y-1">
             {upcomingPhc.map(d => (
@@ -343,13 +302,7 @@ export default function ExecutiveAnalytics({ user }) {
           </div>
           {upcomingPhc.length > 0 && (
             <div className="mt-3 pt-3 border-t" style={{ borderColor: 'var(--ccmc-border)' }}>
-              <div className="grid grid-cols-3 gap-2 text-center">
-                <div>
-                  <div className="text-lg font-bold" style={{ color: '#EF4444' }}>
-                    {upcomingPhc.reduce((s, d) => s + d.critical, 0)}
-                  </div>
-                  <div className="text-[9px]" style={{ color: 'var(--ccmc-text-hint)' }}>Critical</div>
-                </div>
+              <div className="grid grid-cols-2 gap-2 text-center">
                 <div>
                   <div className="text-lg font-bold" style={{ color: '#F97316' }}>
                     {upcomingPhc.reduce((s, d) => s + d.due_7, 0)}
@@ -384,8 +337,6 @@ export default function ExecutiveAnalytics({ user }) {
                 <th>PHC / UPHC</th><th>HRT</th>
                 <th className="text-right">Total</th>
                 <th className="text-right">High Risk</th>
-                <th className="text-right">Critical</th>
-                <th className="text-right">Very High</th>
                 <th className="text-right">Risk %</th>
               </tr>
             </thead>
@@ -403,8 +354,6 @@ export default function ExecutiveAnalytics({ user }) {
                     </td>
                     <td className="text-right font-bold" style={{ color: 'var(--ccmc-text)' }}>{p.total}</td>
                     <td className="text-right font-bold" style={{ color: '#FDBA74' }}>{p.high_risk}</td>
-                    <td className="text-right font-bold" style={{ color: '#FCA5A5' }}>{p.critical}</td>
-                    <td className="text-right font-bold" style={{ color: '#FB923C' }}>{p.very_high}</td>
                     <td className="text-right">
                       <span className="text-[10px] font-bold px-1.5 py-0.5 rounded"
                         style={{
@@ -438,8 +387,6 @@ export default function ExecutiveAnalytics({ user }) {
                 <th>HRT</th><th>Staff Nurse</th><th>PHCs</th>
                 <th className="text-right">Total</th>
                 <th className="text-right">High Risk</th>
-                <th className="text-right">Critical</th>
-                <th className="text-right">Very High</th>
                 <th className="text-right">Risk %</th>
               </tr>
             </thead>
@@ -461,8 +408,6 @@ export default function ExecutiveAnalytics({ user }) {
                     </td>
                     <td className="text-right font-bold" style={{ color: 'var(--ccmc-text)' }}>{h.total}</td>
                     <td className="text-right font-bold" style={{ color: '#FDBA74' }}>{h.high_risk}</td>
-                    <td className="text-right font-bold" style={{ color: '#FCA5A5' }}>{h.critical}</td>
-                    <td className="text-right font-bold" style={{ color: '#FB923C' }}>{h.very_high}</td>
                     <td className="text-right">
                       <span className="text-[10px] font-bold px-1.5 py-0.5 rounded"
                         style={{

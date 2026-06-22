@@ -34,11 +34,10 @@ export default function PHCAnalytics({ user }) {
   const hrtGroups = {};
   data.forEach(p => {
     const k = p.hrt_code;
-    if (!hrtGroups[k]) hrtGroups[k] = { hrt_code: k, hrt_name: p.hrt_name, total: 0, critical: 0, very_high: 0, high: 0, phcs: [] };
+    if (!hrtGroups[k]) hrtGroups[k] = { hrt_code: k, hrt_name: p.hrt_name, total: 0, delivered: 0, due_soon: 0, phcs: [] };
     hrtGroups[k].total    += p.total;
-    hrtGroups[k].critical += p.critical;
-    hrtGroups[k].very_high+= p.very_high;
-    hrtGroups[k].high     += p.high;
+    hrtGroups[k].delivered += p.delivered;
+    hrtGroups[k].due_soon  += p.due_soon;
     hrtGroups[k].phcs.push(p.phc_display);
   });
   const hrtSummary = Object.values(hrtGroups).sort((a, b) => b.total - a.total);
@@ -85,13 +84,13 @@ export default function PHCAnalytics({ user }) {
               <div className="text-xl font-bold" style={{ color }}>{h.total.toLocaleString()}</div>
               <div className="text-[10px] text-slate-500 mt-1">
                 {h.phcs.length} PHC{h.phcs.length !== 1 ? 's' : ''} ·
-                <span style={{ color: '#FCA5A5' }}> {h.critical} critical</span>
+                <span style={{ color: '#A78BFA' }}> {h.due_soon} due soon</span>
               </div>
               {/* Mini bar */}
               <div className="mt-2 h-1 rounded-full" style={{ background: 'rgba(30,58,95,0.4)' }}>
                 <div className="h-full rounded-full"
                   style={{
-                    width: `${Math.round((h.critical + h.very_high) / (h.total || 1) * 100)}%`,
+                    width: `${Math.round(h.delivered / (h.total || 1) * 100)}%`,
                     background: color,
                   }} />
               </div>
@@ -103,7 +102,7 @@ export default function PHCAnalytics({ user }) {
       {/* Sort controls */}
       <div className="flex items-center gap-2">
         <span className="text-xs text-slate-500">Sort by:</span>
-        {['total','critical','very_high','high','delivered','due_soon'].map(s => (
+        {['total','delivered','due_soon','no_phone'].map(s => (
           <button key={s} onClick={() => setSortBy(s)}
             className="px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider"
             style={{
@@ -141,22 +140,18 @@ export default function PHCAnalytics({ user }) {
                   <div className="flex-1" />
                   <div className="flex items-center gap-4 text-[10px] text-right">
                     <span className="text-white font-bold">{p.total}</span>
-                    <span style={{ color: '#FCA5A5' }}>{p.critical} crit</span>
-                    <span style={{ color: '#FDBA74' }}>{p.very_high} vhigh</span>
                     <span style={{ color: '#86EFAC' }}>{p.delivered} del</span>
-                    <span className="font-bold" style={{ color: p.risk_pct > 50 ? '#EF4444' : p.risk_pct > 25 ? '#F97316' : '#22C55E' }}>
+                    <span style={{ color: '#A78BFA' }}>{p.due_soon} due</span>
+                    <span className="font-bold" style={{ color: '#60A5FA' }}>
                       {p.risk_pct}% risk
                     </span>
                   </div>
                 </div>
-                {/* Stacked bar */}
-                <div className="flex h-2 rounded-full overflow-hidden gap-px"
+                {/* Progress bar: delivered */}
+                <div className="relative h-2 rounded-full overflow-hidden"
                   style={{ background: 'rgba(30,58,95,0.3)' }}>
-                  {p.critical  > 0 && <div style={{ width: `${(p.critical   / p.total) * pct}%`, background: '#EF4444', minWidth: 2 }} />}
-                  {p.very_high > 0 && <div style={{ width: `${(p.very_high  / p.total) * pct}%`, background: '#F97316', minWidth: 2 }} />}
-                  {p.high      > 0 && <div style={{ width: `${(p.high       / p.total) * pct}%`, background: '#EAB308', minWidth: 2 }} />}
-                  {p.moderate  > 0 && <div style={{ width: `${(p.moderate   / p.total) * pct}%`, background: '#3B82F6', minWidth: 2 }} />}
-                  {p.low       > 0 && <div style={{ width: `${(p.low        / p.total) * pct}%`, background: '#22C55E', minWidth: 2 }} />}
+                  <div className="h-full rounded-full"
+                    style={{ width: `${Math.round((p.delivered / (p.total || 1)) * 100)}%`, background: color }} />
                 </div>
               </div>
             );
@@ -176,9 +171,7 @@ export default function PHCAnalytics({ user }) {
               <tr>
                 <th>PHC / UPHC</th><th>HRT</th><th>Staff</th>
                 <th className="text-right">Total</th>
-                <th className="text-right">Critical</th><th className="text-right">V.High</th>
-                <th className="text-right">High</th><th className="text-right">Moderate</th>
-                <th className="text-right">Low</th><th className="text-right">Delivered</th>
+                <th className="text-right">Delivered</th>
                 <th className="text-right">Due Soon</th><th className="text-right">No Phone</th>
                 <th className="text-right">Risk %</th>
               </tr>
@@ -195,11 +188,6 @@ export default function PHCAnalytics({ user }) {
                   </td>
                   <td className="text-[10px] text-slate-400">{p.hrt_name}</td>
                   <td className="text-right font-bold text-white">{p.total}</td>
-                  <td className="text-right font-bold" style={{ color: '#FCA5A5' }}>{p.critical}</td>
-                  <td className="text-right font-bold" style={{ color: '#FDBA74' }}>{p.very_high}</td>
-                  <td className="text-right font-bold" style={{ color: '#FDE047' }}>{p.high}</td>
-                  <td className="text-right font-bold" style={{ color: '#93C5FD' }}>{p.moderate}</td>
-                  <td className="text-right font-bold" style={{ color: '#86EFAC' }}>{p.low}</td>
                   <td className="text-right font-bold" style={{ color: '#22C55E' }}>{p.delivered}</td>
                   <td className="text-right" style={{ color: '#A78BFA' }}>{p.due_soon}</td>
                   <td className="text-right" style={{ color: '#F59E0B' }}>{p.no_phone}</td>

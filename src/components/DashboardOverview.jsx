@@ -13,21 +13,6 @@ import PHCPieCharts       from './PHCPieCharts';
 
 const API = '/api';
 
-const RISK_TIERS_DARK = [
-  { key: 'Critical',  color: '#EF4444', track: 'rgba(239,68,68,0.12)'  },
-  { key: 'Very High', color: '#F97316', track: 'rgba(249,115,22,0.12)' },
-  { key: 'High',      color: '#EAB308', track: 'rgba(234,179,8,0.12)'  },
-  { key: 'Moderate',  color: '#3B82F6', track: 'rgba(59,130,246,0.12)' },
-  { key: 'Low',       color: '#22C55E', track: 'rgba(34,197,94,0.12)'  },
-];
-
-const RISK_TIERS_BRIGHT = [
-  { key: 'Critical',  color: '#DC2626', track: '#FEE2E2' },
-  { key: 'Very High', color: '#EA580C', track: '#FFF0E6' },
-  { key: 'High',      color: '#B45309', track: '#FFFBEB' },
-  { key: 'Moderate',  color: '#1D4ED8', track: '#EFF6FF' },
-  { key: 'Low',       color: '#059669', track: '#F0FDF4' },
-];
 
 const HRT_COLORS_DARK = {
   HRT1: '#F472B6', HRT2: '#A78BFA', HRT3: '#60A5FA', HRT4: '#FBBF24',
@@ -103,36 +88,6 @@ function KPICard({ icon: Icon, label, value, color, sub, onClick, gradient, icon
       {sub && (
         <div className="text-[11px] mt-0.5" style={{ color: 'var(--ccmc-text-hint)' }}>{sub}</div>
       )}
-    </div>
-  );
-}
-
-/* ── Risk Distribution Row ────────────────────────────────────────────────── */
-function RiskBar({ label, count, total, color, track, onClick }) {
-  const pct = total > 0 ? Math.round((count / total) * 100) : 0;
-  const { theme } = useTheme();
-  const bright = theme === 'bright';
-  return (
-    <div
-      onClick={onClick}
-      className="flex items-center gap-4 px-3 py-2.5 rounded-xl transition-all"
-      style={{ cursor: onClick ? 'pointer' : 'default' }}
-      onMouseEnter={(e) => { if (onClick) e.currentTarget.style.background = track; }}
-      onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-    >
-      <div className="w-24 flex-shrink-0 flex items-center gap-2">
-        <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: color }} />
-        <span className="text-[12px] font-semibold" style={{ color: bright ? '#334155' : 'var(--ccmc-text-sec)' }}>{label}</span>
-      </div>
-      <div className="flex-1 progress-track" style={{ background: bright ? '#E2E8F0' : 'var(--ccmc-surface2)' }}>
-        <div className="progress-fill" style={{ width: `${pct}%`, background: color }} />
-      </div>
-      <div className="w-14 text-right">
-        <span className="text-[13px] font-bold" style={{ color }}>{(count || 0).toLocaleString()}</span>
-      </div>
-      <div className="w-9 text-right">
-        <span className="text-[11px] font-semibold" style={{ color: 'var(--ccmc-text-hint)' }}>{pct}%</span>
-      </div>
     </div>
   );
 }
@@ -219,11 +174,9 @@ export default function DashboardOverview({ stats, user, onRefresh, syncing, set
       .then(r => r.json()).then(d => setHrtCallData(d.hrts || [])).catch(() => {});
   }, [user]);
 
-  const s           = stats || {};
-  const riskDist    = s.risk_distribution || {};
-  const totalForPct = s.total_mothers || 1;
-  const p1Alerts    = alerts.filter(a => a.priority === 'P1').slice(0, 8);
-  const drill       = (metric, title) => () => setDrillDown({ metric, title });
+  const s        = stats || {};
+  const p1Alerts = alerts.filter(a => a.priority === 'P1').slice(0, 8);
+  const drill    = (metric, title) => () => setDrillDown({ metric, title });
 
   // Theme-aware color palette
   const C = bright ? {
@@ -238,7 +191,6 @@ export default function DashboardOverview({ stats, user, onRefresh, syncing, set
     purple: '#A78BFA',
   };
 
-  const RISK_TIERS = bright ? RISK_TIERS_BRIGHT : RISK_TIERS_DARK;
   const HRT_COLORS = bright ? HRT_COLORS_BRIGHT : HRT_COLORS_DARK;
 
   // PHC table value colors
@@ -258,9 +210,9 @@ export default function DashboardOverview({ stats, user, onRefresh, syncing, set
 
   // Intel cards with per-card gradient accents
   const intelCards = [
-    { label: 'Due Today',     value: s.due_today ?? '—',           color: C.red,    gradient: ['#EA580C', '#FB923C'], sub: 'Deliveries today',    onClick: drill('due_today',       'Mothers Due Today'),        urgent: (s.due_today || 0) > 0 },
+    { label: 'Due Today',     value: s.due_today ?? '—',           color: C.red,    gradient: ['#EA580C', '#FB923C'], sub: 'Deliveries today',    onClick: drill('due_today',       'Mothers Due Today'), urgent: (s.due_today || 0) > 0 },
     { label: 'Due ≤ 7 Days',  value: s.due_7_days ?? '—',          color: C.orange, gradient: ['#F97316', '#FB923C'], sub: 'Upcoming deliveries', onClick: drill('due_7_days',      'Mothers Due ≤7 Days') },
-    { label: 'Critical',      value: s.critical ?? '—',            color: C.red,    gradient: ['#DC2626', '#EF4444'], sub: 'Highest risk cases',  onClick: drill('critical',        'Critical Risk Mothers') },
+    { label: 'Overdue EDD',   value: s.overdue_edd ?? '—',         color: C.rose,   gradient: ['#E11D48', '#FB7185'], sub: 'Past due date',       onClick: drill('overdue_edd',     'Overdue EDD Mothers') },
     { label: 'Follow-Ups',    value: s.followups_due_today ?? '—', color: C.purple, gradient: ['#7C3AED', '#A78BFA'], sub: 'Visits today',        onClick: drill('followups_today', 'Follow-Ups Due Today') },
     { label: 'Calls Pending', value: s.calls_pending_today ?? '—', color: C.blue,   gradient: ['#2563EB', '#60A5FA'], sub: 'Pending today',       onClick: drill('calls_pending',   'Calls Pending Today') },
     { label: 'Data Issues',   value: s.validation_issues ?? '—',   color: C.amber,  gradient: ['#D97706', '#FBBF24'], sub: 'Validation problems', onClick: () => setActivePage('validation') },
@@ -290,26 +242,26 @@ export default function DashboardOverview({ stats, user, onRefresh, syncing, set
 
       {/* ── Primary KPI row ─────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <KPICard icon={Users}      label="Total Mothers" value={s.total_mothers?.toLocaleString()} color={C.blue}   sub="All registered records"  onClick={drill('total',      'All Mothers')}
+        <KPICard icon={Users}       label="Total Mothers"  value={s.total_mothers?.toLocaleString()} color={C.blue}   sub="All registered records"   onClick={drill('total',         'All Mothers')}
           gradient={['#2563EB','#3B82F6']} iconBg={['#EFF6FF','#DBEAFE']} />
-        <KPICard icon={ShieldAlert} label="Critical Risk" value={s.critical?.toLocaleString()}     color={C.red}    sub="Highest priority cases"  onClick={drill('critical',   'Critical Risk Mothers')}
-          gradient={['#DC2626','#EF4444']} iconBg={['#FEF2F2','#FECACA']} />
-        <KPICard icon={Baby}        label="Due ≤ 7 Days"  value={s.due_7_days?.toLocaleString()}   color={C.orange} sub="Upcoming deliveries"     onClick={drill('due_7_days', 'Mothers Due ≤7 Days')}
+        <KPICard icon={Baby}        label="Due ≤ 7 Days"   value={s.due_7_days?.toLocaleString()}   color={C.orange} sub="Upcoming deliveries"      onClick={drill('due_7_days',    'Mothers Due ≤7 Days')}
           gradient={['#F97316','#FB923C']} iconBg={['#FFF7ED','#FED7AA']} />
-        <KPICard icon={Heart}       label="Delivered"     value={s.delivered?.toLocaleString()}     color={C.green}  sub="Successful deliveries"   onClick={drill('delivered',  'Delivered Mothers')}
+        <KPICard icon={Heart}       label="Delivered"      value={s.delivered?.toLocaleString()}     color={C.green}  sub="Successful deliveries"    onClick={drill('delivered',     'Delivered Mothers')}
           gradient={['#059669','#10B981']} iconBg={['#ECFDF5','#D1FAE5']} />
+        <KPICard icon={Phone}       label="Calls Pending"  value={s.calls_pending_today?.toLocaleString()} color={C.teal}  sub="Pending today"       onClick={drill('calls_pending', 'Calls Pending Today')}
+          gradient={['#0F766E','#14B8A6']} iconBg={['#F0FDFA','#CCFBF1']} />
       </div>
 
       {/* ── Secondary KPI row ───────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <KPICard icon={TrendingUp}  label="Very High Risk"  value={s.very_high?.toLocaleString()}     color={C.redAlt} onClick={drill('very_high',     'Very High Risk Mothers')}
-          gradient={['#B91C1C','#EF4444']} iconBg={['#FEF2F2','#FECACA']} />
         <KPICard icon={Calendar}    label="Due ≤ 30 Days"   value={s.due_30_days?.toLocaleString()}   color={C.blueLt} onClick={drill('due_30_days',   'Mothers Due ≤30 Days')}
           gradient={['#2563EB','#60A5FA']} iconBg={['#EFF6FF','#DBEAFE']} />
         <KPICard icon={Phone}       label="No Phone"         value={s.missing_phone?.toLocaleString()} color={C.amber}  onClick={drill('missing_phone', 'Mothers Missing Phone')}
           gradient={['#D97706','#FBBF24']} iconBg={['#FFF7ED','#FED7AA']} />
         <KPICard icon={AlertCircle} label="Postdated EDD"    value={s.postdated_edd?.toLocaleString()} color={C.rose}   onClick={() => setShowPostdated(true)}
           gradient={['#E11D48','#FB7185']} iconBg={['#FEF2F2','#FECACA']} />
+        <KPICard icon={CalendarCheck} label="Follow-Ups Due" value={s.followups_due_today?.toLocaleString()} color={C.purple} onClick={drill('followups_today', 'Follow-Ups Due Today')}
+          gradient={['#7C3AED','#A78BFA']} iconBg={['#F5F3FF','#EDE9FE']} />
       </div>
 
       {/* ── Operational intel strip ─────────────────────────────────── */}
@@ -336,28 +288,8 @@ export default function DashboardOverview({ stats, user, onRefresh, syncing, set
       {/* ── PHC Pie Charts (CHO / DMCHO only) ──────────────────────── */}
       <PHCPieCharts user={user} />
 
-      {/* ── Two-column section ─────────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-
-        {/* Risk distribution */}
-        <div className="rounded-2xl p-6" style={cardStyle}>
-          <div className="flex items-center justify-between mb-5">
-            <div className="flex items-center gap-2">
-              <Activity className="w-4 h-4" style={{ color: C.teal }} />
-              <h2 className="text-[14px] font-bold" style={{ color: 'var(--ccmc-text)' }}>Risk Distribution</h2>
-            </div>
-            <span className="text-[11px]" style={{ color: 'var(--ccmc-text-hint)' }}>{s.total_mothers?.toLocaleString()} total</span>
-          </div>
-          <div className="space-y-1">
-            {RISK_TIERS.map(({ key, color, track }) => {
-              const metricKey = key.toLowerCase().replace(' ', '_');
-              return (
-                <RiskBar key={key} label={key} count={riskDist[key] || 0} total={totalForPct}
-                  color={color} track={track} onClick={drill(metricKey, `${key} Risk Mothers`)} />
-              );
-            })}
-          </div>
-        </div>
+      {/* ── Priority Alerts (full width) ─────────────────────────── */}
+      <div>
 
         {/* Priority alerts */}
         <div className="rounded-2xl overflow-hidden" style={cardStyle}>
@@ -389,7 +321,12 @@ export default function DashboardOverview({ stats, user, onRefresh, syncing, set
                   <div className="text-[12px] font-semibold truncate" style={{ color: 'var(--ccmc-text)' }}>{a.mother_name || 'Unknown'}</div>
                   <div className="text-[11px]" style={{ color: 'var(--ccmc-text-hint)' }}>{a.phc_display} · {a.alert_type}</div>
                 </div>
-                <span className="badge-critical flex-shrink-0">{a.risk_category}</span>
+                {a.days_to_edd != null && (
+                  <span className="text-[10px] font-bold flex-shrink-0"
+                    style={{ color: a.days_to_edd < 0 ? '#EF4444' : a.days_to_edd < 7 ? '#F97316' : '#94A3B8' }}>
+                    {a.days_to_edd < 0 ? `${Math.abs(a.days_to_edd)}d over` : `${a.days_to_edd}d`}
+                  </span>
+                )}
               </div>
             ))}
           </div>
@@ -466,16 +403,14 @@ export default function DashboardOverview({ stats, user, onRefresh, syncing, set
                 <th>PHC / UPHC</th>
                 <th>HRT Officer</th>
                 <th className="text-right">Total</th>
-                <th className="text-right">Critical</th>
-                <th className="text-right">Very High</th>
                 <th className="text-right">Due Soon</th>
                 <th className="text-right">Delivered</th>
-                <th className="text-right">Risk %</th>
+                <th className="text-right">High Risk %</th>
               </tr>
             </thead>
             <tbody>
               {phcData.length === 0 ? (
-                <tr><td colSpan={8} className="text-center py-8" style={{ color: 'var(--ccmc-text-hint)' }}>Loading PHC data…</td></tr>
+                <tr><td colSpan={6} className="text-center py-8" style={{ color: 'var(--ccmc-text-hint)' }}>Loading PHC data…</td></tr>
               ) : phcData.map(p => (
                 <tr key={p.phc_key} style={{ cursor: 'pointer' }}
                   onClick={() => setDrillDown({ metric: `phc:${p.phc_key}`, title: `${p.phc_display} — All Mothers` })}>
@@ -485,12 +420,11 @@ export default function DashboardOverview({ stats, user, onRefresh, syncing, set
                     <span className="text-[11px]" style={{ color: 'var(--ccmc-text-hint)' }}>{p.hrt_name}</span>
                   </td>
                   <td className="text-right font-bold" style={{ color: 'var(--ccmc-text)' }}>{p.total}</td>
-                  <td className="text-right font-semibold" style={{ color: phcClr.critical }}>{p.critical}</td>
-                  <td className="text-right font-semibold" style={{ color: phcClr.veryHigh }}>{p.very_high}</td>
                   <td className="text-right font-semibold" style={{ color: phcClr.dueSoon }}>{p.due_soon}</td>
                   <td className="text-right font-semibold" style={{ color: phcClr.delivered }}>{p.delivered}</td>
                   <td className="text-right">
-                    <span className={p.risk_pct > 50 ? 'badge-critical' : p.risk_pct > 25 ? 'badge-very-high' : 'badge-low'}>{p.risk_pct}%</span>
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded"
+                      style={{ background: 'rgba(66,165,245,0.12)', color: '#60A5FA' }}>{p.risk_pct}%</span>
                   </td>
                 </tr>
               ))}

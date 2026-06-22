@@ -170,12 +170,12 @@ export default function Sidebar({ activePage, setActivePage, user, onLogout, sta
               border: dark ? '1px solid rgba(239,68,68,0.14)' : '1px solid #FECACA',
             }}>
             <div className="text-[15px] font-bold leading-none"
-              style={{ color: dark ? '#EF4444' : '#DC2626' }}>
-              {stats.critical?.toLocaleString() || '—'}
+              style={{ color: dark ? '#F97316' : '#EA580C' }}>
+              {stats.due_7_days?.toLocaleString() || '—'}
             </div>
             <div className="text-[9px] font-semibold mt-1 uppercase tracking-wider"
-              style={{ color: dark ? 'var(--ccmc-text-hint)' : '#EF4444' }}>
-              Critical
+              style={{ color: dark ? 'var(--ccmc-text-hint)' : '#EA580C' }}>
+              Due ≤7 Days
             </div>
           </div>
         </div>
