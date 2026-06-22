@@ -216,6 +216,13 @@ function WeeklyCard({ hrt, maxDay, bright }) {
                   {d.not_connected > 0 && <div style={{ color: '#EF4444' }}>{d.not_connected}✗</div>}
                 </div>
               )}
+              {/* DEO calls marker */}
+              {d.deo_calls != null && !d.is_future && (
+                <div className="text-[7px] font-bold leading-none text-center mt-0.5"
+                  style={{ color: '#34D399' }}>
+                  {d.deo_calls}
+                </div>
+              )}
             </div>
           );
         })}
@@ -384,6 +391,8 @@ export default function HRTCallPerformance({ user, defaultDate }) {
                           <th key={c.key} className="text-center px-2 py-2.5 text-[9px] font-bold uppercase tracking-wider whitespace-nowrap"
                             style={{ color: c.color }}>{c.label}</th>
                         ))}
+                        <th className="text-center px-2 py-2.5 text-[9px] font-bold uppercase tracking-wider whitespace-nowrap"
+                          style={{ color: '#34D399' }}>DEO Calls</th>
                         <th className="px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider whitespace-nowrap"
                           style={{ color: bright ? '#64748B' : '#475569' }}>Last Call</th>
                       </tr>
@@ -448,6 +457,16 @@ export default function HRTCallPerformance({ user, defaultDate }) {
                               );
                             })}
 
+                            <td className="px-2 py-3 text-center">
+                              {hrt.deo_calls != null ? (
+                                <span className="text-sm font-bold px-2 py-0.5 rounded"
+                                  style={{ background: 'rgba(52,211,153,0.12)', color: '#34D399' }}>
+                                  {hrt.deo_calls}
+                                </span>
+                              ) : (
+                                <span className="text-[10px]" style={{ color: bright ? '#CBD5E1' : '#334155' }}>—</span>
+                              )}
+                            </td>
                             <td className="px-3 py-3">
                               <div className="text-[10px] whitespace-nowrap" style={{ color: bright ? '#94A3B8' : '#475569' }}>
                                 {hrt.last_call_date
@@ -484,6 +503,7 @@ export default function HRTCallPerformance({ user, defaultDate }) {
                     <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ background: '#22C55E' }} /> Connected</span>
                     <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ background: '#EF4444' }} /> Not Connected</span>
                     <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ background: '#60A5FA' }} /> Other</span>
+                    <span className="flex items-center gap-1"><span className="text-[9px] font-bold" style={{ color: '#34D399' }}>●</span> DEO Calls (MCH record)</span>
                     <span className="flex items-center gap-1.5 ml-2">
                       <AlertTriangle className="w-3 h-3" style={{ color: '#EF4444' }} />
                       Red border = ≥5 missed calls today

@@ -72,6 +72,32 @@ DEO_PERFORMANCE = {
     ],
 }
 
+# HRT code → DEO name (for cross-referencing MCH call center records)
+HRT_TO_DEO = {
+    "HRT1": "D. Abarna",
+    "HRT2": "Girija",
+    "HRT3": "Nivetha",
+    "HRT4": "M. Pavithraa",
+    "HRT5": "K. Pavithra",
+    "HRT6": "M. Ishwarya",
+    "HRT7": "Swetha",
+    "HRT8": "V. Abarna",
+}
+# Build quick lookup: deo_name → {deo_date_str: count}
+_DEO_CALLS_BY_NAME = {d["name"]: d["calls"] for d in DEO_PERFORMANCE["deos"]}
+
+def _deo_calls_for(hrt_code, iso_date):
+    """Return DEO connected-calls count for a given HRT on an ISO date, or None."""
+    deo_name = HRT_TO_DEO.get(hrt_code)
+    if not deo_name:
+        return None
+    try:
+        dt       = datetime.datetime.strptime(iso_date, "%Y-%m-%d")
+        deo_date = dt.strftime("%d.%m.%y")          # "15.06.26"
+    except Exception:
+        return None
+    return _DEO_CALLS_BY_NAME.get(deo_name, {}).get(deo_date)  # None if not in range
+
 # ── Auth ───────────────────────────────────────────────────────────────────
 USERS = {
     "DMCHO": {"password": "dmcho@2024", "role": "DMCHO", "name": "DMCHO Officer",
@@ -1704,6 +1730,7 @@ def hrt_call_performance():
             if entry.get("next_visit_date") == fu_date
         )
 
+        deo_c = _deo_calls_for(hrt_code, date_filter or today_str)
         result.append({
             "hrt_code":           hrt_code,
             "hrt_name":           hrt_name,
@@ -1721,6 +1748,7 @@ def hrt_call_performance():
             "followups_due":      fu_due,
             "last_call_date":     last_call_date,
             "last_call_time":     last_call_time,
+            "deo_calls":          deo_c,
         })
 
     result.sort(key=lambda x: x["hrt_code"])
@@ -1770,6 +1798,7 @@ def hrt_weekly_performance():
                 "attempted":     attempted,
                 "connected":     connected,
                 "not_connected": not_connected,
+                "deo_calls":     _deo_calls_for(hrt_code, date_str),
             })
             week_attempted     += attempted
             week_connected     += connected
