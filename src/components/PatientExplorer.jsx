@@ -7,24 +7,6 @@ import {
 
 const API = '/api';
 
-const RISK_BADGE = {
-  Critical:   { bg: 'rgba(239,68,68,0.15)',  color: '#FCA5A5',  border: 'rgba(239,68,68,0.3)'  },
-  'Very High':{ bg: 'rgba(249,115,22,0.15)', color: '#FDBA74',  border: 'rgba(249,115,22,0.3)' },
-  High:       { bg: 'rgba(234,179,8,0.15)',  color: '#FDE047',  border: 'rgba(234,179,8,0.3)'  },
-  Moderate:   { bg: 'rgba(59,130,246,0.15)', color: '#93C5FD',  border: 'rgba(59,130,246,0.3)' },
-  Low:        { bg: 'rgba(34,197,94,0.15)',  color: '#86EFAC',  border: 'rgba(34,197,94,0.3)'  },
-};
-
-function RiskBadge({ category }) {
-  const s = RISK_BADGE[category] || RISK_BADGE.Low;
-  return (
-    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-      style={{ background: s.bg, color: s.color, border: `1px solid ${s.border}` }}>
-      {category}
-    </span>
-  );
-}
-
 function InfoRow({ label, value, highlight }) {
   if (!value || value === '' || value === 'nan') return null;
   return (
@@ -85,8 +67,6 @@ function PatientProfile({ uid, onBack, user }) {
   );
   if (!p) return <div className="text-center py-20 text-slate-500">Patient not found</div>;
 
-  const rs = RISK_BADGE[p.risk_category] || RISK_BADGE.Low;
-
   return (
     <div className="space-y-4">
       <button onClick={onBack}
@@ -96,16 +76,15 @@ function PatientProfile({ uid, onBack, user }) {
 
       {/* Profile card */}
       <div className="rounded-xl p-5"
-        style={{ background: '#0F172A', border: `1px solid ${rs.border}` }}>
+        style={{ background: '#0F172A', border: '1px solid rgba(30,58,95,0.8)' }}>
         <div className="flex items-start gap-4">
           <div className="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{ background: rs.bg }}>
-            <User className="w-7 h-7" style={{ color: rs.color }} />
+            style={{ background: 'rgba(66,165,245,0.12)' }}>
+            <User className="w-7 h-7" style={{ color: '#42A5F5' }} />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3 flex-wrap">
               <h2 className="text-lg font-bold text-white">{p.mother_name || 'Unknown'}</h2>
-              <RiskBadge category={p.risk_category} />
               {p.is_delivered && (
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
                   style={{ background: 'rgba(34,197,94,0.15)', color: '#86EFAC', border: '1px solid rgba(34,197,94,0.3)' }}>
@@ -349,7 +328,6 @@ export default function PatientExplorer({ user, openPatient, defaultUid, onBack 
   const [loading,    setLoading]    = useState(false);
   const [page,       setPage]       = useState(1);
   const [search,     setSearch]     = useState('');
-  const [filterRisk, setFilterRisk] = useState('');
   const [filterPHC,  setFilterPHC]  = useState('');
   const [filterHRT,  setFilterHRT]  = useState('');
   const [phcList,    setPhcList]    = useState([]);
@@ -367,13 +345,13 @@ export default function PatientExplorer({ user, openPatient, defaultUid, onBack 
     setLoading(true);
     const params = new URLSearchParams({
       role: user.role, page, per_page: PER_PAGE,
-      search, risk_category: filterRisk, phc: filterPHC, hrt: filterHRT,
+      search, phc: filterPHC, hrt: filterHRT,
     });
     fetch(`${API}/patients?${params}`)
       .then(r => r.json())
       .then(d => { setPatients(d.patients || []); setTotal(d.total || 0); setLoading(false); })
       .catch(() => setLoading(false));
-  }, [user.role, page, search, filterRisk, filterPHC, filterHRT]);
+  }, [user.role, page, search, filterPHC, filterHRT]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -445,14 +423,6 @@ export default function PatientExplorer({ user, openPatient, defaultUid, onBack 
             <option key={p.phc_key} value={p.phc_key}>{p.phc_display} ({p.count})</option>
           ))}
         </select>
-        <select value={filterRisk} onChange={e => { setFilterRisk(e.target.value); setPage(1); }}
-          className="px-3 py-2 rounded-lg text-xs text-white outline-none"
-          style={{ background: 'var(--ccmc-panel)', border: '1px solid var(--ccmc-border)' }}>
-          <option value="">All Risk Levels</option>
-          {['Critical','Very High','High','Moderate','Low'].map(r => (
-            <option key={r} value={r}>{r}</option>
-          ))}
-        </select>
         {user.full_access && (
           <select value={filterHRT} onChange={e => { setFilterHRT(e.target.value); setPage(1); }}
             className="px-3 py-2 rounded-lg text-xs text-white outline-none"
@@ -478,22 +448,20 @@ export default function PatientExplorer({ user, openPatient, defaultUid, onBack 
             <thead>
               <tr>
                 <th>#</th><th>Mother Name</th><th>PHC / UPHC</th><th>HRT</th>
-                <th>Phone</th><th>EDD</th><th>Days Left</th>
-                <th>Risk</th><th>Action</th>
+                <th>Phone</th><th>EDD</th><th>Days Left</th><th>Action</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={10} className="text-center py-8">
+                <tr><td colSpan={8} className="text-center py-8">
                   <div className="w-5 h-5 border-2 rounded-full animate-spin mx-auto"
                     style={{ borderColor: '#1E3A5F', borderTopColor: '#42A5F5' }} />
                 </td></tr>
               ) : patients.length === 0 ? (
-                <tr><td colSpan={10} className="text-center py-8 text-slate-500 text-xs">
+                <tr><td colSpan={8} className="text-center py-8 text-slate-500 text-xs">
                   No patients found for current filters
                 </td></tr>
               ) : patients.map((p, i) => {
-                const rs = RISK_BADGE[p.risk_category] || RISK_BADGE.Low;
                 const daysLeft = p.days_to_edd;
                 return (
                   <tr key={p.uid} className="cursor-pointer" onClick={() => setProfileUid(p.uid)}>
@@ -518,12 +486,6 @@ export default function PatientExplorer({ user, openPatient, defaultUid, onBack 
                           {daysLeft < 0 ? `${Math.abs(daysLeft)}d overdue` : `${daysLeft}d`}
                         </span>
                       ) : '—'}
-                    </td>
-                    <td>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                        style={{ background: rs.bg, color: rs.color, border: `1px solid ${rs.border}` }}>
-                        {p.risk_category}
-                      </span>
                     </td>
                     <td>
                       <button

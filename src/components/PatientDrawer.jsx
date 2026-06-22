@@ -6,14 +6,6 @@ import {
 
 const API = '/api';
 
-const RISK_BADGE = {
-  Critical:    { bg: 'rgba(239,68,68,0.15)',  color: '#FCA5A5', border: 'rgba(239,68,68,0.3)'   },
-  'Very High': { bg: 'rgba(249,115,22,0.15)', color: '#FDBA74', border: 'rgba(249,115,22,0.3)'  },
-  High:        { bg: 'rgba(234,179,8,0.15)',  color: '#FDE047', border: 'rgba(234,179,8,0.3)'   },
-  Moderate:    { bg: 'rgba(59,130,246,0.15)', color: '#93C5FD', border: 'rgba(59,130,246,0.3)'  },
-  Low:         { bg: 'rgba(34,197,94,0.15)',  color: '#86EFAC', border: 'rgba(34,197,94,0.3)'   },
-};
-
 function InfoItem({ label, value }) {
   if (!value || value === '' || value === 'nan') return null;
   return (
@@ -47,8 +39,6 @@ export default function PatientDrawer({ uid, user, onClose, onViewFull }) {
   }, [uid]);
 
   if (!uid) return null;
-
-  const rs = RISK_BADGE[p?.risk_category] || RISK_BADGE.Low;
 
   return (
     <>
@@ -120,20 +110,16 @@ export default function PatientDrawer({ uid, user, onClose, onViewFull }) {
             <>
               {/* ── Profile header ──────────────────────────── */}
               <div className="rounded-xl p-4 flex items-start gap-4"
-                style={{ background: 'var(--ccmc-panel)', border: `1px solid ${rs.border}` }}>
+                style={{ background: 'var(--ccmc-panel)', border: '1px solid var(--ccmc-border)' }}>
                 <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
-                  style={{ background: rs.bg }}>
-                  <User className="w-6 h-6" style={{ color: rs.color }} />
+                  style={{ background: 'rgba(66,165,245,0.12)' }}>
+                  <User className="w-6 h-6" style={{ color: '#42A5F5' }} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap mb-1">
                     <h2 className="text-base font-bold" style={{ color: 'var(--ccmc-text)' }}>
                       {p.mother_name || 'Unknown'}
                     </h2>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                      style={{ background: rs.bg, color: rs.color, border: `1px solid ${rs.border}` }}>
-                      {p.risk_category} Risk
-                    </span>
                     {p.is_delivered && (
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
                         style={{ background: 'rgba(34,197,94,0.15)', color: '#86EFAC', border: '1px solid rgba(34,197,94,0.3)' }}>

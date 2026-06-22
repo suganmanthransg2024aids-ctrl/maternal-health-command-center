@@ -152,9 +152,6 @@ export default function FollowUpTracking({ user }) {
                   <tr key={r.uid}>
                     <td>
                       <div className="font-semibold text-white max-w-[140px] truncate">{r.mother_name || '—'}</div>
-                      <div className="text-[10px]" style={{ color: r.risk_category === 'Critical' ? '#FCA5A5' : '#64748B' }}>
-                        {r.risk_category}
-                      </div>
                     </td>
                     <td className="text-slate-400 text-xs">{r.phc_display}</td>
                     <td>
