@@ -102,7 +102,7 @@ def _deo_calls_for(hrt_code, iso_date):
 USERS = {
     "DMCHO": {"password": "dmcho@2026", "role": "DMCHO", "name": "DMCHO Officer",
               "phcs": [], "full_access": True},
-    "CHO":   {"password": "cho@2026",   "role": "CHO",   "name": "CHO Officer",
+    "CHO":   {"password": "cho@2026",   "role": "CHO",   "name": "City Health Officer",
               "phcs": [], "full_access": True},
     "HRT1":  {"password": "hrt1@2026",  "role": "HRT1",  "name": "Abarna D",
               "phcs": ["CTM", "PATTUNOOL", "NANJUNDAPURAM", "NEELIKONAMPALAYAM"], "full_access": False},
