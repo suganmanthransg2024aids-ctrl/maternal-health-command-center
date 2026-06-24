@@ -215,7 +215,7 @@ _sync_state = {
     "sync_count":     0,
     "auto_enabled":   True,
 }
-AUTO_SYNC_INTERVAL  = 30   # seconds — local mtime check interval
+AUTO_SYNC_INTERVAL  = 5    # seconds — local mtime check interval
 CLOUD_SYNC_INTERVAL = 300  # seconds — Google Sheets re-download interval (5 min)
 
 def _get_file_mtime():

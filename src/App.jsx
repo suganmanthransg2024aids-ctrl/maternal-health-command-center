@@ -184,14 +184,14 @@ export default function App() {
       } catch { /* silent — backend may be restarting */ }
     };
     checkSync();
-    const t = setInterval(checkSync, 30000);
+    const t = setInterval(checkSync, 10000);
     return () => clearInterval(t);
   }, [user, loadStats]);
 
-  // ── Periodic stats refresh every 60 s (catches manual Excel saves) ─────
+  // ── Periodic stats refresh every 10s (catches manual Excel saves) ──────
   useEffect(() => {
     if (!user) return;
-    const t = setInterval(() => { loadStats(); }, 60000);
+    const t = setInterval(() => { loadStats(); }, 10000);
     return () => clearInterval(t);
   }, [user, loadStats]);
 
