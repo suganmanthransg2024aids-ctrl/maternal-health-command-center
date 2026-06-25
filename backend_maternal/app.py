@@ -692,7 +692,9 @@ def _normalise_col(df, candidates, default=""):
 def load_excel():
     global _cache
     if not os.path.exists(EXCEL_PATH):
-        return pd.DataFrame()
+        _cache["df"] = pd.DataFrame()
+        _cache["ts"] = datetime.datetime.now().isoformat()
+        return
     xl  = pd.ExcelFile(EXCEL_PATH)
     frames = []
     for sheet in xl.sheet_names:
@@ -2166,7 +2168,8 @@ if __name__ == "__main__":
     print(f"Dist  : {FRONTEND_DIST}")
     load_excel()
     _sync_state["last_mtime"] = _get_file_mtime()
-    print(f"Loaded {len(_cache['df'])} records")
+    n = len(_cache["df"]) if _cache.get("df") is not None else 0
+    print(f"Loaded {n} records")
     _sync_thread = threading.Thread(
         target=_auto_sync_worker, daemon=True, name="ExcelAutoSync"
     )
