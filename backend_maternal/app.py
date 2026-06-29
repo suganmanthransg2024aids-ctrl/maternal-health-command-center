@@ -36,14 +36,14 @@ if os.path.exists(_cfg_file):
         pass
 
 # ── Cloud / Local data source ───────────────────────────────────────────────
-# EXCEL_URL: set this env var to the Google Sheets XLSX export URL for cloud sync.
-# When set, the app downloads the sheet on startup and every 5 minutes automatically.
-# Leave unset (or empty) to use the local Excel file via config.json / default path.
 EXCEL_URL = os.environ.get('EXCEL_URL', '').strip()
 
+_bundled_excel = os.path.join(BASE_DIR, 'data.xlsx')
 if EXCEL_URL:
-    # Cloud mode: Windows-safe temp path
     EXCEL_PATH = os.path.join(BASE_DIR, 'ccmc_data_cache.xlsx')
+elif os.path.exists(_bundled_excel):
+    # Docker/Render: bundled data.xlsx inside backend_maternal/
+    EXCEL_PATH = _bundled_excel
 else:
     _default_excel = os.path.join(BASE_DIR, '..', '..', '..', 'Downloads',
                                   'ccmc maternal',
