@@ -247,22 +247,6 @@ function CountTable({ factors, selected, onSelect, bright }) {
               </tr>
             );
           })}
-          {/* Total row */}
-          <tr style={{ background: bright ? '#F0F9FF' : 'rgba(37,99,235,0.08)', borderTop: bright ? '2px solid #BFDBFE' : '2px solid rgba(37,99,235,0.3)' }}>
-            <td className="px-4 py-3" />
-            <td className="px-4 py-3">
-              <span className="text-[12px] font-bold" style={{ color: bright ? '#1D4ED8' : '#60A5FA' }}>
-                TOTAL (multi-count per patient)
-              </span>
-            </td>
-            <td className="px-4 py-3 text-right">
-              <span className="text-[14px] font-bold" style={{ color: bright ? '#1D4ED8' : '#60A5FA', fontFamily: 'Poppins,sans-serif' }}>
-                {grandTotal.toLocaleString()}
-              </span>
-            </td>
-            <td className="px-4 py-3 hidden md:table-cell" />
-            <td className="px-4 py-3" />
-          </tr>
         </tbody>
       </table>
     </div>
