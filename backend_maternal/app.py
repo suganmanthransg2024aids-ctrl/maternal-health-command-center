@@ -1586,6 +1586,126 @@ def phc_analytics():
     result.sort(key=lambda x: x["total"], reverse=True)
     return jsonify(result)
 
+
+@app.route("/api/phc/ai-insights")
+def phc_ai_insights():
+    role = request.args.get("role", "DMCHO")
+    df   = filter_by_role(get_data(), role)
+    today = datetime.date.today()
+
+    insights = []
+    for phc_key, group in df.groupby("phc_key"):
+        hrt_info   = PHC_MAP.get(phc_key, {})
+        total      = len(group)
+        if total == 0:
+            continue
+
+        critical   = int((group["risk_category"] == "Critical").sum())
+        very_h     = int((group["risk_category"] == "Very High").sum())
+        high       = int((group["risk_category"] == "High").sum())
+        delivered  = int(group["is_delivered"].sum())
+        due_soon   = int((group["days_to_edd"].between(0, 7)).sum())
+        due_14     = int((group["days_to_edd"].between(0, 14)).sum())
+        no_phone   = int((group["cell_no"].str.strip() == "").sum())
+        overdue    = int((group["days_to_edd"] < 0).sum())
+        risk_pct   = round((critical + very_h + high) / total * 100, 1)
+
+        # ── AI Risk Score (0–100) ────────────────────────────────────────────
+        score  = risk_pct                          * 0.35   # max 35
+        score += (due_soon / total * 100)          * 0.25   # max 25
+        score += (no_phone / total * 100)          * 0.20   # max 20
+        score += (overdue  / total * 100)          * 0.20   # max 20
+        score  = round(min(100, score), 1)
+
+        # ── Grade ────────────────────────────────────────────────────────────
+        if   score < 20: grade = "A"
+        elif score < 40: grade = "B"
+        elif score < 60: grade = "C"
+        else:            grade = "D"
+
+        # ── Alert type ───────────────────────────────────────────────────────
+        if   due_14 >= 8:                         alert = "Delivery Surge"
+        elif no_phone >= 5 and risk_pct > 35:     alert = "Intervention Needed"
+        elif risk_pct > 50 or overdue >= 5:       alert = "At-Risk"
+        else:                                      alert = "Stable"
+
+        # ── Top risk factors for this PHC ────────────────────────────────────
+        factor_counts = {}
+        for _, row in group.iterrows():
+            for f in _get_canonical_factors(row):
+                factor_counts[f] = factor_counts.get(f, 0) + 1
+        top_factors = sorted(factor_counts.items(), key=lambda x: x[1], reverse=True)[:3]
+
+        # ── AI-generated summary (template-based, real data) ─────────────────
+        phc_name = hrt_info.get("phc_display", phc_key)
+        hrt_name = hrt_info.get("hrt_name", "")
+
+        lines = []
+
+        # Opening sentence
+        if grade == "A":
+            lines.append(f"{phc_name} is currently stable with {total} registered mothers and a low intervention burden.")
+        elif grade == "B":
+            lines.append(f"{phc_name} has {total} mothers under monitoring with moderate risk activity requiring routine follow-up.")
+        elif grade == "C":
+            lines.append(f"{phc_name} is showing elevated risk patterns across {total} mothers — active intervention is advised.")
+        else:
+            lines.append(f"{phc_name} is a high-priority PHC with {total} mothers and critical risk indicators that need immediate attention.")
+
+        # Risk detail
+        if critical + very_h > 0:
+            lines.append(f"{critical + very_h} mother{'s' if critical+very_h>1 else ''} are in the Critical or Very High risk tier ({risk_pct}% overall risk burden).")
+        elif risk_pct > 0:
+            lines.append(f"Overall risk burden stands at {risk_pct}%, primarily in the High category.")
+
+        # Delivery urgency
+        if due_soon > 0:
+            lines.append(f"{due_soon} mother{'s are' if due_soon>1 else ' is'} expected to deliver within 7 days — priority contact required.")
+        if overdue > 0:
+            lines.append(f"{overdue} mother{'s have' if overdue>1 else ' has'} passed their EDD and {'are' if overdue>1 else 'is'} awaiting delivery confirmation.")
+
+        # Unreachable
+        if no_phone >= 5:
+            lines.append(f"{no_phone} mothers have no registered phone number — field visits are essential for these cases.")
+        elif no_phone > 0:
+            lines.append(f"{no_phone} mother{'s have' if no_phone>1 else ' has'} no phone contact and {'require' if no_phone>1 else 'requires'} field follow-up.")
+
+        # Top factors
+        if top_factors:
+            factor_str = ", ".join(f"{f} ({c})" for f, c in top_factors)
+            lines.append(f"Dominant risk conditions: {factor_str}.")
+
+        # HRT recommendation
+        if alert in ("Delivery Surge", "Intervention Needed", "At-Risk"):
+            lines.append(f"Assigned HRT ({hrt_name}) should prioritise this PHC in today's workflow.")
+
+        summary = " ".join(lines)
+
+        insights.append({
+            "phc_key":     phc_key,
+            "phc_display": phc_name,
+            "hrt_code":    hrt_info.get("hrt_code", ""),
+            "hrt_name":    hrt_name,
+            "total":       total,
+            "risk_score":  score,
+            "grade":       grade,
+            "alert":       alert,
+            "risk_pct":    risk_pct,
+            "due_soon":    due_soon,
+            "due_14":      due_14,
+            "no_phone":    no_phone,
+            "overdue":     overdue,
+            "critical":    critical,
+            "very_high":   very_h,
+            "high":        high,
+            "top_factors": [{"name": f, "count": c} for f, c in top_factors],
+            "summary":     summary,
+        })
+
+    insights.sort(key=lambda x: x["risk_score"], reverse=True)
+    return jsonify(insights)
+
+
 @app.route("/api/phc-audit")
 def phc_audit():
     """Full PHC mapping validation report — compares configured vs detected PHCs."""
