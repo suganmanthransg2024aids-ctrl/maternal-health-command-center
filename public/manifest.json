@@ -1,0 +1,41 @@
+{
+  "name": "CCMC Maternal Health Tracker",
+  "short_name": "CCMC Health",
+  "description": "Coimbatore City Municipal Corporation - High Risk Mother Tracker",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#020617",
+  "theme_color": "#1e3a5f",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["health", "medical"],
+  "shortcuts": [
+    {
+      "name": "Daily Workflow",
+      "short_name": "My Tasks",
+      "description": "View today's tasks and log calls",
+      "url": "/?page=workflow",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Approval Queue",
+      "short_name": "Approvals",
+      "description": "Review HRT status updates",
+      "url": "/?page=approvals",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

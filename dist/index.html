@@ -2,11 +2,27 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="CanisIntel is an enterprise-grade municipal analytics and public health intelligence platform for Coimbatore City Municipal Corporation (CCMC) East Zone, tracking dog populations, sterilization, vaccination, and rabies risk using real GIS markers." />
-    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="description" content="CCMC Maternal Health Tracker — High Risk Mother Monitoring for Coimbatore City Municipal Corporation" />
+
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#1e3a5f" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="CCMC Health" />
+
+    <!-- Apple touch icons -->
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192.png" />
+    <link rel="apple-touch-icon" sizes="512x512" href="/icons/icon-512.png" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
     <!-- Title -->
-    <title>HIGH RISK MOTHER TRACKER – CCMC | Maternal Health Monitoring</title>
+    <title>CCMC Maternal Health Tracker</title>
 
     <!-- Google Fonts: Inter + Poppins -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -19,6 +35,8 @@
         background-color: #020617;
         color: #F1F5F9;
         margin: 0;
+        -webkit-tap-highlight-color: transparent;
+        overscroll-behavior: none;
       }
     </style>
     <script type="module" crossorigin src="/assets/index-B9rMGifg.js"></script>
@@ -26,5 +44,12 @@
   </head>
   <body class="bg-background text-text antialiased">
     <div id="root"></div>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(() => {});
+        });
+      }
+    </script>
   </body>
 </html>
