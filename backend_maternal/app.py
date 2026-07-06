@@ -225,14 +225,26 @@ def _get_file_mtime():
         return None
 
 def _download_excel():
-    """Download Excel from EXCEL_URL (Google Sheets export). Returns True if data changed."""
+    """Download Excel from EXCEL_URL. Supports GitHub release assets (with GITHUB_TOKEN) and public URLs."""
     if not EXCEL_URL:
         return False
     try:
         import urllib.request
         tmp = EXCEL_PATH + '.download'
-        urllib.request.urlretrieve(EXCEL_URL, tmp)
-        # Compare with existing to detect real changes
+        github_token = os.environ.get('GITHUB_TOKEN', '').strip()
+        if github_token and 'api.github.com' in EXCEL_URL:
+            req = urllib.request.Request(EXCEL_URL, headers={
+                'Authorization': f'token {github_token}',
+                'Accept': 'application/octet-stream',
+                'User-Agent': 'CCMC-Tracker/1.0'
+            })
+            with urllib.request.urlopen(req) as resp, open(tmp, 'wb') as f:
+                f.write(resp.read())
+        else:
+            opener = urllib.request.build_opener()
+            opener.addheaders = [('User-Agent', 'Mozilla/5.0 CCMC-Tracker')]
+            urllib.request.install_opener(opener)
+            urllib.request.urlretrieve(EXCEL_URL, tmp)
         changed = True
         if os.path.exists(EXCEL_PATH):
             with open(EXCEL_PATH, 'rb') as f_old, open(tmp, 'rb') as f_new:

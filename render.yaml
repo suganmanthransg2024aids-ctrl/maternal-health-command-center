@@ -1,4 +1,4 @@
-﻿services:
+services:
   - type: web
     name: ccmc-maternal-tracker
     env: docker
@@ -7,7 +7,6 @@
     healthCheckPath: /api/health
     envVars:
       - key: EXCEL_URL
-        value: https://docs.google.com/spreadsheets/d/1T1sthQZftwJEyve2wuyAwVZ55sr8TvgwhQJFEdEmAmA/export?format=xlsx
+        value: https://api.github.com/repos/suganmanthransg2024aids-ctrl/maternal-health-command-center/releases/assets/467887734
       - key: PYTHONUNBUFFERED
         value: "1"
-# redeployed: 2026-07-06
