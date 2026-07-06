@@ -2232,7 +2232,7 @@ def calls_today():
     return jsonify([dict(r) for r in rows])
 
 @app.route("/api/calls/history/<uid>")
-def call_history(uid):
+def app_call_history(uid):
     with _db() as conn:
         rows = conn.execute("SELECT * FROM call_logs WHERE mother_id=? ORDER BY call_time DESC LIMIT 30", (uid,)).fetchall()
     return jsonify([dict(r) for r in rows])
