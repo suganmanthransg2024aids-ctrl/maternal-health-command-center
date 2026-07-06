@@ -15,6 +15,7 @@ import re
 import hashlib
 import threading
 import time
+import sqlite3
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -55,6 +56,7 @@ PORT = int(os.environ.get('PORT', _cfg.get('port', 8001)))
 HOST = _cfg.get('host', '0.0.0.0')
 CALLS_FILE    = os.path.join(BASE_DIR, 'call_tracking.json')
 FOLLOWUP_FILE = os.path.join(BASE_DIR, 'followup_data.json')
+DB_PATH       = os.path.join(BASE_DIR, 'logs.db')
 
 # ── DEO Call Performance — MCH Call Center June 2026 ──────────────────────
 DEO_PERFORMANCE = {
@@ -2155,6 +2157,220 @@ def api_risk_factor_analytics():
     return jsonify(result)
 
 
+# ── Activity Log DB (SQLite) ───────────────────────────────────────────────
+
+def _db():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+def init_db():
+    with _db() as conn:
+        conn.executescript("""
+        CREATE TABLE IF NOT EXISTS call_logs (
+            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            mother_id    TEXT NOT NULL,
+            mother_name  TEXT,
+            phc          TEXT,
+            hrt_user     TEXT NOT NULL,
+            call_date    TEXT NOT NULL,
+            call_time    TEXT NOT NULL,
+            outcome      TEXT NOT NULL,
+            notes        TEXT
+        );
+        CREATE TABLE IF NOT EXISTS status_updates (
+            id               INTEGER PRIMARY KEY AUTOINCREMENT,
+            mother_id        TEXT NOT NULL,
+            mother_name      TEXT,
+            phc              TEXT,
+            hrt_user         TEXT NOT NULL,
+            new_status       TEXT NOT NULL,
+            notes            TEXT,
+            submitted_at     TEXT NOT NULL,
+            approved_by      TEXT,
+            approved_at      TEXT,
+            is_approved      INTEGER DEFAULT 0,
+            rejection_reason TEXT
+        );
+        """)
+
+# ── Activity endpoints ─────────────────────────────────────────────────────
+
+@app.route("/api/calls/log", methods=["POST"])
+def log_call():
+    b = request.get_json() or {}
+    mother_id   = b.get("mother_id", "").strip()
+    hrt_user    = b.get("hrt_user", "").strip()
+    outcome     = b.get("outcome", "").strip()
+    notes       = b.get("notes", "").strip()
+    if not (mother_id and hrt_user and outcome):
+        return jsonify({"error": "mother_id, hrt_user and outcome are required"}), 400
+
+    df = get_data()
+    row = df[df["uid"] == mother_id] if "uid" in df.columns else pd.DataFrame()
+    mother_name = str(row.iloc[0].get("mother_name", "")) if len(row) else ""
+    phc         = str(row.iloc[0].get("phc_key", ""))     if len(row) else ""
+
+    now = datetime.datetime.now()
+    with _db() as conn:
+        cur = conn.execute(
+            "INSERT INTO call_logs (mother_id,mother_name,phc,hrt_user,call_date,call_time,outcome,notes) VALUES (?,?,?,?,?,?,?,?)",
+            (mother_id, mother_name, phc, hrt_user, now.strftime("%Y-%m-%d"), now.isoformat(timespec="seconds"), outcome, notes)
+        )
+        new_id = cur.lastrowid
+    return jsonify({"success": True, "id": new_id})
+
+@app.route("/api/calls/today")
+def calls_today():
+    role = request.args.get("role", "").upper()
+    date = request.args.get("date", datetime.date.today().isoformat())
+    with _db() as conn:
+        if role in ("CHO", "DMCHO"):
+            rows = conn.execute("SELECT * FROM call_logs WHERE call_date=? ORDER BY call_time DESC", (date,)).fetchall()
+        else:
+            rows = conn.execute("SELECT * FROM call_logs WHERE call_date=? AND hrt_user=? ORDER BY call_time DESC", (date, role)).fetchall()
+    return jsonify([dict(r) for r in rows])
+
+@app.route("/api/calls/history/<uid>")
+def call_history(uid):
+    with _db() as conn:
+        rows = conn.execute("SELECT * FROM call_logs WHERE mother_id=? ORDER BY call_time DESC LIMIT 30", (uid,)).fetchall()
+    return jsonify([dict(r) for r in rows])
+
+@app.route("/api/tasks/today")
+def tasks_today():
+    role = request.args.get("role", "").upper()
+    today = datetime.date.today()
+    today_str = today.isoformat()
+
+    df = get_data_for_role(role)
+    if df is None or df.empty:
+        return jsonify([])
+
+    date_col = None
+    for c in ["next_followup_date", "followup_date", "next_visit", "edd"]:
+        if c in df.columns:
+            date_col = c
+            break
+    if not date_col:
+        return jsonify([])
+
+    def parse_date(v):
+        try:
+            if pd.isna(v): return None
+            if isinstance(v, (datetime.date, datetime.datetime)): return v if isinstance(v, datetime.date) else v.date()
+            return datetime.date.fromisoformat(str(v)[:10])
+        except: return None
+
+    df["_due"] = df[date_col].apply(parse_date)
+    due_today = df[df["_due"] == today]
+
+    with _db() as conn:
+        logged = conn.execute("SELECT mother_id, outcome, notes, call_time FROM call_logs WHERE call_date=? AND hrt_user=?", (today_str, role)).fetchall()
+    logged_map = {r["mother_id"]: dict(r) for r in logged}
+
+    result = []
+    name_col = next((c for c in ["mother_name","name","patient_name"] if c in df.columns), None)
+    phc_col  = next((c for c in ["phc_key","phc","phc_name"] if c in df.columns), None)
+    ph_col   = next((c for c in ["phone","mobile","contact","phone_number"] if c in df.columns), None)
+    uid_col  = "uid" if "uid" in df.columns else None
+
+    for _, r in due_today.iterrows():
+        uid_val = str(r[uid_col]) if uid_col else ""
+        log = logged_map.get(uid_val, {})
+        result.append({
+            "uid":      uid_val,
+            "name":     str(r[name_col]) if name_col else "",
+            "phc":      str(r[phc_col])  if phc_col  else "",
+            "phone":    str(r[ph_col])   if ph_col   else "",
+            "due_date": today_str,
+            "called":   uid_val in logged_map,
+            "outcome":  log.get("outcome"),
+            "notes":    log.get("notes"),
+            "call_time":log.get("call_time"),
+        })
+
+    result.sort(key=lambda x: (x["called"], x["name"]))
+    return jsonify(result)
+
+@app.route("/api/status/update", methods=["POST"])
+def submit_status_update():
+    b = request.get_json() or {}
+    mother_id  = b.get("mother_id", "").strip()
+    hrt_user   = b.get("hrt_user", "").strip()
+    new_status = b.get("new_status", "").strip()
+    notes      = b.get("notes", "").strip()
+    if not (mother_id and hrt_user and new_status):
+        return jsonify({"error": "mother_id, hrt_user and new_status required"}), 400
+
+    df = get_data()
+    row = df[df["uid"] == mother_id] if "uid" in df.columns else pd.DataFrame()
+    mother_name = str(row.iloc[0].get("mother_name", "")) if len(row) else ""
+    phc         = str(row.iloc[0].get("phc_key", ""))     if len(row) else ""
+
+    now = datetime.datetime.now().isoformat(timespec="seconds")
+    with _db() as conn:
+        cur = conn.execute(
+            "INSERT INTO status_updates (mother_id,mother_name,phc,hrt_user,new_status,notes,submitted_at) VALUES (?,?,?,?,?,?,?)",
+            (mother_id, mother_name, phc, hrt_user, new_status, notes, now)
+        )
+        new_id = cur.lastrowid
+    return jsonify({"success": True, "id": new_id})
+
+@app.route("/api/approvals")
+def get_approvals():
+    with _db() as conn:
+        pending = conn.execute("SELECT * FROM status_updates WHERE is_approved=0 ORDER BY submitted_at DESC").fetchall()
+        recent  = conn.execute("SELECT * FROM status_updates WHERE is_approved!=0 ORDER BY approved_at DESC LIMIT 30").fetchall()
+    return jsonify({"pending": [dict(r) for r in pending], "recent": [dict(r) for r in recent]})
+
+@app.route("/api/approvals/<int:aid>/approve", methods=["POST"])
+def approve_status(aid):
+    b = request.get_json() or {}
+    approved_by = b.get("approved_by", "CHO").strip()
+    now = datetime.datetime.now().isoformat(timespec="seconds")
+    with _db() as conn:
+        conn.execute("UPDATE status_updates SET is_approved=1, approved_by=?, approved_at=? WHERE id=?", (approved_by, now, aid))
+    return jsonify({"success": True})
+
+@app.route("/api/approvals/<int:aid>/reject", methods=["POST"])
+def reject_status(aid):
+    b = request.get_json() or {}
+    rejected_by = b.get("rejected_by", "CHO").strip()
+    reason      = b.get("reason", "").strip()
+    now = datetime.datetime.now().isoformat(timespec="seconds")
+    with _db() as conn:
+        conn.execute("UPDATE status_updates SET is_approved=-1, approved_by=?, approved_at=?, rejection_reason=? WHERE id=?", (rejected_by, now, reason, aid))
+    return jsonify({"success": True})
+
+@app.route("/api/daily-summary")
+def daily_summary():
+    date = request.args.get("date", datetime.date.today().isoformat())
+    with _db() as conn:
+        rows = conn.execute(
+            "SELECT hrt_user, outcome, COUNT(*) as cnt FROM call_logs WHERE call_date=? GROUP BY hrt_user, outcome",
+            (date,)
+        ).fetchall()
+        pending_count = conn.execute("SELECT COUNT(*) FROM status_updates WHERE is_approved=0").fetchone()[0]
+    summary = {}
+    for r in rows:
+        u = r["hrt_user"]
+        if u not in summary:
+            summary[u] = {"total": 0, "contacted": 0, "unreachable": 0, "no_answer": 0, "busy": 0}
+        summary[u]["total"]          += r["cnt"]
+        summary[u][r["outcome"].lower().replace(" ", "_")] = r["cnt"]
+    return jsonify({"by_hrt": summary, "pending_approvals": pending_count, "date": date})
+
+def get_data_for_role(role):
+    df = get_data()
+    if df is None or df.empty: return df
+    if role in ("CHO", "DMCHO"): return df
+    user = next((u for u in USERS.values() if u.get("role") == role), None)
+    if not user: return pd.DataFrame()
+    allowed_phcs = user.get("phcs", [])
+    if "phc_key" not in df.columns: return pd.DataFrame()
+    return df[df["phc_key"].isin(allowed_phcs)]
+
 # ── Static React frontend ──────────────────────────────────────────────────
 @app.route("/", defaults={"path": ""})
 @app.route("/<path:path>")
@@ -2186,6 +2402,8 @@ if __name__ == "__main__":
         target=_auto_sync_worker, daemon=True, name="ExcelAutoSync"
     )
     _sync_thread.start()
+    init_db()
+    print(f"Activity DB: {DB_PATH}")
     print(f"Auto-sync : ON")
     print(f"Open      : http://localhost:{PORT}")
     print("Flask ready on", PORT)

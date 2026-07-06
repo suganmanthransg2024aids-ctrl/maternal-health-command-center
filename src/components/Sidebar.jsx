@@ -3,7 +3,7 @@ import { useTheme } from '../ThemeContext';
 import {
   LayoutDashboard, ShieldCheck, Users, Activity, Baby,
   Phone, CalendarCheck, Bell, BarChart2, FileText,
-  LogOut, TrendingUp, ChevronRight,
+  LogOut, TrendingUp, ChevronRight, ClipboardList, CheckSquare,
 } from 'lucide-react';
 
 const NAV_SECTIONS = [
@@ -11,6 +11,13 @@ const NAV_SECTIONS = [
     label: 'Overview',
     items: [
       { id: 'overview',   label: 'Dashboard',           icon: LayoutDashboard },
+    ],
+  },
+  {
+    label: 'Daily Work',
+    items: [
+      { id: 'workflow',   label: 'Daily Workflow',       icon: CheckSquare,    hrtOnly: true },
+      { id: 'approvals',  label: 'Approval Queue',       icon: ClipboardList,  execOnly: false, supervisorOnly: true },
     ],
   },
   {
@@ -183,14 +190,28 @@ export default function Sidebar({ activePage, setActivePage, user, onLogout, sta
 
       {/* ── Navigation ─────────────────────────────────────────────────── */}
       <nav className="flex-1 px-3 py-2 overflow-y-auto">
-        {sections.map((section) => (
+        {sections.map((section) => {
+          const visibleItems = section.items.filter(({ hrtOnly, supervisorOnly, execOnly }) => {
+            const role = user?.role || '';
+            const isHRT = role.startsWith('HRT');
+            const isSupervisor = role === 'CHO' || role === 'DMCHO';
+            const isExecRole = user?.full_access === true;
+            if (hrtOnly && !isHRT) return false;
+            if (supervisorOnly && !isSupervisor && !isExecRole) return false;
+            if (execOnly && !isExecRole) return false;
+            return true;
+          });
+          if (visibleItems.length === 0) return null;
+          return (
           <div key={section.label}>
             <div className="nav-section-label">{section.label}</div>
             <div className="space-y-0.5">
-              {section.items.map(({ id, label, icon: Icon, execOnly }) => {
+              {visibleItems.map(({ id, label, icon: Icon, execOnly, hrtOnly, supervisorOnly }) => {
                 const isActive = activePage === id || (id === 'patients' && activePage === 'patient-profile');
                 const itemAccent = execOnly
                   ? (dark ? '#34D399' : '#059669')
+                  : hrtOnly ? '#F472B6'
+                  : supervisorOnly ? '#F97316'
                   : activeNavAccent;
                 return (
                   <button
@@ -224,7 +245,8 @@ export default function Sidebar({ activePage, setActivePage, user, onLogout, sta
               })}
             </div>
           </div>
-        ))}
+          );
+        })}
       </nav>
 
       {/* ── Footer ─────────────────────────────────────────────────────── */}

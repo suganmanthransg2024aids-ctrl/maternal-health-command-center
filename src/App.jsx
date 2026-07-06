@@ -16,6 +16,8 @@ import PHCAnalytics         from './components/PHCAnalytics';
 import Reports              from './components/Reports';
 import ExecutiveAnalytics   from './components/ExecutiveAnalytics';
 import PatientDrawer        from './components/PatientDrawer';
+import DailyWorkflow        from './components/DailyWorkflow';
+import ApprovalQueue        from './components/ApprovalQueue';
 
 const API = '/api';
 
@@ -215,6 +217,10 @@ export default function App() {
       case 'overview':
         return <DashboardOverview stats={stats} user={user} onRefresh={handleRefresh}
                   syncing={syncing} setActivePage={setActivePage} openPatient={openPatient} />;
+      case 'workflow':
+        return <DailyWorkflow user={user} />;
+      case 'approvals':
+        return <ApprovalQueue user={user} />;
       case 'executive':
         return <ExecutiveAnalytics user={user} />;
       case 'validation':
