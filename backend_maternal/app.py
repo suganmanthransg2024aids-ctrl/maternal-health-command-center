@@ -1706,6 +1706,65 @@ def phc_ai_insights():
     return jsonify(insights)
 
 
+@app.route("/api/phc/<phc_key>/mothers")
+def phc_mothers(phc_key):
+    role = request.args.get("role", "DMCHO")
+    df   = filter_by_role(get_data(), role)
+
+    group = df[df["phc_key"] == phc_key]
+    if group.empty:
+        return jsonify([])
+
+    mothers = []
+    for _, row in group.iterrows():
+        days = row.get("days_to_edd", None)
+        try:
+            days = int(days) if days is not None and not pd.isna(days) else None
+        except Exception:
+            days = None
+
+        hb_raw = row.get("hb", "")
+        hb_str = str(hb_raw).strip() if hb_raw and str(hb_raw).strip() not in ("", "nan") else "—"
+
+        mothers.append({
+            "uid":            row.get("uid", ""),
+            "row_no":         row.get("row_no", ""),
+            "mother_name":    row.get("mother_name", ""),
+            "cell_no":        str(row.get("cell_no", "")).strip(),
+            "husband_name":   str(row.get("husband_name", "")).strip(),
+            "address":        str(row.get("address", "")).strip(),
+            "edd":            row.get("edd", ""),
+            "days_to_edd":    days,
+            "weeks":          row.get("weeks", ""),
+            "hb":             hb_str,
+            "blood_group":    str(row.get("blood_group", "")).strip(),
+            "risk_category":  row.get("risk_category", ""),
+            "risk_score":     row.get("risk_score", 0),
+            "high_risk_raw":  str(row.get("high_risk_raw", "")).strip(),
+            "is_delivered":   bool(row.get("is_delivered", False)),
+            "delivery_date":  row.get("delivery_date", ""),
+            "last_visit_date":str(row.get("last_visit_date", "")).strip(),
+            "next_visit_date":str(row.get("next_visit_date", "")).strip(),
+            "bp":             str(row.get("bp", "")).strip(),
+            "gravida":        str(row.get("gravida", "")).strip(),
+            "referral":       str(row.get("referral", "")).strip(),
+        })
+
+    # Sort: overdue first, then by days_to_edd ascending, delivered last
+    def sort_key(m):
+        d = m["days_to_edd"]
+        if m["is_delivered"]:
+            return (2, 0)
+        if d is None:
+            return (1, 9999)
+        if d < 0:
+            return (0, d)
+        return (1, d)
+
+    mothers.sort(key=sort_key)
+    return jsonify(mothers)
+
+
 @app.route("/api/phc-audit")
 def phc_audit():
     """Full PHC mapping validation report — compares configured vs detected PHCs."""

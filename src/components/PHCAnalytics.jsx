@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
-  BarChart2, RefreshCw, Brain, AlertTriangle,
-  TrendingUp, Users, ChevronDown, ChevronUp,
-  Zap, ShieldAlert, CheckCircle, Activity,
+  RefreshCw, Brain, AlertTriangle,
+  ChevronDown, ChevronUp, Search,
+  Zap, ShieldAlert, CheckCircle, Phone, PhoneOff,
+  Baby, Clock, List,
 } from 'lucide-react';
 
 const API = '/api';
@@ -62,10 +63,56 @@ function ScoreBar({ score }) {
   );
 }
 
-function PHCCard({ p, expanded, onToggle }) {
-  const color   = HRT_COLORS[p.hrt_code] || '#42A5F5';
-  const grade   = GRADE_META[p.grade]    || GRADE_META.B;
-  const alertM  = ALERT_META[p.alert]    || ALERT_META['Stable'];
+const RISK_COLOR = {
+  'Critical':  '#EF4444',
+  'Very High': '#F97316',
+  'High':      '#F59E0B',
+  'Moderate':  '#60A5FA',
+  'Low':       '#22C55E',
+};
+
+function DaysChip({ days, delivered }) {
+  if (delivered) return <span className="text-[10px] font-bold px-2 py-0.5 rounded" style={{ background: 'rgba(34,197,94,0.15)', color: '#22C55E' }}>Delivered</span>;
+  if (days === null || days === undefined) return <span className="text-slate-600 text-[10px]">—</span>;
+  if (days < 0)  return <span className="text-[10px] font-bold px-2 py-0.5 rounded" style={{ background: 'rgba(239,68,68,0.15)', color: '#EF4444' }}>Overdue {Math.abs(days)}d</span>;
+  if (days <= 7) return <span className="text-[10px] font-bold px-2 py-0.5 rounded" style={{ background: 'rgba(167,139,250,0.15)', color: '#A78BFA' }}>{days}d</span>;
+  if (days <= 30)return <span className="text-[10px] font-bold px-2 py-0.5 rounded" style={{ background: 'rgba(245,158,11,0.1)', color: '#F59E0B' }}>{days}d</span>;
+  return <span className="text-[10px] text-slate-400">{days}d</span>;
+}
+
+function PHCCard({ p, expanded, onToggle, user, openPatient }) {
+  const color  = HRT_COLORS[p.hrt_code] || '#42A5F5';
+  const grade  = GRADE_META[p.grade]    || GRADE_META.B;
+  const [mothers,     setMothers]     = useState(null);
+  const [loadingM,    setLoadingM]    = useState(false);
+  const [search,      setSearch]      = useState('');
+  const [motherTab,   setMotherTab]   = useState('all'); // all | overdue | due7 | nophone
+
+  const loadMothers = useCallback(() => {
+    if (mothers !== null) return;
+    setLoadingM(true);
+    fetch(`${API}/phc/${p.phc_key}/mothers?role=${user.role}`)
+      .then(r => r.json())
+      .then(d => { setMothers(d); setLoadingM(false); })
+      .catch(() => setLoadingM(false));
+  }, [p.phc_key, user.role, mothers]);
+
+  useEffect(() => {
+    if (expanded) loadMothers();
+  }, [expanded, loadMothers]);
+
+  const filteredMothers = (mothers || []).filter(m => {
+    const q = search.toLowerCase();
+    const matchSearch = !q ||
+      m.mother_name.toLowerCase().includes(q) ||
+      m.cell_no.includes(q) ||
+      m.rch_id?.includes(q);
+    if (!matchSearch) return false;
+    if (motherTab === 'overdue') return !m.is_delivered && m.days_to_edd !== null && m.days_to_edd < 0;
+    if (motherTab === 'due7')    return !m.is_delivered && m.days_to_edd !== null && m.days_to_edd >= 0 && m.days_to_edd <= 7;
+    if (motherTab === 'nophone') return !m.cell_no || m.cell_no === '';
+    return true;
+  });
 
   return (
     <div className="rounded-xl overflow-hidden transition-all"
@@ -74,7 +121,6 @@ function PHCCard({ p, expanded, onToggle }) {
       {/* Main row */}
       <div className="flex items-center gap-3 px-4 py-3 cursor-pointer" onClick={onToggle}>
         <GradeBadge grade={p.grade} />
-
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm font-bold text-white truncate">{p.phc_display}</span>
@@ -83,11 +129,8 @@ function PHCCard({ p, expanded, onToggle }) {
               {p.hrt_code} · {p.hrt_name}
             </span>
           </div>
-          <div className="mt-1.5">
-            <ScoreBar score={p.risk_score} />
-          </div>
+          <div className="mt-1.5"><ScoreBar score={p.risk_score} /></div>
         </div>
-
         <div className="flex items-center gap-3 flex-shrink-0">
           <AlertPill alert={p.alert} />
           <div className="text-right hidden sm:block">
@@ -100,62 +143,172 @@ function PHCCard({ p, expanded, onToggle }) {
         </div>
       </div>
 
-      {/* Expanded AI detail */}
+      {/* Expanded section */}
       {expanded && (
-        <div className="px-4 pb-4 space-y-4 border-t" style={{ borderColor: 'rgba(30,58,95,0.4)' }}>
+        <div className="border-t" style={{ borderColor: 'rgba(30,58,95,0.4)' }}>
 
           {/* Stats row */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
+          <div className="px-4 pt-3 pb-3 grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
-              { label: 'Risk %',    value: `${p.risk_pct}%`,  color: p.risk_pct > 50 ? '#EF4444' : p.risk_pct > 25 ? '#F59E0B' : '#22C55E' },
-              { label: 'Due ≤7d',   value: p.due_soon,        color: p.due_soon >= 5 ? '#A78BFA' : '#94A3B8' },
-              { label: 'No Phone',  value: p.no_phone,        color: p.no_phone >= 5 ? '#F59E0B' : '#94A3B8' },
-              { label: 'Overdue',   value: p.overdue,         color: p.overdue  >= 3 ? '#EF4444' : '#94A3B8' },
+              { label: 'Risk %',   value: `${p.risk_pct}%`, color: p.risk_pct > 50 ? '#EF4444' : p.risk_pct > 25 ? '#F59E0B' : '#22C55E' },
+              { label: 'Due ≤7d',  value: p.due_soon,       color: p.due_soon >= 5 ? '#A78BFA' : '#94A3B8' },
+              { label: 'No Phone', value: p.no_phone,       color: p.no_phone >= 5 ? '#F59E0B' : '#94A3B8' },
+              { label: 'Overdue',  value: p.overdue,        color: p.overdue  >= 3 ? '#EF4444' : '#94A3B8' },
             ].map(s => (
               <div key={s.label} className="rounded-lg p-3 text-center"
                 style={{ background: 'rgba(15,23,42,0.6)', border: '1px solid rgba(30,58,95,0.4)' }}>
-                <div className="text-lg font-black" style={{ color: s.color, fontFamily: 'Poppins,sans-serif' }}>
-                  {s.value}
-                </div>
+                <div className="text-lg font-black" style={{ color: s.color, fontFamily: 'Poppins,sans-serif' }}>{s.value}</div>
                 <div className="text-[10px] text-slate-500 mt-0.5">{s.label}</div>
               </div>
             ))}
           </div>
 
-          {/* Top risk factors */}
-          {p.top_factors && p.top_factors.length > 0 && (
-            <div>
-              <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">
-                Top Risk Conditions
-              </div>
+          {/* Top factors + AI summary */}
+          <div className="px-4 pb-3 space-y-3">
+            {p.top_factors?.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {p.top_factors.map((f, i) => (
                   <span key={i} className="px-2.5 py-1 rounded-lg text-[10px] font-semibold"
                     style={{
                       background: i === 0 ? 'rgba(239,68,68,0.12)' : i === 1 ? 'rgba(245,158,11,0.12)' : 'rgba(96,165,250,0.12)',
-                      color:      i === 0 ? '#FCA5A5'              : i === 1 ? '#FDE68A'              : '#BAE6FD',
+                      color:      i === 0 ? '#FCA5A5' : i === 1 ? '#FDE68A' : '#BAE6FD',
                       border:     `1px solid ${i === 0 ? 'rgba(239,68,68,0.25)' : i === 1 ? 'rgba(245,158,11,0.25)' : 'rgba(96,165,250,0.25)'}`,
                     }}>
                     #{i + 1} {f.name} ({f.count})
                   </span>
                 ))}
               </div>
+            )}
+            <div className="rounded-lg p-3" style={{ background: 'rgba(30,58,95,0.2)', border: '1px solid rgba(30,58,95,0.4)' }}>
+              <div className="flex items-center gap-2 mb-1.5">
+                <Brain className="w-3.5 h-3.5" style={{ color: '#60A5FA' }} />
+                <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: '#60A5FA' }}>AI Summary</span>
+              </div>
+              <p className="text-xs leading-relaxed" style={{ color: '#CBD5E1' }}>{p.summary}</p>
             </div>
-          )}
+          </div>
 
-          {/* AI Summary */}
-          <div className="rounded-lg p-3"
-            style={{ background: 'rgba(30,58,95,0.2)', border: '1px solid rgba(30,58,95,0.4)' }}>
-            <div className="flex items-center gap-2 mb-2">
-              <Brain className="w-3.5 h-3.5" style={{ color: '#60A5FA' }} />
-              <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: '#60A5FA' }}>
-                AI Health Summary
-              </span>
-              <span className="text-[10px] text-slate-600 ml-1">· computed from real records</span>
+          {/* ── Mother Records ─────────────────────────────────── */}
+          <div className="border-t" style={{ borderColor: 'rgba(30,58,95,0.4)' }}>
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-2.5 flex-wrap gap-2">
+              <div className="flex items-center gap-2">
+                <List className="w-3.5 h-3.5 text-slate-400" />
+                <span className="text-xs font-bold text-white">All Mothers</span>
+                {mothers && <span className="text-[10px] text-slate-500">({filteredMothers.length} / {mothers.length})</span>}
+              </div>
+              {/* Filter tabs */}
+              <div className="flex gap-1.5 flex-wrap">
+                {[
+                  { id: 'all',     label: 'All' },
+                  { id: 'overdue', label: '⚠ Overdue' },
+                  { id: 'due7',    label: '🔔 Due ≤7d' },
+                  { id: 'nophone', label: '📵 No Phone' },
+                ].map(t => (
+                  <button key={t.id} onClick={() => setMotherTab(t.id)}
+                    className="px-2 py-0.5 rounded text-[10px] font-bold"
+                    style={{
+                      background: motherTab === t.id ? 'rgba(25,118,210,0.25)' : 'transparent',
+                      color:      motherTab === t.id ? '#60A5FA' : '#64748B',
+                      border:     `1px solid ${motherTab === t.id ? 'rgba(25,118,210,0.4)' : 'rgba(30,58,95,0.4)'}`,
+                    }}>
+                    {t.label}
+                  </button>
+                ))}
+              </div>
             </div>
-            <p className="text-xs leading-relaxed" style={{ color: '#CBD5E1' }}>
-              {p.summary}
-            </p>
+
+            {/* Search */}
+            <div className="px-4 pb-2">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500" />
+                <input
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  placeholder="Search name or phone..."
+                  className="w-full pl-8 pr-3 py-1.5 rounded-lg text-xs text-white placeholder-slate-600 outline-none"
+                  style={{ background: 'rgba(15,23,42,0.6)', border: '1px solid rgba(30,58,95,0.5)' }}
+                />
+              </div>
+            </div>
+
+            {/* Table */}
+            {loadingM ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="w-6 h-6 border-2 rounded-full animate-spin" style={{ borderColor: '#1E3A5F', borderTopColor: '#42A5F5' }} />
+              </div>
+            ) : (
+              <div className="overflow-x-auto" style={{ maxHeight: '420px', overflowY: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
+                  <thead style={{ position: 'sticky', top: 0, zIndex: 1 }}>
+                    <tr style={{ background: '#0A1628', borderBottom: '1px solid rgba(30,58,95,0.6)' }}>
+                      {['#', 'Name', 'Phone', 'EDD', 'Days', 'Hb', 'Weeks', 'Risk', 'Last Visit'].map(h => (
+                        <th key={h} style={{ padding: '7px 10px', textAlign: 'left', color: '#475569', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', whiteSpace: 'nowrap', fontSize: '10px' }}>
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredMothers.length === 0 ? (
+                      <tr><td colSpan={9} style={{ padding: '16px', textAlign: 'center', color: '#475569', fontSize: '11px' }}>No records match</td></tr>
+                    ) : filteredMothers.map((m, i) => {
+                      const riskColor = RISK_COLOR[m.risk_category] || '#64748B';
+                      const rowBg = m.is_delivered
+                        ? 'rgba(34,197,94,0.04)'
+                        : m.days_to_edd !== null && m.days_to_edd < 0
+                          ? 'rgba(239,68,68,0.06)'
+                          : m.days_to_edd !== null && m.days_to_edd <= 7
+                            ? 'rgba(167,139,250,0.06)'
+                            : 'transparent';
+                      return (
+                        <tr key={m.uid}
+                          onClick={() => openPatient && openPatient(m.uid)}
+                          style={{ background: rowBg, borderBottom: '1px solid rgba(30,58,95,0.25)', cursor: openPatient ? 'pointer' : 'default' }}
+                          onMouseEnter={e => e.currentTarget.style.background = 'rgba(30,58,95,0.3)'}
+                          onMouseLeave={e => e.currentTarget.style.background = rowBg}>
+                          <td style={{ padding: '6px 10px', color: '#475569', fontVariantNumeric: 'tabular-nums' }}>{i + 1}</td>
+                          <td style={{ padding: '6px 10px', color: '#E2E8F0', fontWeight: 600, whiteSpace: 'nowrap', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {m.mother_name || '—'}
+                          </td>
+                          <td style={{ padding: '6px 10px', whiteSpace: 'nowrap' }}>
+                            {m.cell_no ? (
+                              <span style={{ color: '#94A3B8', display: 'flex', alignItems: 'center', gap: 4 }}>
+                                <Phone style={{ width: 10, height: 10 }} />{m.cell_no}
+                              </span>
+                            ) : (
+                              <span style={{ color: '#F59E0B', display: 'flex', alignItems: 'center', gap: 4 }}>
+                                <PhoneOff style={{ width: 10, height: 10 }} />No phone
+                              </span>
+                            )}
+                          </td>
+                          <td style={{ padding: '6px 10px', color: '#94A3B8', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>
+                            {m.edd || '—'}
+                          </td>
+                          <td style={{ padding: '6px 10px', whiteSpace: 'nowrap' }}>
+                            <DaysChip days={m.days_to_edd} delivered={m.is_delivered} />
+                          </td>
+                          <td style={{ padding: '6px 10px', color: '#E2E8F0', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
+                            {m.hb || '—'}
+                          </td>
+                          <td style={{ padding: '6px 10px', color: '#94A3B8', fontVariantNumeric: 'tabular-nums' }}>
+                            {m.weeks || '—'}
+                          </td>
+                          <td style={{ padding: '6px 10px', whiteSpace: 'nowrap' }}>
+                            <span style={{ color: riskColor, fontWeight: 700, fontSize: 10 }}>
+                              {m.risk_category || '—'}
+                            </span>
+                          </td>
+                          <td style={{ padding: '6px 10px', color: '#64748B', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>
+                            {m.last_visit_date || '—'}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -163,7 +316,7 @@ function PHCCard({ p, expanded, onToggle }) {
   );
 }
 
-export default function PHCAnalytics({ user }) {
+export default function PHCAnalytics({ user, openPatient }) {
   const [insights,   setInsights]   = useState([]);
   const [basicData,  setBasicData]  = useState([]);
   const [loading,    setLoading]    = useState(true);
@@ -365,6 +518,8 @@ export default function PHCAnalytics({ user }) {
               p={p}
               expanded={!!expanded[p.phc_key]}
               onToggle={() => toggleExpand(p.phc_key)}
+              user={user}
+              openPatient={openPatient}
             />
           ))}
         </div>
