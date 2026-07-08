@@ -1,11 +1,39 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   Bell, RefreshCw, CheckCircle, AlertTriangle, Info,
-  Sun, Moon, X, Wifi, WifiOff,
+  Sun, Moon, X, Wifi, WifiOff, Upload,
 } from 'lucide-react';
 
 export default function Header({ user, backendOK, lastSync, syncing, onRefresh, notifications, clearNotifications, stats, theme, toggleTheme }) {
-  const [showBell, setShowBell] = useState(false);
+  const [showBell,    setShowBell]    = useState(false);
+  const [uploading,   setUploading]   = useState(false);
+  const [uploadMsg,   setUploadMsg]   = useState(null);
+  const fileInputRef = useRef();
+
+  const handleUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    setUploadMsg(null);
+    const form = new FormData();
+    form.append('file', file);
+    form.append('role', user.role);
+    try {
+      const r = await fetch('/api/upload-excel', { method: 'POST', body: form });
+      const d = await r.json();
+      if (d.success) {
+        setUploadMsg({ type: 'ok', text: d.message });
+        setTimeout(() => setUploadMsg(null), 6000);
+      } else {
+        setUploadMsg({ type: 'err', text: d.error || 'Upload failed' });
+      }
+    } catch {
+      setUploadMsg({ type: 'err', text: 'Could not reach server' });
+    } finally {
+      setUploading(false);
+      e.target.value = '';
+    }
+  };
   const unread = notifications.length;
   const dark   = theme !== 'bright';
 
@@ -111,6 +139,33 @@ export default function Header({ user, backendOK, lastSync, syncing, onRefresh, 
           }
         </button>
 
+        {/* Upload Excel — CHO / DMCHO only */}
+        {(user?.role === 'CHO' || user?.role === 'DMCHO') && (
+          <>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".xlsx,.xls"
+              style={{ display: 'none' }}
+              onChange={handleUpload}
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              title="Upload updated Excel file"
+              className="btn-ghost p-2 rounded-lg flex items-center gap-1.5"
+              style={{ padding: '6px 10px', background: uploading ? 'rgba(34,197,94,0.1)' : 'rgba(25,118,210,0.12)', border: '1px solid rgba(25,118,210,0.25)', borderRadius: 8 }}
+            >
+              <Upload className={`w-3.5 h-3.5 ${uploading ? 'animate-bounce' : ''}`}
+                style={{ color: uploading ? '#22C55E' : '#60A5FA' }} />
+              <span className="text-[11px] font-bold hidden sm:inline"
+                style={{ color: uploading ? '#22C55E' : '#60A5FA' }}>
+                {uploading ? 'Uploading…' : 'Upload Data'}
+              </span>
+            </button>
+          </>
+        )}
+
         {/* Refresh */}
         <button
           onClick={onRefresh}
@@ -122,6 +177,25 @@ export default function Header({ user, backendOK, lastSync, syncing, onRefresh, 
           <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`}
             style={{ color: syncing ? '#3B9FFF' : 'var(--ccmc-text-sec)' }} />
         </button>
+
+        {/* Upload result toast */}
+        {uploadMsg && (
+          <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-[9999] px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3"
+            style={{
+              background: uploadMsg.type === 'ok' ? 'rgba(15,40,20,0.97)' : 'rgba(40,10,10,0.97)',
+              border: `1px solid ${uploadMsg.type === 'ok' ? 'rgba(34,197,94,0.4)' : 'rgba(239,68,68,0.4)'}`,
+            }}>
+            {uploadMsg.type === 'ok'
+              ? <CheckCircle className="w-4 h-4 flex-shrink-0" style={{ color: '#22C55E' }} />
+              : <AlertTriangle className="w-4 h-4 flex-shrink-0" style={{ color: '#EF4444' }} />}
+            <span className="text-sm font-semibold" style={{ color: uploadMsg.type === 'ok' ? '#86EFAC' : '#FCA5A5' }}>
+              {uploadMsg.text}
+            </span>
+            <button onClick={() => setUploadMsg(null)} style={{ color: '#475569', marginLeft: 8 }}>
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
 
         {/* Bell */}
         <div className="relative">

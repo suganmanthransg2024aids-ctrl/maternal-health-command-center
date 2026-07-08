@@ -218,7 +218,7 @@ _sync_state = {
     "auto_enabled":   True,
 }
 AUTO_SYNC_INTERVAL  = 5    # seconds — local mtime check interval
-CLOUD_SYNC_INTERVAL = 300  # seconds — Google Sheets re-download interval (5 min)
+CLOUD_SYNC_INTERVAL = 60   # seconds — cloud spreadsheet re-download interval (1 min)
 
 def _get_file_mtime():
     try:
@@ -795,14 +795,16 @@ def load_excel():
             hr_text  = high_risk.iloc[i]
             score, factors, category = _parse_risk(hr_text)
             name_raw = mother_name.iloc[i]
-            # Skip header-repeat rows and blank rows
+            # Skip only header-repeat rows (not blank rows — keep all mothers)
             if name_raw.upper() in ("NAME AND ADD", "MOTHER NAME AND ADDRESS",
                                     "NAME AND ADDRESS", "MOTHER NAME", "MOTHERNAME",
-                                    "NAME AND AD", "NAME", ""):
+                                    "NAME AND AD", "NAME"):
                 continue
             # Extract name vs address (often combined with comma or newline)
             name_parts = re.split(r",|W/O|w/o|\n", name_raw, maxsplit=1)
             clean_name = name_parts[0].strip() if name_parts else name_raw
+            if not clean_name:
+                clean_name = f"Entry #{row_no.iloc[i]}" if str(row_no.iloc[i]).strip() not in ("", "nan") else f"Row {i+1}"
             address    = name_raw[len(clean_name):].strip().lstrip(",").strip()
 
             edd_val = edd.iloc[i]
@@ -1010,6 +1012,55 @@ def refresh():
     finally:
         _sync_state["syncing"] = False
     return jsonify({"success": True, "records": len(_cache["df"]), "ts": _cache["ts"]})
+
+
+@app.route("/api/upload-excel", methods=["POST"])
+def upload_excel():
+    role = request.form.get("role", "")
+    if role not in ("CHO", "DMCHO"):
+        return jsonify({"error": "Only CHO or DMCHO can upload data"}), 403
+
+    if "file" not in request.files:
+        return jsonify({"error": "No file provided"}), 400
+
+    f = request.files["file"]
+    if not f.filename.endswith((".xlsx", ".xls")):
+        return jsonify({"error": "Only Excel files (.xlsx / .xls) are accepted"}), 400
+
+    # Save to EXCEL_PATH (overwrites current data source)
+    tmp = EXCEL_PATH + ".upload_tmp"
+    try:
+        f.save(tmp)
+        # Quick sanity check — must be a valid Excel file
+        xl = pd.ExcelFile(tmp)
+        if len(xl.sheet_names) < 5:
+            os.remove(tmp)
+            return jsonify({"error": "File appears invalid — fewer than 5 sheets found"}), 400
+        os.replace(tmp, EXCEL_PATH)
+    except Exception as e:
+        if os.path.exists(tmp):
+            os.remove(tmp)
+        return jsonify({"error": f"Upload failed: {e}"}), 500
+
+    # Reload data
+    _cache["df"] = None
+    _sync_state["syncing"] = True
+    try:
+        load_excel()
+        _sync_state["last_sync_time"] = datetime.datetime.now().isoformat()
+        _sync_state["sync_count"]    += 1
+        _sync_state["last_mtime"]     = _get_file_mtime()
+    finally:
+        _sync_state["syncing"] = False
+
+    records = len(_cache["df"]) if _cache["df"] is not None else 0
+    return jsonify({
+        "success":  True,
+        "records":  records,
+        "sheets":   len(xl.sheet_names),
+        "ts":       _cache["ts"],
+        "message":  f"Data updated — {records:,} mother records loaded from {len(xl.sheet_names)} PHC sheets",
+    })
 
 @app.route("/api/sync-status")
 def sync_status_api():
