@@ -308,17 +308,19 @@ export default function PatientDrawer({ uid, user, onClose, onViewFull }) {
                   <InfoItem label="EDD"         value={p.edd} />
                   <InfoItem label="Weeks"       value={p.weeks} />
                   <InfoItem label="Gravida"     value={p.gravida} />
+                  <InfoItem label="Para"        value={p.para} />
                   <InfoItem label="Height"      value={p.height} />
                   <InfoItem label="Weight"      value={p.weight} />
                   <InfoItem label="BP"          value={p.bp} />
                   <InfoItem label="Hb"          value={p.hb} />
                   <InfoItem label="Blood Group" value={p.blood_group} />
                   <InfoItem label="GCT"         value={p.gct} />
-                  <InfoItem label="PPBS"        value={p.ppbs} />
+                  <InfoItem label="PPBS / FBS"  value={p.ppbs} />
                   <InfoItem label="TSH"         value={p.tsh} />
                   <InfoItem label="USG"         value={p.usg} />
-                  <InfoItem label="Echo/ECG"    value={p.echo_ecg} />
+                  <InfoItem label="Echo / ECG"  value={p.echo_ecg} />
                   <InfoItem label="Urine"       value={p.urine_routine} />
+                  <InfoItem label="Sputum AFB"  value={p.sputum_afb} />
                 </div>
               </div>
 
@@ -436,12 +438,17 @@ export default function PatientDrawer({ uid, user, onClose, onViewFull }) {
                 style={{ background: 'var(--ccmc-panel)', border: '1px solid var(--ccmc-border)' }}>
                 <SectionTitle>Visit History &amp; Delivery</SectionTitle>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-2.5 mb-3">
-                  <InfoItem label="Last Visit"    value={p.last_visit_date} />
-                  <InfoItem label="Next Visit"    value={p.next_visit_date} />
-                  <InfoItem label="Birth Plan"    value={p.birth_plan} />
-                  <InfoItem label="Referral"      value={p.referral} />
-                  <InfoItem label="Action Taken"  value={p.action_taken} />
-                  <InfoItem label="UPHC Response" value={p.uphc_response} />
+                  <InfoItem label="Last Visit"      value={p.last_visit_date} />
+                  <InfoItem label="Call Date"       value={p.call_date} />
+                  <InfoItem label="Next Visit"      value={p.next_visit_date} />
+                  <InfoItem label="Birth Plan"      value={p.birth_plan} />
+                  <InfoItem label="Referral"        value={p.referral} />
+                  <InfoItem label="Action Taken"    value={p.action_taken} />
+                  <InfoItem label="UPHC Response"   value={p.uphc_response} />
+                  {p.delivery_date && <InfoItem label="Delivery Date"  value={p.delivery_date} />}
+                  {p.days_since_delivery != null && p.days_since_delivery >= 0 &&
+                    <InfoItem label="Days Since Delivery" value={`${p.days_since_delivery} days`} />
+                  }
                 </div>
                 {p.delivery_info && p.delivery_info !== 'nan' && p.delivery_info.trim() !== '' && (
                   <div className="p-2.5 rounded-lg"
