@@ -246,13 +246,17 @@ def _download_excel():
                 f.write(resp.read())
         elif 'docs.google.com' in EXCEL_URL:
             # Google Sheets export — follow redirects, browser User-Agent
+            # Append cache-buster so Google serves a fresh export each poll
             import urllib.parse
+            bust_url = EXCEL_URL + ('&' if '?' in EXCEL_URL else '?') + f'cachebuster={int(time.time())}'
             opener = urllib.request.build_opener(urllib.request.HTTPRedirectHandler())
             opener.addheaders = [
                 ('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36'),
                 ('Accept', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,*/*'),
+                ('Cache-Control', 'no-cache, no-store'),
+                ('Pragma', 'no-cache'),
             ]
-            with opener.open(EXCEL_URL, timeout=30) as resp, open(tmp, 'wb') as f:
+            with opener.open(bust_url, timeout=30) as resp, open(tmp, 'wb') as f:
                 f.write(resp.read())
             # Verify it's a real Excel file (not an HTML error page)
             with open(tmp, 'rb') as f:
@@ -269,15 +273,34 @@ def _download_excel():
             urllib.request.install_opener(opener)
             urllib.request.urlretrieve(EXCEL_URL, tmp)
 
+        # Compare data-level hash (row count + content sample) not raw bytes,
+        # because Google Sheets xlsx zip metadata changes even when data is unchanged
+        def _xlsx_data_hash(path):
+            try:
+                import zipfile, hashlib
+                h = hashlib.md5()
+                with zipfile.ZipFile(path, 'r') as z:
+                    # Hash the actual sheet XML files, not zip metadata
+                    for name in sorted(z.namelist()):
+                        if name.startswith('xl/worksheets/') or name == 'xl/sharedStrings.xml':
+                            h.update(z.read(name))
+                return h.hexdigest()
+            except Exception:
+                return None
+
         changed = True
         if os.path.exists(EXCEL_PATH):
-            with open(EXCEL_PATH, 'rb') as f_old, open(tmp, 'rb') as f_new:
-                changed = f_old.read() != f_new.read()
+            old_hash = _xlsx_data_hash(EXCEL_PATH)
+            new_hash = _xlsx_data_hash(tmp)
+            if old_hash and new_hash and old_hash == new_hash:
+                changed = False
+
         if changed:
             os.replace(tmp, EXCEL_PATH)
-            print(f"[CLOUD-SYNC] New data downloaded from spreadsheet", flush=True)
+            print(f"[CLOUD-SYNC] Data changed — new spreadsheet downloaded", flush=True)
         else:
             os.remove(tmp)
+            print(f"[CLOUD-SYNC] No data change detected", flush=True)
         return changed
     except Exception as e:
         print(f"[CLOUD-SYNC] Download error: {e}", flush=True)
