@@ -794,52 +794,69 @@ def load_excel():
         for i in range(len(raw.columns)):
             raw.iloc[:, i] = raw.iloc[:, i].astype(str).str.strip()
 
-        # ── Build normalised columns (_normalise_col is now case+strip tolerant) ──
+        # ── Build normalised columns (_normalise_col is case+strip tolerant) ──
         row_no       = _normalise_col(raw, ["S.NO", "S.NO.", "S NO", "SNO", "SL NO", "-"])
         uphc_name    = _normalise_col(raw, ["UPHC NAME", "UPHC"])
-        hsc_name     = _normalise_col(raw, ["HSC NAME", "HSC"])
+        hsc_name     = _normalise_col(raw, ["HSC NAME", "HSC", "SECTOR", "sector"])
         res_type     = _normalise_col(raw, ["RESIDENT/VISITOR", "RESIDENT / VISITORS",
                                             "RESIDENT / VISITOR", "RESIDENT"])
-        rch_id       = _normalise_col(raw, ["RCH ID"])
+        rch_id       = _normalise_col(raw, ["RCH ID", "RCH  ID"])
         mother_name  = _normalise_col(raw, ["MOTHER NAME AND ADDRESS", "NAME AND ADD",
                                             "NAME AND ADDRESS", "MOTHER NAME",
                                             "MOTHERNAME", "NAME AND AD", "NAME"])
-        cell_no      = _normalise_col(raw, ["CELL NO", "MOBILE", "PHONE"])
+        # KURUCHI uses PHONE NO; some sheets use MOBILE NO
+        cell_no      = _normalise_col(raw, ["CELL NO", "PHONE NO", "MOBILE NO",
+                                            "MOBILE NUMBER", "MOBILE", "PHONE"])
         husband      = _normalise_col(raw, ["HUSBAND NAME", "HUSBAND"])
-        gravida      = _normalise_col(raw, ["GRAVIDA"])
+        # KURUCHI has "GRAVIDA  PARA" as combined column
+        gravida      = _normalise_col(raw, ["GRAVIDA", "GRAVIDA  PARA", "GRAVIDA PARA"])
+        para         = _normalise_col(raw, ["PARA"])
         lmp          = _normalise_col(raw, ["LMP"])
         edd          = _normalise_col(raw, ["EDD"])
-        weeks        = _normalise_col(raw, ["WEEKS"])
-        high_risk    = _normalise_col(raw, ["HIGH RISK ", "HIGH RISK", "HIGH RISK FACTORS"])
+        # KURUCHI uses WKS
+        weeks        = _normalise_col(raw, ["WEEKS", "WKS", "weeks"])
+        # PODANUR has typo "HIGH RISH"; RATHINAPURI header is garbled
+        high_risk    = _normalise_col(raw, ["HIGH RISK", "HIGH RISK ", "HIGH RISH",
+                                            "HIGH RISK FACTORS"])
         height       = _normalise_col(raw, ["HEIGHT"])
         weight       = _normalise_col(raw, ["WT", "WEIGHT"])
         bp           = _normalise_col(raw, ["BP", "BLOOD PRESSURE"])
         hb           = _normalise_col(raw, ["HB", "HAEMOGLOBIN", "HEMOGLOBIN"])
         gct          = _normalise_col(raw, ["GCT"])
-        ppbs         = _normalise_col(raw, ["PPBS", "FBS/PPBS", "FBS"])
-        echo         = _normalise_col(raw, ["ECHO/ECG", "ECG/ECHO", "ECHO"])
+        ppbs         = _normalise_col(raw, ["PPBS", "FBS/PPBS", "FBS/PPBS ", "FBS"])
+        # ECG/ECO is another variation found in vadavalli and KALVEERAMPALAYAM
+        echo         = _normalise_col(raw, ["ECHO/ECG", "ECG/ECHO", "ECG/ECO", "ECHO"])
         usg          = _normalise_col(raw, ["USG"])
         tsh          = _normalise_col(raw, ["TSH"])
-        blood_grp    = _normalise_col(raw, ["BLOOD GROUP"])
-        sputum       = _normalise_col(raw, ["SPUTUM AFB", "SPUTUM"])
+        # BLLOD GROUP is a typo in 49 goundampalayam
+        blood_grp    = _normalise_col(raw, ["BLOOD GROUP", "BLLOD GROUP"])
+        # AFB SP is a variation in one sheet
+        sputum       = _normalise_col(raw, ["SPUTUM AFB", "AFB SP", "SPUTUM"])
         urine        = _normalise_col(raw, ["URINE ROUTINE", "URINE RE", "URINE"])
-        birth_plan   = _normalise_col(raw, ["BIRTH PLAN", "REGULAR FOLLOW UP"])
-        referral     = _normalise_col(raw, ["REFERRAL DETAILS"])
+        # BIRTH  PLAN (double space) and BIRTHPLAN (no space) found in some sheets
+        birth_plan   = _normalise_col(raw, ["BIRTH PLAN", "BIRTH  PLAN", "BIRTHPLAN",
+                                            "REGULAR FOLLOW UP"])
+        # REFERAL (misspelled in 3 sheets)
+        referral     = _normalise_col(raw, ["REFERRAL DETAILS", "REFERAL DETAILS",
+                                            "REFERAL", "REMARKS"])
         last_visit   = _normalise_col(raw, ["UPHC LAST VISIT DATE", "LAST VISIT DATE"])
         action_taken = _normalise_col(raw, ["UPHC ACTION TAKEN \n(1st follow up)",
-                                            "UPHC ACTION TAKEN", "ACTION TAKEN"])
-        call_date    = _normalise_col(raw, ["CALL DATE"])
+                                            "UPHC ACTION TAKEN", "ACTION TAKEN",
+                                            "UPHC ACTION TAKEN \n(1ST FOLLOW UP)"])
+        call_date    = _normalise_col(raw, ["CALL DATE", "CALL DT"])
         next_visit   = _normalise_col(raw, ["NEXT VISIT DATE \nONLY FILL BY UPHC",
                                             "NEXT VISIT DATE", "NEXT VISIT"])
-        uphc_response   = _normalise_col(raw, ["UPHC RESPONSE AS PER NEXT VISIT", "UPHC RESPONSE"])
+        uphc_response   = _normalise_col(raw, ["UPHC RESPONSE AS PER NEXT VISIT",
+                                               "UPHC RESPONSE"])
         next_plan       = _normalise_col(raw, ["NEXT PLAN OF VISIT PLACE AND TIME ",
                                                "NEXT PLAN OF VISIT PLACE AND TIME",
                                                "PLAN OF NEXT VISIT DATE AND PLACE",
                                                "PLAN OF NEXT VISIT DATE & PLACE "])
-        # Some PHCs use a dedicated delivery outcome/details column
+        # Dedicated delivery outcome columns (varies by PHC)
+        # M,,, is a garbled header found in Singanallur-type sheets with delivery info
         delivery_outcome_col = _normalise_col(raw, [
             "DELIVERY OUTCOME", "DELIVERY DETAILS", "DELIVARY DETAILS",
-            "DELIVERY OUTCOME ", " DELIVERY OUTCOME",
+            "DELIVERY OUTCOME ", " DELIVERY OUTCOME", "M,,,",
         ])
 
         for i in range(len(raw)):
@@ -908,6 +925,7 @@ def load_excel():
                 "cell_no":      cell_no.iloc[i],
                 "husband_name": husband.iloc[i],
                 "gravida":      gravida.iloc[i],
+                "para":         para.iloc[i],
                 "lmp":          lmp.iloc[i],
                 "edd":          edd_clean,
                 "days_to_edd":  days_left,
@@ -1857,9 +1875,24 @@ def phc_mothers(phc_key):
             "delivery_date":  row.get("delivery_date", ""),
             "last_visit_date":str(row.get("last_visit_date", "")).strip(),
             "next_visit_date":str(row.get("next_visit_date", "")).strip(),
-            "bp":             str(row.get("bp", "")).strip(),
-            "gravida":        str(row.get("gravida", "")).strip(),
-            "referral":       str(row.get("referral", "")).strip(),
+            "bp":              str(row.get("bp", "")).strip(),
+            "gravida":         str(row.get("gravida", "")).strip(),
+            "para":            str(row.get("para", "")).strip(),
+            "lmp":             str(row.get("lmp", "")).strip(),
+            "height":          str(row.get("height", "")).strip(),
+            "weight":          str(row.get("weight", "")).strip(),
+            "gct":             str(row.get("gct", "")).strip(),
+            "ppbs":            str(row.get("ppbs", "")).strip(),
+            "tsh":             str(row.get("tsh", "")).strip(),
+            "echo_ecg":        str(row.get("echo_ecg", "")).strip(),
+            "usg":             str(row.get("usg", "")).strip(),
+            "sputum_afb":      str(row.get("sputum_afb", "")).strip(),
+            "urine_routine":   str(row.get("urine_routine", "")).strip(),
+            "birth_plan":      str(row.get("birth_plan", "")).strip(),
+            "action_taken":    str(row.get("action_taken", "")).strip(),
+            "uphc_response":   str(row.get("uphc_response", "")).strip(),
+            "delivery_info":   str(row.get("delivery_info", "")).strip(),
+            "referral":        str(row.get("referral", "")).strip(),
         })
 
     # Sort: overdue first, then by days_to_edd ascending, delivered last
