@@ -808,11 +808,16 @@ def load_excel():
         call_date    = _normalise_col(raw, ["CALL DATE"])
         next_visit   = _normalise_col(raw, ["NEXT VISIT DATE \nONLY FILL BY UPHC",
                                             "NEXT VISIT DATE", "NEXT VISIT"])
-        uphc_response= _normalise_col(raw, ["UPHC RESPONSE AS PER NEXT VISIT", "UPHC RESPONSE"])
-        next_plan    = _normalise_col(raw, ["NEXT PLAN OF VISIT PLACE AND TIME ",
-                                            "NEXT PLAN OF VISIT PLACE AND TIME",
-                                            "PLAN OF NEXT VISIT DATE AND PLACE",
-                                            "PLAN OF NEXT VISIT DATE & PLACE "])
+        uphc_response   = _normalise_col(raw, ["UPHC RESPONSE AS PER NEXT VISIT", "UPHC RESPONSE"])
+        next_plan       = _normalise_col(raw, ["NEXT PLAN OF VISIT PLACE AND TIME ",
+                                               "NEXT PLAN OF VISIT PLACE AND TIME",
+                                               "PLAN OF NEXT VISIT DATE AND PLACE",
+                                               "PLAN OF NEXT VISIT DATE & PLACE "])
+        # Some PHCs use a dedicated delivery outcome/details column
+        delivery_outcome_col = _normalise_col(raw, [
+            "DELIVERY OUTCOME", "DELIVERY DETAILS", "DELIVARY DETAILS",
+            "DELIVERY OUTCOME ", " DELIVERY OUTCOME",
+        ])
 
         for i in range(len(raw)):
             hr_text  = high_risk.iloc[i]
@@ -835,13 +840,15 @@ def load_excel():
             edd_clean = re.split(r"/|Scan|scan", edd_val)[0].strip()
             days_left = _days_to_edd(edd_clean)
 
-            # Determine delivery status
-            delivery_info = next_plan.iloc[i] if next_plan.iloc[i] else uphc_response.iloc[i]
-            is_delivered  = any(kw in str(delivery_info).upper()
+            # Determine delivery status — check dedicated outcome column first
+            del_outcome_val = delivery_outcome_col.iloc[i]
+            delivery_info   = del_outcome_val or (next_plan.iloc[i] if next_plan.iloc[i] else uphc_response.iloc[i])
+            is_delivered    = bool(del_outcome_val.strip()) or any(
+                                kw in str(delivery_info).upper()
                                 for kw in ["DELIVERED", "DOD", "LSCS", "NVD", "FCH", "MCH"])
 
-            # Parse actual delivery date from uphc_response (e.g. "31.3.26 AT:5PM/LSCS...")
-            uphc_resp_val = uphc_response.iloc[i]
+            # Parse actual delivery date — prefer dedicated outcome col, fall back to uphc_response
+            uphc_resp_val = del_outcome_val or uphc_response.iloc[i]
             actual_ddate  = _parse_delivery_date(uphc_resp_val) if is_delivered else None
             today_d       = datetime.date.today()
             if actual_ddate:
