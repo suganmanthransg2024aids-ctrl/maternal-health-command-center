@@ -906,6 +906,12 @@ def load_excel():
             else:
                 days_since_del = None
 
+            # Exclude old delivered mothers (>42 days postpartum) —
+            # postnatal care period is 42 days; after that they leave active tracking.
+            # Only exclude when we have a confirmed date; unknown-date deliveries are kept.
+            if is_delivered and days_since_del is not None and days_since_del > 42:
+                continue
+
             rch = rch_id.iloc[i]
             uid = f"{phc_key}_{i}_{rch}" if rch else f"{phc_key}_{i}"
 
