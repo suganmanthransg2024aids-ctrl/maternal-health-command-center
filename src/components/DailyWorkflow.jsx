@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Phone, CheckCircle2, Clock, RefreshCw, X, PhoneOff, PhoneMissed, ChevronDown, Send, Zap } from 'lucide-react';
+import { Phone, CheckCircle2, Clock, RefreshCw, X, PhoneOff, PhoneMissed, ChevronDown, Send, Activity } from 'lucide-react';
 import { useTheme } from '../ThemeContext';
 
 const API = '/api';
@@ -374,7 +374,7 @@ export default function DailyWorkflow({ user }) {
   const bg    = bright ? '#F4F7FB'                   : 'rgba(7,13,26,0.5)';
 
   const TABS = [
-    { id: 'priority', label: 'AI Priority', count: priorityCalls.length, accent: '#818CF8' },
+    { id: 'priority', label: 'Priority Queue', count: priorityCalls.length, accent: '#F59E0B' },
     { id: 'tasks',    label: 'Due Today',   count: total,                accent: '#60A5FA' },
     { id: 'log',      label: 'Call Log',    count: todayCalls.length,    accent: '#34D399' },
   ];
@@ -432,7 +432,7 @@ export default function DailyWorkflow({ user }) {
                   marginBottom: -1, transition: 'color 0.15s, border-color 0.15s',
                   letterSpacing: '0.01em',
                 }}>
-                {tab.id === 'priority' && <Zap size={12} />}
+                {tab.id === 'priority' && <Activity size={12} />}
                 {tab.label}
                 <span style={{ fontVariantNumeric: 'tabular-nums', opacity: 0.65, fontWeight: 700 }}>
                   ({tab.count})
@@ -452,8 +452,8 @@ export default function DailyWorkflow({ user }) {
               background: bright ? '#F8FAFF' : 'rgba(99,102,241,0.04)',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                <Zap size={13} color="#818CF8" />
-                <span style={{ fontSize: 11, fontWeight: 600, color: '#818CF8' }}>Smart Call Priority</span>
+                <Activity size={13} color="#F59E0B" />
+                <span style={{ fontSize: 11, fontWeight: 600, color: '#F59E0B' }}>Daily Call Queue</span>
                 <span style={{ fontSize: 10, color: sub }}>· excludes already-called mothers</span>
               </div>
               <div style={{ display: 'flex', gap: 14 }}>
@@ -477,7 +477,7 @@ export default function DailyWorkflow({ user }) {
 
             {loading ? (
               <div style={{ padding: '56px 0', textAlign: 'center' }}>
-                <Zap size={32} color="#818CF8" style={{ margin: '0 auto 12px', display: 'block', opacity: 0.5 }} />
+                <Activity size={32} color="#F59E0B" style={{ margin: '0 auto 12px', display: 'block', opacity: 0.5 }} />
                 <p style={{ fontSize: 12, color: sub, margin: 0 }}>Ranking mothers by urgency…</p>
               </div>
             ) : priorityCalls.length === 0 ? (
