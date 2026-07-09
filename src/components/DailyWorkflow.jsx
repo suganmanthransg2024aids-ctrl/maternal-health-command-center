@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Phone, CheckCircle2, Clock, AlertCircle, RefreshCw, X, PhoneOff, PhoneMissed, ChevronDown, Send } from 'lucide-react';
+import { Phone, CheckCircle2, Clock, AlertCircle, RefreshCw, X, PhoneOff, PhoneMissed, ChevronDown, Send, Zap } from 'lucide-react';
 import { useTheme } from '../ThemeContext';
 
 const API = '/api';
@@ -131,23 +131,26 @@ export default function DailyWorkflow({ user }) {
   const { theme } = useTheme();
   const bright = theme === 'bright';
 
-  const [tasks,    setTasks]    = useState([]);
-  const [todayCalls, setTodayCalls] = useState([]);
-  const [loading,  setLoading]  = useState(true);
-  const [modal,    setModal]    = useState(null); // mother object
-  const [activeTab, setActiveTab] = useState('tasks');
+  const [tasks,         setTasks]         = useState([]);
+  const [todayCalls,    setTodayCalls]    = useState([]);
+  const [priorityCalls, setPriorityCalls] = useState([]);
+  const [loading,       setLoading]       = useState(true);
+  const [modal,         setModal]         = useState(null);
+  const [activeTab,     setActiveTab]     = useState('priority');
 
   const today = new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [t, c] = await Promise.all([
+      const [t, c, p] = await Promise.all([
         fetch(`${API}/tasks/today?role=${user.role}`).then(r => r.json()),
         fetch(`${API}/calls/today?role=${user.role}`).then(r => r.json()),
+        fetch(`${API}/daily-priority?role=${user.role}&limit=30`).then(r => r.json()),
       ]);
       setTasks(Array.isArray(t) ? t : []);
       setTodayCalls(Array.isArray(c) ? c : []);
+      setPriorityCalls(Array.isArray(p) ? p : []);
     } catch { /* silent */ } finally { setLoading(false); }
   }, [user.role]);
 
@@ -213,19 +216,121 @@ export default function DailyWorkflow({ user }) {
       {/* Tabs */}
       <div className="flex gap-1 p-1 rounded-xl" style={{ background: panel, border }}>
         {[
-          { id: 'tasks', label: `Due Today (${total})` },
-          { id: 'log',   label: `Call Log (${todayCalls.length})` },
+          { id: 'priority', label: `AI Priority`, count: priorityCalls.length, icon: true },
+          { id: 'tasks',    label: `Due Today`,   count: total },
+          { id: 'log',      label: `Call Log`,    count: todayCalls.length },
         ].map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-            className="flex-1 py-2 rounded-lg text-xs font-bold transition-all"
+            className="flex-1 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1"
             style={{
-              background: activeTab === tab.id ? '#3B9FFF' : 'transparent',
+              background: activeTab === tab.id
+                ? (tab.id === 'priority' ? 'linear-gradient(135deg,#7C3AED,#4F46E5)' : '#3B9FFF')
+                : 'transparent',
               color: activeTab === tab.id ? '#fff' : sub,
             }}>
+            {tab.icon && <Zap className="w-3 h-3" />}
             {tab.label}
+            <span className="ml-0.5 opacity-75">({tab.count})</span>
           </button>
         ))}
       </div>
+
+      {/* AI Priority tab */}
+      {activeTab === 'priority' && (
+        <div className="rounded-2xl overflow-hidden" style={{ background: panel, border }}>
+          {/* Header */}
+          <div className="px-4 py-3 border-b flex items-center gap-2" style={{ borderColor: bright ? '#F1F5F9' : 'rgba(30,58,95,0.5)', background: bright ? '#F8FAFC' : 'rgba(79,70,229,0.08)' }}>
+            <Zap className="w-4 h-4" style={{ color: '#7C3AED' }} />
+            <div>
+              <span className="text-xs font-bold" style={{ color: bright ? '#4F46E5' : '#A78BFA' }}>Smart Call Priority</span>
+              <span className="text-[10px] ml-2" style={{ color: sub }}>AI-ranked · excludes already-called mothers today</span>
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="py-12 text-center text-xs" style={{ color: sub }}>Ranking mothers…</div>
+          ) : priorityCalls.length === 0 ? (
+            <div className="py-12 text-center">
+              <CheckCircle2 className="w-10 h-10 mx-auto mb-3" style={{ color: '#22C55E' }} />
+              <p className="text-sm font-semibold" style={{ color: text }}>All priority mothers called today!</p>
+              <p className="text-xs mt-1" style={{ color: sub }}>Great work — refresh to check for updates</p>
+            </div>
+          ) : (
+            <div className="divide-y" style={{ borderColor: bright ? '#F1F5F9' : 'rgba(30,58,95,0.4)' }}>
+              {priorityCalls.map(p => {
+                const tierColor = p.priority_tier === 'P1' ? '#EF4444' : p.priority_tier === 'P2' ? '#F97316' : '#EAB308';
+                const riskColor = p.risk_category === 'Critical' ? '#EF4444' : p.risk_category === 'Very High' ? '#F97316' : p.risk_category === 'High' ? '#EAB308' : '#22C55E';
+                const hasPhone  = p.phone && p.phone !== 'nan' && p.phone !== 'None' && p.phone !== '';
+                const eddText   = p.is_delivered
+                  ? (p.days_since_delivery != null ? `PN ${p.days_since_delivery}d` : 'Delivered')
+                  : (p.days_to_edd != null
+                    ? (p.days_to_edd < 0 ? `Overdue ${Math.abs(p.days_to_edd)}d` : p.days_to_edd === 0 ? 'Due today' : `EDD ${p.days_to_edd}d`)
+                    : '—');
+                const eddColor  = p.is_delivered ? '#3B9FFF' :
+                  (p.days_to_edd != null && p.days_to_edd <= 0) ? '#EF4444' :
+                  (p.days_to_edd != null && p.days_to_edd <= 7) ? '#F97316' :
+                  (p.days_to_edd != null && p.days_to_edd <= 14) ? '#EAB308' : '#22C55E';
+
+                return (
+                  <div key={p.uid} className="px-4 py-3 flex items-start gap-3">
+                    {/* Priority badge */}
+                    <div className="flex-shrink-0 w-9 h-9 rounded-xl flex flex-col items-center justify-center text-[9px] font-black"
+                      style={{ background: `${tierColor}18`, border: `1.5px solid ${tierColor}50`, color: tierColor }}>
+                      <span className="text-[11px] leading-none font-black">{p.rank}</span>
+                      <span className="mt-0.5 leading-none">{p.priority_tier}</span>
+                    </div>
+
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs font-bold truncate" style={{ color: text }}>{p.name || '—'}</span>
+                        {/* EDD pill */}
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
+                          style={{ background: `${eddColor}18`, color: eddColor, border: `1px solid ${eddColor}40` }}>
+                          {eddText}
+                        </span>
+                        {/* Risk pill */}
+                        {p.risk_category && (
+                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
+                            style={{ background: `${riskColor}18`, color: riskColor, border: `1px solid ${riskColor}40` }}>
+                            {p.risk_category}
+                          </span>
+                        )}
+                      </div>
+                      {/* PHC + phone */}
+                      <div className="text-[10px] mt-0.5" style={{ color: sub }}>
+                        {p.phc}
+                        {hasPhone && <span style={{ color: '#60A5FA' }}> · {p.phone}</span>}
+                        {!hasPhone && <span style={{ color: '#EF4444' }}> · No phone</span>}
+                      </div>
+                      {/* Reason chips */}
+                      {p.reasons && p.reasons.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1.5">
+                          {p.reasons.map((r, ri) => (
+                            <span key={ri} className="text-[9px] px-1.5 py-0.5 rounded font-medium"
+                              style={{ background: bright ? '#F1F5F9' : 'rgba(148,163,184,0.1)', color: sub, border: `1px solid ${bright ? '#E2E8F0' : 'rgba(148,163,184,0.2)'}` }}>
+                              {r}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Action */}
+                    {isHRT && (
+                      <button onClick={() => setModal(p)}
+                        className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-bold"
+                        style={{ background: 'rgba(59,159,255,0.15)', border: '1px solid rgba(59,159,255,0.35)', color: '#60A5FA' }}>
+                        <Phone className="w-3 h-3" /> Call
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Tasks tab */}
       {activeTab === 'tasks' && (

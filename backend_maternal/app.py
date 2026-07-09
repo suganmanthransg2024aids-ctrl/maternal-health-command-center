@@ -2673,6 +2673,140 @@ def reject_status(aid):
         conn.execute("UPDATE status_updates SET is_approved=-1, approved_by=?, approved_at=?, rejection_reason=? WHERE id=?", (rejected_by, now, reason, aid))
     return jsonify({"success": True})
 
+@app.route("/api/daily-priority")
+def daily_priority():
+    """Smart AI call prioritisation — returns top mothers to call today, ranked by urgency."""
+    role  = request.args.get("role", "").upper()
+    limit = int(request.args.get("limit", 30))
+    today = datetime.date.today()
+    today_str = today.isoformat()
+
+    df = get_data_for_role(role)
+    if df is None or df.empty:
+        return jsonify([])
+
+    def _sint(v):
+        try:
+            return None if (v is None or (isinstance(v, float) and np.isnan(v))) else int(v)
+        except Exception: return None
+
+    def _sfloat(v):
+        try:
+            return 0.0 if (v is None or (isinstance(v, float) and np.isnan(v))) else float(v)
+        except Exception: return 0.0
+
+    # UIDs already called today — exclude from list
+    with _db() as conn:
+        if role in ("CHO", "DMCHO"):
+            called_rows = conn.execute(
+                "SELECT DISTINCT mother_id FROM call_logs WHERE call_date=?", (today_str,)
+            ).fetchall()
+        else:
+            called_rows = conn.execute(
+                "SELECT DISTINCT mother_id FROM call_logs WHERE call_date=? AND hrt_user=?",
+                (today_str, role)
+            ).fetchall()
+    called_today = {r["mother_id"] for r in called_rows}
+
+    def _score(row):
+        uid = str(row.get("uid", ""))
+        if uid in called_today:
+            return -1, []
+
+        score   = 0
+        reasons = []
+        is_del  = bool(row.get("is_delivered", False))
+        d_left  = _sint(row.get("days_to_edd"))
+        d_since = _sint(row.get("days_since_delivery"))
+
+        # ── 1. EDD / Postnatal urgency (max 40 pts) ──────────────────────
+        if is_del:
+            if d_since is not None:
+                if d_since <= 7:    score += 35; reasons.append(f"Postnatal {d_since}d ago")
+                elif d_since <= 14: score += 28; reasons.append(f"Postnatal {d_since}d ago")
+                elif d_since <= 28: score += 18; reasons.append(f"Postnatal {d_since}d ago")
+                else:               score += 8;  reasons.append(f"Postnatal {d_since}d ago")
+        elif d_left is not None:
+            if d_left < 0:      score += 40; reasons.append(f"Overdue {abs(d_left)}d")
+            elif d_left == 0:   score += 40; reasons.append("Due TODAY")
+            elif d_left <= 3:   score += 38; reasons.append(f"Due in {d_left}d")
+            elif d_left <= 7:   score += 32; reasons.append(f"Due in {d_left}d")
+            elif d_left <= 14:  score += 22; reasons.append(f"Due in {d_left}d")
+            elif d_left <= 30:  score += 12; reasons.append(f"Due in {d_left}d")
+
+        # ── 2. Risk category (max 30 pts) ────────────────────────────────
+        cat = str(row.get("risk_category", "")).strip()
+        if cat == "Critical":    score += 30; reasons.append("Critical")
+        elif cat == "Very High": score += 22; reasons.append("Very High Risk")
+        elif cat == "High":      score += 14; reasons.append("High Risk")
+        elif cat == "Moderate":  score += 6
+
+        # ── 3. Haemoglobin — anaemia (max 10 pts) ────────────────────────
+        hb_str = str(row.get("hb", "")).strip()
+        try:
+            m = re.search(r"(\d+\.?\d*)", hb_str)
+            if m:
+                hb = float(m.group(1))
+                if hb < 7:   score += 10; reasons.append(f"Severe anaemia Hb {hb:.1f}")
+                elif hb < 9:  score += 6; reasons.append(f"Low Hb {hb:.1f}")
+                elif hb < 11: score += 2
+        except Exception: pass
+
+        # ── 4. Days since last documented contact (max 15 pts) ───────────
+        call_dt = _parse_date(str(row.get("call_date", "")).strip())
+        if call_dt:
+            try:
+                gap = (today - call_dt).days
+                if gap > 21:   score += 15; reasons.append(f"Not contacted {gap}d")
+                elif gap > 14: score += 10; reasons.append(f"Not contacted {gap}d")
+                elif gap > 7:  score += 5
+            except Exception:
+                score += 15; reasons.append("Never called")
+        else:
+            score += 15; reasons.append("Never called")
+
+        # ── 5. No phone — needs field visit (5 pts flag) ─────────────────
+        phone = str(row.get("cell_no", "")).strip()
+        if phone in ("", "nan", "NaN", "None"):
+            score += 5; reasons.append("No phone – field visit")
+
+        return score, reasons
+
+    rows_out = []
+    for _, row in df.iterrows():
+        sc, rsns = _score(row)
+        if sc < 0:
+            continue
+        phone = str(row.get("cell_no", "")).strip()
+        rows_out.append({
+            "uid":              str(row.get("uid", "")),
+            "name":             str(row.get("mother_name", "")),
+            "phc":              str(row.get("phc_display", row.get("phc_key", ""))),
+            "phc_key":          str(row.get("phc_key", "")),
+            "hrt_code":         str(row.get("hrt_code", "")),
+            "phone":            phone,
+            "edd":              str(row.get("edd", "")),
+            "days_to_edd":      _sint(row.get("days_to_edd")),
+            "risk_category":    str(row.get("risk_category", "")),
+            "risk_score":       _sfloat(row.get("risk_score")),
+            "hb":               str(row.get("hb", "")),
+            "is_delivered":     bool(row.get("is_delivered", False)),
+            "days_since_delivery": _sint(row.get("days_since_delivery")),
+            "high_risk_raw":    str(row.get("high_risk_raw", "")),
+            "priority_score":   sc,
+            "reasons":          rsns,
+        })
+
+    rows_out.sort(key=lambda x: -x["priority_score"])
+    top = rows_out[:limit]
+    for i, r in enumerate(top):
+        r["rank"] = i + 1
+        s = r["priority_score"]
+        r["priority_tier"] = "P1" if s >= 60 else ("P2" if s >= 35 else "P3")
+
+    return jsonify(top)
+
+
 @app.route("/api/daily-summary")
 def daily_summary():
     date = request.args.get("date", datetime.date.today().isoformat())
