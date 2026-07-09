@@ -227,14 +227,16 @@ def _get_file_mtime():
         return None
 
 def _download_excel():
-    """Download Excel from EXCEL_URL. Supports GitHub release assets (with GITHUB_TOKEN) and public URLs."""
+    """Download Excel from EXCEL_URL. Supports GitHub release assets and Google Sheets."""
     if not EXCEL_URL:
         return False
     try:
         import urllib.request
         tmp = EXCEL_PATH + '.download'
         github_token = os.environ.get('GITHUB_TOKEN', '').strip()
+
         if github_token and 'api.github.com' in EXCEL_URL:
+            # GitHub release asset — needs token auth
             req = urllib.request.Request(EXCEL_URL, headers={
                 'Authorization': f'token {github_token}',
                 'Accept': 'application/octet-stream',
@@ -242,17 +244,38 @@ def _download_excel():
             })
             with urllib.request.urlopen(req) as resp, open(tmp, 'wb') as f:
                 f.write(resp.read())
+        elif 'docs.google.com' in EXCEL_URL:
+            # Google Sheets export — follow redirects, browser User-Agent
+            import urllib.parse
+            opener = urllib.request.build_opener(urllib.request.HTTPRedirectHandler())
+            opener.addheaders = [
+                ('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36'),
+                ('Accept', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,*/*'),
+            ]
+            with opener.open(EXCEL_URL, timeout=30) as resp, open(tmp, 'wb') as f:
+                f.write(resp.read())
+            # Verify it's a real Excel file (not an HTML error page)
+            with open(tmp, 'rb') as f:
+                header = f.read(4)
+            if header[:2] == b'PK':  # ZIP/XLSX magic bytes
+                pass  # valid
+            else:
+                os.remove(tmp)
+                print("[CLOUD-SYNC] Google Sheets returned non-Excel content (possibly blocked)", flush=True)
+                return False
         else:
             opener = urllib.request.build_opener()
             opener.addheaders = [('User-Agent', 'Mozilla/5.0 CCMC-Tracker')]
             urllib.request.install_opener(opener)
             urllib.request.urlretrieve(EXCEL_URL, tmp)
+
         changed = True
         if os.path.exists(EXCEL_PATH):
             with open(EXCEL_PATH, 'rb') as f_old, open(tmp, 'rb') as f_new:
                 changed = f_old.read() != f_new.read()
         if changed:
             os.replace(tmp, EXCEL_PATH)
+            print(f"[CLOUD-SYNC] New data downloaded from spreadsheet", flush=True)
         else:
             os.remove(tmp)
         return changed
