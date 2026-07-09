@@ -846,10 +846,18 @@ def load_excel():
             hr_text  = high_risk.iloc[i]
             score, factors, category = _parse_risk(hr_text)
             name_raw = mother_name.iloc[i]
-            # Skip only header-repeat rows (not blank rows — keep all mothers)
+            # Skip header-repeat rows
             if name_raw.upper() in ("NAME AND ADD", "MOTHER NAME AND ADDRESS",
                                     "NAME AND ADDRESS", "MOTHER NAME", "MOTHERNAME",
                                     "NAME AND AD", "NAME"):
+                continue
+            # Skip genuinely empty rows — no name AND no RCH ID AND no EDD
+            # (keeps mothers with missing name but real data like RCH/EDD)
+            rch_val_raw = str(rch_id.iloc[i]).strip()
+            edd_val_raw = str(edd.iloc[i]).strip()
+            if (not name_raw and
+                    rch_val_raw in ('', 'nan', 'NaN') and
+                    edd_val_raw in ('', 'nan', 'NaN')):
                 continue
             # Extract name vs address (often combined with comma or newline)
             name_parts = re.split(r",|W/O|w/o|\n", name_raw, maxsplit=1)
