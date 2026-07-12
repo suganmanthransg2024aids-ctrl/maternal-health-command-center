@@ -138,10 +138,17 @@ export default function App() {
   const handleRefresh = async () => {
     setSyncing(true);
     try {
-      await fetch(`${API}/refresh`, { method: 'POST' });
+      const res = await fetch(`${API}/refresh`, { method: 'POST' });
+      const data = res.ok ? await res.json() : {};
       await loadStats();
       setLastSync(new Date().toLocaleTimeString());
-      pushNotification('Database Synced', 'All patient records reloaded from Excel source.', 'SUCCESS');
+      const src = data.source === 'google_sheets' ? 'Google Sheets' : 'local file';
+      const rec = data.records ? ` — ${data.records.toLocaleString()} mothers loaded` : '';
+      pushNotification(
+        'Spreadsheet Synced',
+        `All PHC patient records refreshed from ${src}${rec}.`,
+        'SUCCESS'
+      );
     } catch {
       pushNotification('Sync Failed', 'Could not reach backend server.', 'ERROR');
     } finally {

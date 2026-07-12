@@ -1087,16 +1087,29 @@ def me():
 
 @app.route("/api/refresh", methods=["POST"])
 def refresh():
+    """Force-reload data. If EXCEL_URL is set, re-downloads from Google Sheets first."""
     _cache["df"] = None
     _sync_state["syncing"] = True
+    downloaded = False
     try:
+        if EXCEL_URL:
+            print("[REFRESH] Force-downloading from Google Sheets…", flush=True)
+            downloaded = _download_excel()
+            print(f"[REFRESH] Download {'changed' if downloaded else 'no change'}", flush=True)
         load_excel()
         _sync_state["last_sync_time"] = datetime.datetime.now().isoformat()
         _sync_state["sync_count"]    += 1
         _sync_state["last_mtime"]     = _get_file_mtime()
     finally:
         _sync_state["syncing"] = False
-    return jsonify({"success": True, "records": len(_cache["df"]), "ts": _cache["ts"]})
+    records = len(_cache["df"]) if _cache["df"] is not None else 0
+    return jsonify({
+        "success":    True,
+        "records":    records,
+        "ts":         _cache["ts"],
+        "downloaded": downloaded,
+        "source":     "google_sheets" if EXCEL_URL else "local_file",
+    })
 
 
 @app.route("/api/upload-excel", methods=["POST"])
