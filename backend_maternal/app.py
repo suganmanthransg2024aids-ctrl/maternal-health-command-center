@@ -48,7 +48,7 @@ elif os.path.exists(_bundled_excel):
 else:
     _default_excel = os.path.join(BASE_DIR, '..', '..', '..', 'Downloads',
                                   'ccmc maternal',
-                                  'Coimbatore Corp Zonewise HR Mother Updation  (1).xlsx')
+                                  'Coimbatore Corp Zonewise HR Mother Updation .xlsx')
     EXCEL_PATH = os.path.abspath(_cfg.get('excel_path', os.environ.get('EXCEL_PATH', _default_excel)))
 
 # PORT: Render (and most PaaS platforms) inject PORT via env var at runtime.
@@ -217,8 +217,8 @@ _sync_state = {
     "sync_count":     0,
     "auto_enabled":   True,
 }
-AUTO_SYNC_INTERVAL  = 5    # seconds — local mtime check interval
-CLOUD_SYNC_INTERVAL = 60   # seconds — cloud spreadsheet re-download interval (1 min)
+AUTO_SYNC_INTERVAL  = 5      # seconds — local mtime check interval
+CLOUD_SYNC_INTERVAL = 86400  # seconds — cloud spreadsheet re-download interval (24h)
 
 def _get_file_mtime():
     try:
@@ -307,7 +307,7 @@ def _download_excel():
         return False
 
 def _auto_sync_worker():
-    """Background daemon: local mtime check (every 30s) or cloud re-download (every 5 min)."""
+    """Background daemon: local mtime check (every 5s) or cloud re-download (every 24h)."""
     time.sleep(20)
     _sync_state["last_mtime"] = _get_file_mtime()
     _cloud_elapsed = 0
@@ -892,7 +892,7 @@ def load_excel():
             del_outcome_val = delivery_outcome_col.iloc[i]
             delivery_info   = del_outcome_val or (next_plan.iloc[i] if next_plan.iloc[i] else uphc_response.iloc[i])
             is_delivered    = bool(del_outcome_val.strip()) or any(
-                                kw in str(delivery_info).upper()
+                                re.search(r'\b' + kw + r'\b', str(delivery_info).upper())
                                 for kw in ["DELIVERED", "DOD", "LSCS", "NVD", "FCH", "MCH"])
 
             # Parse actual delivery date — prefer dedicated outcome col, fall back to uphc_response
