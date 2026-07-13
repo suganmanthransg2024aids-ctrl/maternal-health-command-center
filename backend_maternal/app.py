@@ -748,6 +748,39 @@ def _normalise_col(df, candidates, default=""):
             return df[col_norm[key]].fillna("").astype(str).str.strip()
     return pd.Series([default] * len(df), index=df.index)
 
+# ── Name/address splitting ───────────────────────────────────────────────
+_NAME_RELATION_RE = re.compile(r'W\s*/\s*O|S\s*/\s*O|D\s*/\s*O|L\s*/\s*O', re.IGNORECASE)
+_NAME_ADDR_KEYWORD_RE = re.compile(
+    r'\b(STREET|ST|NAGAR|NAGER|COLONY|ROAD|RD|SECTOR|EXTENSION|EXTN|LAYOUT|LANE)\b',
+    re.IGNORECASE
+)
+
+def _split_name_address(name_raw):
+    """Split a combined 'name, address' or 'name/husband' cell into (clean_name, address).
+    Sheets mix delimiters inconsistently (comma, newline, slash, W/O) and often append a
+    house number or address keyword with no delimiter at all, so cut at whichever comes first.
+    """
+    if not name_raw:
+        return "", ""
+    cut = len(name_raw)
+    m = re.search(r',|\n|/', name_raw)
+    if m:
+        cut = min(cut, m.start())
+    rm = _NAME_RELATION_RE.search(name_raw)
+    if rm:
+        cut = min(cut, rm.start())
+    head = name_raw[:cut]
+    dm = re.search(r'\d', head)
+    if dm:
+        cut = min(cut, dm.start())
+        head = name_raw[:cut]
+    km = _NAME_ADDR_KEYWORD_RE.search(head)
+    if km:
+        cut = min(cut, km.start())
+    clean_name = re.sub(r'\s+', ' ', name_raw[:cut]).strip(" ,/-")
+    address = name_raw[cut:].strip().lstrip(",/").strip()
+    return clean_name, address
+
 # ── Excel Reader ───────────────────────────────────────────────────────────
 def load_excel():
     global _cache
@@ -876,12 +909,11 @@ def load_excel():
                     rch_val_raw in ('', 'nan', 'NaN') and
                     edd_val_raw in ('', 'nan', 'NaN')):
                 continue
-            # Extract name vs address (often combined with comma or newline)
-            name_parts = re.split(r",|W/O|w/o|\n", name_raw, maxsplit=1)
-            clean_name = name_parts[0].strip() if name_parts else name_raw
+            # Extract name vs address (sheets mix comma/newline/slash/W-O delimiters,
+            # or append a house number/street directly with no delimiter at all)
+            clean_name, address = _split_name_address(name_raw)
             if not clean_name:
                 clean_name = f"Entry #{row_no.iloc[i]}" if str(row_no.iloc[i]).strip() not in ("", "nan") else f"Row {i+1}"
-            address    = name_raw[len(clean_name):].strip().lstrip(",").strip()
 
             edd_val = edd.iloc[i]
             # EDD sometimes has extra text like "22-03-26 / Scan Edd 22.04.26"
