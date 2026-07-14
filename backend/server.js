@@ -1,75 +1,80 @@
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
+import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
 
-// Route imports
-import authRouter from './routes/auth.js';
-import dataSourcesRouter from './routes/dataSources.js';
-import importRouter from './routes/import.js';
-import surveyRouter from './routes/survey.js';
-import gisRouter from './routes/gis.js';
-import reportsRouter from './routes/reports.js';
+import {
+  PORT, HOST, EXCEL_URL, EXCEL_PATH, FRONTEND_DIST, DB_PATH, CLOUD_SYNC_INTERVAL,
+} from './src/config.js';
+import { loadExcel, downloadExcel, startAutoSync, cache, syncState } from './src/excelLoader.js';
+import { initDb } from './src/activityDb.js';
 
-dotenv.config();
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import healthRouter from './src/routes/health.js';
+import authRouter from './src/routes/auth.js';
+import syncRouter from './src/routes/sync.js';
+import patientsRouter from './src/routes/patients.js';
+import alertsRouter from './src/routes/alerts.js';
+import callsRouter from './src/routes/calls.js';
+import activityRouter from './src/routes/activity.js';
 
 const app = express();
-const PORT = process.env.PORT || 5000;
 
-// Enable CORS with default settings for frontend client (Vite on 5173)
-app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-}));
-
+app.use(cors({ origin: '*' }));
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
-// Serve uploaded survey files/photographs statically in the server directory
-const uploadDir = path.join(__dirname, 'uploads');
-app.use('/uploads', express.static(uploadDir));
+app.use('/api', healthRouter);
+app.use('/api', authRouter);
+app.use('/api', syncRouter);
+app.use('/api', patientsRouter);
+app.use('/api', alertsRouter);
+// activityRouter must be mounted before callsRouter: unlike Flask's routing
+// (which always prefers a static rule like /calls/log over a dynamic
+// /calls/<uid>), Express matches in registration order, so callsRouter's
+// POST /calls/:uid would otherwise swallow POST /calls/log first.
+app.use('/api', activityRouter);
+app.use('/api', callsRouter);
 
-// Register API Route Handlers
-app.use('/api/auth', authRouter);
-app.use('/api/sources', dataSourcesRouter);
-app.use('/api/import', importRouter);
-app.use('/api/survey', surveyRouter);
-app.use('/api/gis', gisRouter);
-app.use('/api/reports', reportsRouter);
-
-// Health Check Endpoint
-app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'ONLINE',
-    timestamp: new Date(),
-    service: 'CCMC CanisIntel API Node',
-  });
+// ── Static React frontend ──────────────────────────────────────────────────
+app.use(express.static(FRONTEND_DIST));
+app.use((req, res) => {
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({ error: 'Not found' });
+  }
+  const full = path.join(FRONTEND_DIST, req.path);
+  if (req.path !== '/' && fs.existsSync(full) && fs.statSync(full).isFile()) {
+    return res.sendFile(full);
+  }
+  res.sendFile(path.join(FRONTEND_DIST, 'index.html'));
 });
 
-// Global Error Handling Middleware
-app.use((err, req, res, next) => {
-  console.error('🔥 Server Error Catch:', err.stack);
-  res.status(500).json({
-    error: 'Internal Server Error',
-    message: err.message,
-    timestamp: new Date(),
-  });
-});
+async function main() {
+  console.log('HIGH RISK MOTHER TRACKER - CCMC Backend');
+  if (EXCEL_URL) {
+    console.log(`Mode  : CLOUD — Google Sheets sync every ${CLOUD_SYNC_INTERVAL}s`);
+    console.log(`URL   : ${EXCEL_URL}`);
+    console.log(`Cache : ${EXCEL_PATH}`);
+    console.log('Downloading initial data from Google Sheets…');
+    await downloadExcel();
+  } else {
+    console.log('Mode  : LOCAL — mtime watch every 5s');
+    console.log(`Excel : ${EXCEL_PATH}`);
+  }
+  console.log(`Dist  : ${FRONTEND_DIST}`);
 
-// Create upload directory if not exists
-import fs from 'fs';
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
+  loadExcel();
+  syncState.lastMtime = fs.existsSync(EXCEL_PATH) ? fs.statSync(EXCEL_PATH).mtimeMs : null;
+  console.log(`Loaded ${cache.records ? cache.records.length : 0} records`);
+
+  startAutoSync();
+
+  initDb();
+  console.log(`Activity DB: ${DB_PATH}`);
+  console.log('Auto-sync : ON');
+  console.log(`Open      : http://localhost:${PORT}`);
+
+  app.listen(PORT, HOST, () => {
+    console.log('Node backend ready on', PORT);
+  });
 }
 
-app.listen(PORT, () => {
-  console.log(`🚀 CanisIntel Backend Server is running on port ${PORT}`);
-  console.log(`📡 Health check endpoint: http://localhost:${PORT}/api/health`);
-});
-
-export default app;
+main();

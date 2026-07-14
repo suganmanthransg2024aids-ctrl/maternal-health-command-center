@@ -1,0 +1,7 @@
+{
+  "port": 8001,
+  "host": "0.0.0.0",
+  "excel_url": "https://docs.google.com/spreadsheets/d/1T1sthQZftwJEyve2wuyAwVZ55sr8TvgwhQJFEdEmAmA/export?format=xlsx",
+  "sync_interval_sec": 60,
+  "excel_path": "C:\\Users\\L E N O V O\\Downloads\\ccmc maternal\\Coimbatore Corp Zonewise HR Mother Updation .xlsx"
+}

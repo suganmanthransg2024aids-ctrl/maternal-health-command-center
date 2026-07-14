@@ -8,6 +8,6 @@ services:
     envVars:
       - key: EXCEL_URL
         value: https://docs.google.com/spreadsheets/d/1T1sthQZftwJEyve2wuyAwVZ55sr8TvgwhQJFEdEmAmA/export?format=xlsx
-      - key: PYTHONUNBUFFERED
-        value: "1"
+      - key: SYNC_INTERVAL_SEC
+        value: "60"
 # redeployed: 2026-07-09 | region: ohio | source: google-sheets | sync: 60s

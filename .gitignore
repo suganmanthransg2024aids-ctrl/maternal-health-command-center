@@ -1,17 +1,7 @@
 # Dependencies
 node_modules/
 
-# Python
-__pycache__/
-*.pyc
-*.pyo
-venv/
-.venv/
-env/
-
 # Logs
-backend_maternal/server.log
-backend_maternal/server_err.log
 *.log
 npm-debug.log*
 yarn-debug.log*
@@ -34,15 +24,26 @@ desktop.ini
 *.env
 .env*
 
-
 # Large binaries
 cloudflared.exe
 *.exe
 
-# Python virtual environments
-venv/
-.venv/
-env/
-
 # Render / deployment artifacts
 .render/
+
+# Cloudflared tunnel logs
+cf_*.log
+
+# Excel data cache / backups (re-downloaded or re-synced at runtime)
+backend/*.xlsx
+backend/*.xlsx.download
+backend/*.stale*.bak
+
+# SQLite runtime DB
+backend/logs.db
+*.db
+*.db-shm
+*.db-wal
+
+# Runtime follow-up store (created on first write)
+backend/followup_data.json

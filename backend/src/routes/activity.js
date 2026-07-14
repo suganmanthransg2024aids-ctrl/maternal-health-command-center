@@ -1,0 +1,299 @@
+import { Router } from 'express';
+import { getData } from '../excelLoader.js';
+import { getDb } from '../activityDb.js';
+import { getDataForRole } from '../helpers.js';
+import { parseDate } from '../parseUtils.js';
+
+const router = Router();
+
+function pad2(n) { return String(n).padStart(2, '0'); }
+function nowParts() {
+  const d = new Date();
+  return {
+    dateStr: `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`,
+    isoSeconds: `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}T${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`,
+  };
+}
+
+router.post('/calls/log', (req, res) => {
+  const b = req.body || {};
+  const motherId = String(b.mother_id || '').trim();
+  const hrtUser = String(b.hrt_user || '').trim();
+  const outcome = String(b.outcome || '').trim();
+  const notes = String(b.notes || '').trim();
+  if (!(motherId && hrtUser && outcome)) {
+    return res.status(400).json({ error: 'mother_id, hrt_user and outcome are required' });
+  }
+
+  const df = getData();
+  const row = df.find((r) => r.uid === motherId);
+  const motherName = row ? String(row.mother_name || '') : '';
+  const phc = row ? String(row.phc_key || '') : '';
+
+  const { dateStr, isoSeconds } = nowParts();
+  const stmt = getDb().prepare(
+    'INSERT INTO call_logs (mother_id,mother_name,phc,hrt_user,call_date,call_time,outcome,notes) VALUES (?,?,?,?,?,?,?,?)'
+  );
+  const info = stmt.run(motherId, motherName, phc, hrtUser, dateStr, isoSeconds, outcome, notes);
+  res.json({ success: true, id: info.lastInsertRowid });
+});
+
+router.get('/calls/today', (req, res) => {
+  const role = String(req.query.role || '').toUpperCase();
+  const date = req.query.date || nowParts().dateStr;
+  const db = getDb();
+  let rows;
+  if (role === 'CHO' || role === 'DMCHO') {
+    rows = db.prepare('SELECT * FROM call_logs WHERE call_date=? ORDER BY call_time DESC').all(date);
+  } else {
+    rows = db.prepare('SELECT * FROM call_logs WHERE call_date=? AND hrt_user=? ORDER BY call_time DESC').all(date, role);
+  }
+  res.json(rows);
+});
+
+router.get('/calls/history/:uid', (req, res) => {
+  const rows = getDb().prepare('SELECT * FROM call_logs WHERE mother_id=? ORDER BY call_time DESC LIMIT 30').all(req.params.uid);
+  res.json(rows);
+});
+
+function fromIsoDateOnly(v) {
+  if (v === null || v === undefined) return null;
+  const s = String(v).slice(0, 10);
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+  if (!m) return null;
+  const y = +m[1]; const mo = +m[2]; const d = +m[3];
+  const dt = new Date(Date.UTC(y, mo - 1, d));
+  if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== mo - 1 || dt.getUTCDate() !== d) return null;
+  return dt;
+}
+
+router.get('/tasks/today', (req, res) => {
+  const role = String(req.query.role || '').toUpperCase();
+  const today = new Date();
+  const today0 = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
+  const todayStr = `${today0.getUTCFullYear()}-${pad2(today0.getUTCMonth() + 1)}-${pad2(today0.getUTCDate())}`;
+
+  const df = getDataForRole(role);
+  if (!df || df.length === 0) return res.json([]);
+
+  const DATE_COL_CANDIDATES = ['next_followup_date', 'followup_date', 'next_visit', 'edd'];
+  const dateCol = DATE_COL_CANDIDATES.find((c) => c in df[0]);
+  if (!dateCol) return res.json([]);
+
+  const dueToday = df.filter((r) => {
+    const due = fromIsoDateOnly(r[dateCol]);
+    return due && due.getTime() === today0.getTime();
+  });
+
+  const logged = getDb().prepare('SELECT mother_id, outcome, notes, call_time FROM call_logs WHERE call_date=? AND hrt_user=?').all(todayStr, role);
+  const loggedMap = Object.fromEntries(logged.map((r) => [r.mother_id, r]));
+
+  const NAME_CANDS = ['mother_name', 'name', 'patient_name'];
+  const PHC_CANDS = ['phc_key', 'phc', 'phc_name'];
+  const PHONE_CANDS = ['phone', 'mobile', 'contact', 'phone_number'];
+  const nameCol = NAME_CANDS.find((c) => c in df[0]);
+  const phcCol = PHC_CANDS.find((c) => c in df[0]);
+  const phCol = PHONE_CANDS.find((c) => c in df[0]);
+  const uidCol = 'uid' in df[0] ? 'uid' : null;
+
+  const result = dueToday.map((r) => {
+    const uidVal = uidCol ? String(r[uidCol]) : '';
+    const log = loggedMap[uidVal] || {};
+    return {
+      uid: uidVal,
+      name: nameCol ? String(r[nameCol]) : '',
+      phc: phcCol ? String(r[phcCol]) : '',
+      phone: phCol ? String(r[phCol]) : '',
+      due_date: todayStr,
+      called: uidVal in loggedMap,
+      outcome: log.outcome ?? null,
+      notes: log.notes ?? null,
+      call_time: log.call_time ?? null,
+    };
+  });
+
+  result.sort((a, b) => (a.called === b.called ? (a.name < b.name ? -1 : a.name > b.name ? 1 : 0) : (a.called ? 1 : -1)));
+  res.json(result);
+});
+
+router.post('/status/update', (req, res) => {
+  const b = req.body || {};
+  const motherId = String(b.mother_id || '').trim();
+  const hrtUser = String(b.hrt_user || '').trim();
+  const newStatus = String(b.new_status || '').trim();
+  const notes = String(b.notes || '').trim();
+  if (!(motherId && hrtUser && newStatus)) {
+    return res.status(400).json({ error: 'mother_id, hrt_user and new_status required' });
+  }
+
+  const df = getData();
+  const row = df.find((r) => r.uid === motherId);
+  const motherName = row ? String(row.mother_name || '') : '';
+  const phc = row ? String(row.phc_key || '') : '';
+
+  const { isoSeconds } = nowParts();
+  const stmt = getDb().prepare(
+    'INSERT INTO status_updates (mother_id,mother_name,phc,hrt_user,new_status,notes,submitted_at) VALUES (?,?,?,?,?,?,?)'
+  );
+  const info = stmt.run(motherId, motherName, phc, hrtUser, newStatus, notes, isoSeconds);
+  res.json({ success: true, id: info.lastInsertRowid });
+});
+
+router.get('/approvals', (req, res) => {
+  const db = getDb();
+  const pending = db.prepare('SELECT * FROM status_updates WHERE is_approved=0 ORDER BY submitted_at DESC').all();
+  const recent = db.prepare('SELECT * FROM status_updates WHERE is_approved!=0 ORDER BY approved_at DESC LIMIT 30').all();
+  res.json({ pending, recent });
+});
+
+router.post('/approvals/:aid/approve', (req, res) => {
+  const b = req.body || {};
+  const approvedBy = String(b.approved_by || 'CHO').trim();
+  const { isoSeconds } = nowParts();
+  getDb().prepare('UPDATE status_updates SET is_approved=1, approved_by=?, approved_at=? WHERE id=?')
+    .run(approvedBy, isoSeconds, req.params.aid);
+  res.json({ success: true });
+});
+
+router.post('/approvals/:aid/reject', (req, res) => {
+  const b = req.body || {};
+  const rejectedBy = String(b.rejected_by || 'CHO').trim();
+  const reason = String(b.reason || '').trim();
+  const { isoSeconds } = nowParts();
+  getDb().prepare('UPDATE status_updates SET is_approved=-1, approved_by=?, approved_at=?, rejection_reason=? WHERE id=?')
+    .run(rejectedBy, isoSeconds, reason, req.params.aid);
+  res.json({ success: true });
+});
+
+/** Smart AI call prioritisation — returns top mothers to call today, ranked by urgency. */
+router.get('/daily-priority', (req, res) => {
+  const role = String(req.query.role || '').toUpperCase();
+  const limit = parseInt(req.query.limit || '30', 10);
+  const today0 = new Date();
+  const todayUTC = new Date(Date.UTC(today0.getFullYear(), today0.getMonth(), today0.getDate()));
+  const todayStr = `${todayUTC.getUTCFullYear()}-${pad2(todayUTC.getUTCMonth() + 1)}-${pad2(todayUTC.getUTCDate())}`;
+
+  const df = getDataForRole(role);
+  if (!df || df.length === 0) return res.json([]);
+
+  const sint = (v) => (v === null || v === undefined || Number.isNaN(Number(v)) ? null : Math.trunc(Number(v)));
+  const sfloat = (v) => (v === null || v === undefined || Number.isNaN(Number(v)) ? 0.0 : Number(v));
+
+  const db = getDb();
+  let calledRows;
+  if (role === 'CHO' || role === 'DMCHO') {
+    calledRows = db.prepare('SELECT DISTINCT mother_id FROM call_logs WHERE call_date=?').all(todayStr);
+  } else {
+    calledRows = db.prepare('SELECT DISTINCT mother_id FROM call_logs WHERE call_date=? AND hrt_user=?').all(todayStr, role);
+  }
+  const calledToday = new Set(calledRows.map((r) => r.mother_id));
+
+  function score(row) {
+    const uid = String(row.uid || '');
+    if (calledToday.has(uid)) return { sc: -1, reasons: [] };
+
+    let sc = 0;
+    const reasons = [];
+    const isDel = Boolean(row.is_delivered);
+    const dLeft = sint(row.days_to_edd);
+    const dSince = sint(row.days_since_delivery);
+
+    if (isDel) {
+      if (dSince !== null) {
+        if (dSince <= 7) { sc += 35; reasons.push(`Postnatal ${dSince}d ago`); }
+        else if (dSince <= 14) { sc += 28; reasons.push(`Postnatal ${dSince}d ago`); }
+        else if (dSince <= 28) { sc += 18; reasons.push(`Postnatal ${dSince}d ago`); }
+        else { sc += 8; reasons.push(`Postnatal ${dSince}d ago`); }
+      }
+    } else if (dLeft !== null) {
+      if (dLeft < 0) { sc += 40; reasons.push(`Overdue ${Math.abs(dLeft)}d`); }
+      else if (dLeft === 0) { sc += 40; reasons.push('Due TODAY'); }
+      else if (dLeft <= 3) { sc += 38; reasons.push(`Due in ${dLeft}d`); }
+      else if (dLeft <= 7) { sc += 32; reasons.push(`Due in ${dLeft}d`); }
+      else if (dLeft <= 14) { sc += 22; reasons.push(`Due in ${dLeft}d`); }
+      else if (dLeft <= 30) { sc += 12; reasons.push(`Due in ${dLeft}d`); }
+    }
+
+    const cat = String(row.risk_category || '').trim();
+    if (cat === 'Critical') { sc += 30; reasons.push('Critical'); }
+    else if (cat === 'Very High') { sc += 22; reasons.push('Very High Risk'); }
+    else if (cat === 'High') { sc += 14; reasons.push('High Risk'); }
+    else if (cat === 'Moderate') { sc += 6; }
+
+    const hbStr = String(row.hb || '').trim();
+    const m = /(\d+\.?\d*)/.exec(hbStr);
+    if (m) {
+      const hb = parseFloat(m[1]);
+      if (hb < 7) { sc += 10; reasons.push(`Severe anaemia Hb ${hb.toFixed(1)}`); }
+      else if (hb < 9) { sc += 6; reasons.push(`Low Hb ${hb.toFixed(1)}`); }
+      else if (hb < 11) { sc += 2; }
+    }
+
+    const callDt = parseDate(String(row.call_date || '').trim());
+    if (callDt) {
+      const gap = Math.round((todayUTC.getTime() - callDt.getTime()) / 86400000);
+      if (gap > 21) { sc += 15; reasons.push(`Not contacted ${gap}d`); }
+      else if (gap > 14) { sc += 10; reasons.push(`Not contacted ${gap}d`); }
+      else if (gap > 7) { sc += 5; }
+    } else {
+      sc += 15; reasons.push('Never called');
+    }
+
+    const phone = String(row.cell_no || '').trim();
+    if (['', 'nan', 'NaN', 'None'].includes(phone)) { sc += 5; reasons.push('No phone – field visit'); }
+
+    return { sc, reasons };
+  }
+
+  const rowsOut = [];
+  for (const row of df) {
+    const { sc, reasons } = score(row);
+    if (sc < 0) continue;
+    const phone = String(row.cell_no || '').trim();
+    rowsOut.push({
+      uid: String(row.uid || ''),
+      name: String(row.mother_name || ''),
+      phc: String(row.phc_display || row.phc_key || ''),
+      phc_key: String(row.phc_key || ''),
+      hrt_code: String(row.hrt_code || ''),
+      phone,
+      edd: String(row.edd || ''),
+      days_to_edd: sint(row.days_to_edd),
+      risk_category: String(row.risk_category || ''),
+      risk_score: sfloat(row.risk_score),
+      hb: String(row.hb || ''),
+      is_delivered: Boolean(row.is_delivered),
+      days_since_delivery: sint(row.days_since_delivery),
+      high_risk_raw: String(row.high_risk_raw || ''),
+      priority_score: sc,
+      reasons,
+    });
+  }
+
+  rowsOut.sort((a, b) => b.priority_score - a.priority_score);
+  const top = rowsOut.slice(0, limit);
+  top.forEach((r, i) => {
+    r.rank = i + 1;
+    r.priority_tier = r.priority_score >= 60 ? 'P1' : (r.priority_score >= 35 ? 'P2' : 'P3');
+  });
+
+  res.json(top);
+});
+
+router.get('/daily-summary', (req, res) => {
+  const date = req.query.date || nowParts().dateStr;
+  const db = getDb();
+  const rows = db.prepare('SELECT hrt_user, outcome, COUNT(*) as cnt FROM call_logs WHERE call_date=? GROUP BY hrt_user, outcome').all(date);
+  const pendingCount = db.prepare('SELECT COUNT(*) as c FROM status_updates WHERE is_approved=0').get().c;
+
+  const summary = {};
+  for (const r of rows) {
+    const u = r.hrt_user;
+    if (!summary[u]) summary[u] = { total: 0, contacted: 0, unreachable: 0, no_answer: 0, busy: 0 };
+    summary[u].total += r.cnt;
+    summary[u][r.outcome.toLowerCase().replace(/ /g, '_')] = r.cnt;
+  }
+  res.json({ by_hrt: summary, pending_approvals: pendingCount, date });
+});
+
+export default router;

@@ -1,33 +1,24 @@
-FROM python:3.11-slim
-
-# Install Node.js 20 for Vite build
-RUN apt-get update && apt-get install -y curl && \
-    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
-    apt-get install -y nodejs && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
+FROM node:20-slim
 
 WORKDIR /app
 
-# Python dependencies
-COPY backend_maternal/requirements.txt ./requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+# Frontend dependencies + build
+COPY frontend/package.json frontend/package-lock.json ./frontend/
+RUN cd frontend && npm ci --legacy-peer-deps
 
-# Node dependencies + frontend build
-COPY package.json package-lock.json ./
-RUN npm ci --legacy-peer-deps
+COPY frontend/ ./frontend/
+RUN cd frontend && npm run build
 
-COPY index.html vite.config.js tailwind.config.js postcss.config.js eslint.config.js ./
-COPY src/ ./src/
-COPY public/ ./public/
-RUN npm run build
+# Backend dependencies
+COPY backend/package.json backend/package-lock.json ./backend/
+RUN cd backend && npm ci --omit=dev
 
-# Backend
-COPY backend_maternal/ ./backend_maternal/
-COPY config.json ./config.json
+# Backend source + runtime data
+COPY backend/ ./backend/
 
 # Runtime port (injected by Render/Railway/Fly)
 ENV PORT=8001
 EXPOSE 8001
 
-WORKDIR /app/backend_maternal
-CMD python app.py
+WORKDIR /app/backend
+CMD ["node", "server.js"]

@@ -1,7 +1,7 @@
 {
-  "name": "canisintel-backend",
+  "name": "ccmc-maternal-backend",
   "version": "1.0.0",
-  "description": "CCMC Municipal Analytics & Public Health Intelligence Platform Backend",
+  "description": "HIGH RISK MOTHER TRACKER - CCMC Node.js Backend",
   "main": "server.js",
   "type": "module",
   "scripts": {
@@ -9,18 +9,11 @@
     "dev": "nodemon server.js"
   },
   "dependencies": {
-    "axios": "^1.7.2",
-    "bcryptjs": "^2.4.3",
-    "cheerio": "^1.0.0-rc.12",
+    "better-sqlite3": "^11.3.0",
     "cors": "^2.8.5",
-    "csv-parse": "^5.5.6",
-    "dotenv": "^16.4.5",
     "express": "^4.19.2",
-    "jsonwebtoken": "^9.0.2",
-    "multer": "^1.4.5-lts.1",
-    "pg": "^8.12.0",
-    "pg-format": "^1.0.4",
-    "xml2js": "^0.6.2"
+    "multer": "^2.0.0",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "devDependencies": {
     "nodemon": "^3.1.3"
