@@ -42,6 +42,7 @@ export const HOST = cfg.host || '0.0.0.0';
 
 export const CALLS_FILE = path.join(BASE_DIR, 'call_tracking.json');
 export const FOLLOWUP_FILE = path.join(BASE_DIR, 'followup_data.json');
+export const OVERRIDES_FILE = path.join(BASE_DIR, 'patient_overrides.json');
 export const DB_PATH = path.join(BASE_DIR, 'logs.db');
 
 export const AUTO_SYNC_INTERVAL = 5; // seconds — local mtime check interval

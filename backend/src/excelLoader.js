@@ -11,6 +11,7 @@ XLSX.set_fs(fs);
 import { SHEET_TO_PHC, PHC_MAP } from './constants.js';
 import { parseRisk } from './riskEngine.js';
 import { parseDate, daysToEdd, parseDeliveryDate, splitNameAddress, formatDDMMYYYY } from './parseUtils.js';
+import { applyOverrides, overridesVersion } from './overrides.js';
 
 export const cache = { records: null, ts: null };
 
@@ -286,9 +287,18 @@ export function loadExcel() {
   return records;
 }
 
+// Merged view = Excel base data + app-side patient overrides. Recomputed only
+// when the Excel cache reloads or an override is saved.
+const merged = { records: null, baseTs: null, version: -1 };
+
 export function getData() {
   if (cache.records === null) loadExcel();
-  return cache.records;
+  if (merged.records === null || merged.baseTs !== cache.ts || merged.version !== overridesVersion()) {
+    merged.records = applyOverrides(cache.records);
+    merged.baseTs = cache.ts;
+    merged.version = overridesVersion();
+  }
+  return merged.records;
 }
 
 /**

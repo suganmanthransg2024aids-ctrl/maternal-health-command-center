@@ -25,12 +25,16 @@ const PN_TABS = [
 ];
 
 function DeliveryCard({ p, openPatient, accentColor }) {
-  const days  = p.days_to_edd;
-  const label = days === null ? '—'
-              : days === 0   ? 'Due Today!'
-              : days < 0     ? `${Math.abs(days)}d post`
-              :                `${days}d left`;
-  const dColor= days === 0 ? '#DC2626' : days !== null && days < 0 ? '#22C55E' : accentColor;
+  const days   = p.days_to_edd;
+  const pnDays = p.days_since_delivery;
+  const label = p.is_delivered ? (pnDays !== null && pnDays !== undefined ? `PN Day ${pnDays}` : 'Delivered')
+              : days === null  ? '—'
+              : days === 0     ? 'Due Today!'
+              : days < 0       ? `${Math.abs(days)}d post`
+              :                  `${days}d left`;
+  const dColor  = p.is_delivered ? '#22C55E'
+                : days === 0 ? '#DC2626' : days !== null && days < 0 ? '#22C55E' : accentColor;
+  const dateSub = p.is_delivered && p.delivery_date ? `DEL ${p.delivery_date}` : `EDD ${p.edd || '—'}`;
 
   return (
     <div
@@ -51,7 +55,7 @@ function DeliveryCard({ p, openPatient, accentColor }) {
         </div>
         <div className="text-right flex-shrink-0">
           <div className="text-base font-bold" style={{ color: dColor }}>{label}</div>
-          <div className="text-[9px]" style={{ color: dColor }}>EDD {p.edd || '—'}</div>
+          <div className="text-[9px]" style={{ color: dColor }}>{dateSub}</div>
         </div>
       </div>
 

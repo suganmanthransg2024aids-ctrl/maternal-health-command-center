@@ -3,7 +3,10 @@ import {
   X, User, Phone, MapPin, Activity, AlertTriangle,
   Heart, ExternalLink, CheckCircle, Clock,
   PhoneCall, CheckCircle2, PhoneOff, PhoneMissed, Send, ChevronDown,
+  Baby, Pencil,
 } from 'lucide-react';
+import MarkDeliveryModal from './MarkDeliveryModal';
+import EditPatientModal  from './EditPatientModal';
 
 const OUTCOMES = [
   { value: 'contacted',   label: 'Contacted',   color: '#22C55E', icon: CheckCircle2 },
@@ -43,6 +46,16 @@ export default function PatientDrawer({ uid, user, onClose, onViewFull }) {
   const [logSaving,   setLogSaving]   = useState(false);
   const [logDone,     setLogDone]     = useState(false);
   const [appHistory,  setAppHistory]  = useState([]);
+  const [showDelivery, setShowDelivery] = useState(false);
+  const [showEdit,     setShowEdit]     = useState(false);
+
+  // Re-fetch full record (incl. call/follow-up history) after delivery/edit save
+  const refetchPatient = () => {
+    fetch(`${API}/patients/${uid}`)
+      .then(r => r.json())
+      .then(d => setP(d))
+      .catch(() => {});
+  };
 
   const loadHistory = (id) => {
     fetch(`${API}/calls/history/${id}`)
@@ -120,7 +133,7 @@ export default function PatientDrawer({ uid, user, onClose, onViewFull }) {
               CCMC Maternal Health Record
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap justify-end">
             {p && user.role.startsWith('HRT') && (
               <button
                 onClick={() => setShowLogCall(v => !v)}
@@ -129,6 +142,28 @@ export default function PatientDrawer({ uid, user, onClose, onViewFull }) {
               >
                 <PhoneCall className="w-3.5 h-3.5" />
                 {logDone ? 'Logged ✓' : 'Log Call'}
+              </button>
+            )}
+            {p && (
+              <button
+                onClick={() => setShowDelivery(true)}
+                title={p.is_delivered ? 'Delivered — click to edit or undo' : 'Assign this mother to Delivery'}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold"
+                style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.35)', color: '#4ADE80' }}
+              >
+                <Baby className="w-3.5 h-3.5" />
+                {p.is_delivered ? 'Delivered ✓' : 'Delivery'}
+              </button>
+            )}
+            {p && (
+              <button
+                onClick={() => setShowEdit(true)}
+                title="Edit EDD, Hb and other details"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold"
+                style={{ background: 'rgba(251,191,36,0.12)', border: '1px solid rgba(251,191,36,0.35)', color: '#FBBF24' }}
+              >
+                <Pencil className="w-3.5 h-3.5" />
+                Edit
               </button>
             )}
             {p && (
@@ -449,6 +484,9 @@ export default function PatientDrawer({ uid, user, onClose, onViewFull }) {
                   {p.days_since_delivery != null && p.days_since_delivery >= 0 &&
                     <InfoItem label="Days Since Delivery" value={`${p.days_since_delivery} days`} />
                   }
+                  {p.delivery_source === 'app' && p.delivery_marked_by &&
+                    <InfoItem label="Delivery Marked By" value={p.delivery_marked_by} />
+                  }
                 </div>
                 {p.delivery_info && p.delivery_info !== 'nan' && p.delivery_info.trim() !== '' && (
                   <div className="p-2.5 rounded-lg"
@@ -467,6 +505,26 @@ export default function PatientDrawer({ uid, user, onClose, onViewFull }) {
           )}
         </div>
       </div>
+
+      {/* Assign-to-Delivery modal */}
+      {showDelivery && p && (
+        <MarkDeliveryModal
+          patient={p}
+          user={user}
+          onClose={() => setShowDelivery(false)}
+          onSaved={refetchPatient}
+        />
+      )}
+
+      {/* Edit details modal */}
+      {showEdit && p && (
+        <EditPatientModal
+          patient={p}
+          user={user}
+          onClose={() => setShowEdit(false)}
+          onSaved={refetchPatient}
+        />
+      )}
     </>
   );
 }

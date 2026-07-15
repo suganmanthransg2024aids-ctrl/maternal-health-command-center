@@ -262,7 +262,8 @@ router.get('/deliveries', (req, res) => {
 
   const cols = ['uid', 'mother_name', 'phc_display', 'hrt_name', 'hrt_code', 'cell_no',
     'edd', 'days_to_edd', 'risk_category', 'birth_plan',
-    'referral', 'delivery_info', 'is_delivered', 'weeks', 'rch_id'];
+    'referral', 'delivery_info', 'is_delivered', 'weeks', 'rch_id',
+    'delivery_date', 'days_since_delivery'];
 
   const toRecords = (sub) => sub.slice(0, 200).map((r) => Object.fromEntries(cols.map((c) => [c, r[c]])));
 
@@ -298,7 +299,8 @@ router.get('/deliveries', (req, res) => {
   });
 
   const pnBetween = (lo, hi) => pn.filter((r) => between(r._pn_days, lo, hi));
-  const pn1_7 = pnBetween(1, 7);
+  // Day 0 (delivered today, e.g. just assigned in the app) belongs in the first bucket
+  const pn1_7 = pnBetween(0, 7);
   const pn8_14 = pnBetween(8, 14);
   const pn15_21 = pnBetween(15, 21);
   const pn21_28 = pnBetween(22, 28);

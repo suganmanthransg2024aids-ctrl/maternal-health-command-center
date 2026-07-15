@@ -13,6 +13,7 @@ import healthRouter from './src/routes/health.js';
 import authRouter from './src/routes/auth.js';
 import syncRouter from './src/routes/sync.js';
 import patientsRouter from './src/routes/patients.js';
+import editsRouter from './src/routes/edits.js';
 import alertsRouter from './src/routes/alerts.js';
 import callsRouter from './src/routes/calls.js';
 import activityRouter from './src/routes/activity.js';
@@ -26,6 +27,7 @@ app.use('/api', healthRouter);
 app.use('/api', authRouter);
 app.use('/api', syncRouter);
 app.use('/api', patientsRouter);
+app.use('/api', editsRouter);
 app.use('/api', alertsRouter);
 // activityRouter must be mounted before callsRouter: unlike Flask's routing
 // (which always prefers a static rule like /calls/log over a dynamic

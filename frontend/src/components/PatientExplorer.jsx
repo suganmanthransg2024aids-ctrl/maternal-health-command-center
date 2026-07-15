@@ -2,8 +2,10 @@ import React, { useEffect, useState, useCallback } from 'react';
 import {
   Search, Filter, ChevronLeft, ChevronRight, User, Phone, MapPin,
   Activity, Calendar, AlertTriangle, Heart, Eye, ArrowLeft,
-  Clock, CheckCircle, X,
+  Clock, CheckCircle, X, Baby, Pencil,
 } from 'lucide-react';
+import MarkDeliveryModal from './MarkDeliveryModal';
+import EditPatientModal  from './EditPatientModal';
 
 const API = '/api';
 
@@ -27,6 +29,8 @@ function PatientProfile({ uid, onBack, user }) {
   const [callForm, setCallForm] = useState(null);
   const [fuForm,   setFuForm]   = useState(null);
   const [saving,   setSaving]   = useState(false);
+  const [showDelivery, setShowDelivery] = useState(false);
+  const [showEdit,     setShowEdit]     = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -34,6 +38,12 @@ function PatientProfile({ uid, onBack, user }) {
       .then(r => r.json()).then(d => { setP(d); setLoading(false); })
       .catch(() => setLoading(false));
   }, [uid]);
+
+  const refetch = () => {
+    fetch(`${API}/patients/${uid}`)
+      .then(r => r.json()).then(d => setP(d))
+      .catch(() => {});
+  };
 
   const saveCall = async () => {
     setSaving(true);
@@ -99,6 +109,24 @@ function PatientProfile({ uid, onBack, user }) {
               <span className="flex items-center gap-1"><Activity className="w-3 h-3" />HRT: {p.hrt_name}</span>
               <span>RCH: {p.rch_id || '—'}</span>
             </div>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-2 flex-shrink-0">
+            <button
+              onClick={() => setShowDelivery(true)}
+              title={p.is_delivered ? 'Delivered — click to edit or undo' : 'Assign this mother to Delivery'}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold"
+              style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.35)', color: '#4ADE80' }}>
+              <Baby className="w-3.5 h-3.5" />
+              {p.is_delivered ? 'Delivered ✓' : 'Assign Delivery'}
+            </button>
+            <button
+              onClick={() => setShowEdit(true)}
+              title="Edit EDD, Hb and other details"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold"
+              style={{ background: 'rgba(251,191,36,0.12)', border: '1px solid rgba(251,191,36,0.35)', color: '#FBBF24' }}>
+              <Pencil className="w-3.5 h-3.5" />
+              Edit Details
+            </button>
           </div>
         </div>
       </div>
@@ -318,6 +346,18 @@ function PatientProfile({ uid, onBack, user }) {
           </div>
         </div>
       )}
+
+      {/* Assign-to-Delivery modal */}
+      {showDelivery && (
+        <MarkDeliveryModal patient={p} user={user}
+          onClose={() => setShowDelivery(false)} onSaved={refetch} />
+      )}
+
+      {/* Edit details modal */}
+      {showEdit && (
+        <EditPatientModal patient={p} user={user}
+          onClose={() => setShowEdit(false)} onSaved={refetch} />
+      )}
     </div>
   );
 }
@@ -332,6 +372,7 @@ export default function PatientExplorer({ user, openPatient, defaultUid, onBack 
   const [filterHRT,  setFilterHRT]  = useState('');
   const [phcList,    setPhcList]    = useState([]);
   const [profileUid, setProfileUid] = useState(defaultUid || null);
+  const [deliveryFor, setDeliveryFor] = useState(null); // row-level "assign delivery" target
 
   const PER_PAGE = 50;
 
@@ -480,7 +521,12 @@ export default function PatientExplorer({ user, openPatient, defaultUid, onBack 
                     <td className="text-slate-400 text-xs">{p.cell_no || '—'}</td>
                     <td className="text-xs text-slate-400">{p.edd || '—'}</td>
                     <td>
-                      {daysLeft !== null && daysLeft !== undefined ? (
+                      {p.is_delivered ? (
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
+                          style={{ background: 'rgba(34,197,94,0.15)', color: '#86EFAC', border: '1px solid rgba(34,197,94,0.3)' }}>
+                          DELIVERED
+                        </span>
+                      ) : daysLeft !== null && daysLeft !== undefined ? (
                         <span className="text-xs font-bold"
                           style={{ color: daysLeft < 0 ? '#EF4444' : daysLeft < 7 ? '#F97316' : '#94A3B8' }}>
                           {daysLeft < 0 ? `${Math.abs(daysLeft)}d overdue` : `${daysLeft}d`}
@@ -488,12 +534,21 @@ export default function PatientExplorer({ user, openPatient, defaultUid, onBack 
                       ) : '—'}
                     </td>
                     <td>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setProfileUid(p.uid); }}
-                        className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-semibold"
-                        style={{ background: 'rgba(66,165,245,0.1)', color: '#42A5F5' }}>
-                        <Eye className="w-3 h-3" /> View
-                      </button>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setProfileUid(p.uid); }}
+                          className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-semibold"
+                          style={{ background: 'rgba(66,165,245,0.1)', color: '#42A5F5' }}>
+                          <Eye className="w-3 h-3" /> View
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setDeliveryFor(p); }}
+                          title={p.is_delivered ? 'Delivered — click to edit or undo' : 'Assign this mother to Delivery'}
+                          className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-semibold"
+                          style={{ background: 'rgba(34,197,94,0.1)', color: '#4ADE80' }}>
+                          <Baby className="w-3 h-3" /> {p.is_delivered ? 'Done ✓' : 'Delivery'}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -522,6 +577,12 @@ export default function PatientExplorer({ user, openPatient, defaultUid, onBack 
           </div>
         )}
       </div>
+
+      {/* Row-level Assign-to-Delivery modal */}
+      {deliveryFor && (
+        <MarkDeliveryModal patient={deliveryFor} user={user}
+          onClose={() => setDeliveryFor(null)} onSaved={() => load()} />
+      )}
     </div>
   );
 }
