@@ -114,7 +114,8 @@ export default function EditPatientModal({ patient, user, onClose, onSaved }) {
   };
 
   const hasOverrides = (patient.edited_fields && patient.edited_fields.length > 0)
-    || patient.delivery_source === 'app';
+    || patient.delivery_source === 'app'
+    || patient.is_aborted;
 
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4"

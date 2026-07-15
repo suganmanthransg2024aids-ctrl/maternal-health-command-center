@@ -147,12 +147,16 @@ export default function PatientDrawer({ uid, user, onClose, onViewFull }) {
             {p && (
               <button
                 onClick={() => setShowDelivery(true)}
-                title={p.is_delivered ? 'Delivered — click to edit or undo' : 'Assign this mother to Delivery'}
+                title={p.is_delivered ? 'Delivered — click to edit or undo'
+                     : p.is_aborted ? 'Abortion recorded — click to edit or undo'
+                     : 'Assign outcome: Delivery or Abortion'}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold"
-                style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.35)', color: '#4ADE80' }}
+                style={p.is_aborted
+                  ? { background: 'rgba(248,113,113,0.15)', border: '1px solid rgba(248,113,113,0.35)', color: '#FCA5A5' }
+                  : { background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.35)', color: '#4ADE80' }}
               >
                 <Baby className="w-3.5 h-3.5" />
-                {p.is_delivered ? 'Delivered ✓' : 'Delivery'}
+                {p.is_delivered ? 'Delivered ✓' : p.is_aborted ? 'Abortion ✓' : 'Delivery'}
               </button>
             )}
             {p && (
@@ -217,6 +221,12 @@ export default function PatientDrawer({ uid, user, onClose, onViewFull }) {
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
                         style={{ background: 'rgba(34,197,94,0.15)', color: '#86EFAC', border: '1px solid rgba(34,197,94,0.3)' }}>
                         DELIVERED
+                      </span>
+                    )}
+                    {p.is_aborted && (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                        style={{ background: 'rgba(248,113,113,0.15)', color: '#FCA5A5', border: '1px solid rgba(248,113,113,0.3)' }}>
+                        ABORTION
                       </span>
                     )}
                   </div>
@@ -495,6 +505,20 @@ export default function PatientDrawer({ uid, user, onClose, onViewFull }) {
                       Delivery Information
                     </div>
                     <div className="text-xs" style={{ color: '#D1FAE5' }}>{p.delivery_info}</div>
+                  </div>
+                )}
+                {p.is_aborted && p.abortion_info && (
+                  <div className="p-2.5 rounded-lg mt-2"
+                    style={{ background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.2)' }}>
+                    <div className="text-[9px] font-bold uppercase tracking-wider mb-0.5" style={{ color: '#FCA5A5' }}>
+                      Abortion Information
+                    </div>
+                    <div className="text-xs" style={{ color: '#FECACA' }}>{p.abortion_info}</div>
+                    {p.abortion_marked_by && (
+                      <div className="text-[9px] mt-1" style={{ color: 'var(--ccmc-text-hint)' }}>
+                        Marked by {p.abortion_marked_by}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

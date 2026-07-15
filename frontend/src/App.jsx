@@ -9,6 +9,7 @@ import DataValidationCenter from './components/DataValidationCenter';
 import PatientExplorer      from './components/PatientExplorer';
 import RiskIntelligence     from './components/RiskIntelligence';
 import DeliveryMonitoring   from './components/DeliveryMonitoring';
+import AbortionMonitoring   from './components/AbortionMonitoring';
 import CallTracking         from './components/CallTracking';
 import FollowUpTracking     from './components/FollowUpTracking';
 import AlertsCenter         from './components/AlertsCenter';
@@ -242,6 +243,8 @@ export default function App() {
         return <RiskIntelligence {...commonProps} />;
       case 'delivery':
         return <DeliveryMonitoring {...commonProps} />;
+      case 'abortions':
+        return <AbortionMonitoring {...commonProps} />;
       case 'calls':
         return <CallTracking {...commonProps} />;
       case 'followups':

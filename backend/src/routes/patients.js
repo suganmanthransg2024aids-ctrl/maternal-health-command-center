@@ -62,7 +62,8 @@ router.get('/stats', (req, res) => {
 
   const total = records.length;
   const delivered = countIf(records, (r) => r.is_delivered);
-  const active = total - delivered;
+  const aborted = countIf(records, (r) => r.is_aborted);
+  const active = total - delivered - aborted;
 
   const riskCounts = {};
   for (const r of records) riskCounts[r.risk_category] = (riskCounts[r.risk_category] || 0) + 1;
@@ -111,6 +112,7 @@ router.get('/stats', (req, res) => {
     total_mothers: total,
     active_mothers: active,
     delivered,
+    aborted,
     high_risk: highCount + veryHigh + critical,
     critical,
     very_high: veryHigh,

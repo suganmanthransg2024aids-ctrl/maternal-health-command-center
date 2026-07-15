@@ -4,6 +4,7 @@ import {
   LayoutDashboard, ShieldCheck, Users, Activity, Baby,
   Phone, CalendarCheck, Bell, BarChart2, FileText,
   LogOut, TrendingUp, ChevronRight, ClipboardList, CheckSquare, X,
+  HeartCrack,
 } from 'lucide-react';
 
 const NAV_SECTIONS = [
@@ -26,6 +27,7 @@ const NAV_SECTIONS = [
       { id: 'patients',   label: 'Patient Explorer',    icon: Users },
       { id: 'risk',       label: 'Risk Intelligence',   icon: Activity },
       { id: 'delivery',   label: 'Delivery Monitoring', icon: Baby },
+      { id: 'abortions',  label: 'Abortions',           icon: HeartCrack },
       { id: 'calls',      label: 'Call Tracking',       icon: Phone },
       { id: 'followups',  label: 'Follow-Up Tracking',  icon: CalendarCheck },
       { id: 'alerts',     label: 'Alerts Center',       icon: Bell },

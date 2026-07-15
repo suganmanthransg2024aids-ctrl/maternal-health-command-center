@@ -50,3 +50,8 @@ backend/followup_data.json
 
 # Runtime patient overrides store (app-side edits/delivery assignments)
 backend/patient_overrides.json
+
+# jsonStore crash-safety artifacts (backups, temp writes, quarantined files)
+backend/*.json.bak
+backend/*.json.tmp
+backend/*.json.corrupt-*

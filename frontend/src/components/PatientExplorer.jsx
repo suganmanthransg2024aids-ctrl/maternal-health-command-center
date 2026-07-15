@@ -101,6 +101,12 @@ function PatientProfile({ uid, onBack, user }) {
                   DELIVERED
                 </span>
               )}
+              {p.is_aborted && (
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                  style={{ background: 'rgba(248,113,113,0.15)', color: '#FCA5A5', border: '1px solid rgba(248,113,113,0.3)' }}>
+                  ABORTION
+                </span>
+              )}
             </div>
             <div className="text-xs text-slate-400 mt-1">{p.address || 'Address not recorded'}</div>
             <div className="flex flex-wrap gap-3 mt-2 text-xs text-slate-400">
@@ -113,11 +119,15 @@ function PatientProfile({ uid, onBack, user }) {
           <div className="flex flex-col sm:flex-row gap-2 flex-shrink-0">
             <button
               onClick={() => setShowDelivery(true)}
-              title={p.is_delivered ? 'Delivered — click to edit or undo' : 'Assign this mother to Delivery'}
+              title={p.is_delivered ? 'Delivered — click to edit or undo'
+                   : p.is_aborted ? 'Abortion recorded — click to edit or undo'
+                   : 'Assign outcome: Delivery or Abortion'}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold"
-              style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.35)', color: '#4ADE80' }}>
+              style={p.is_aborted
+                ? { background: 'rgba(248,113,113,0.15)', border: '1px solid rgba(248,113,113,0.35)', color: '#FCA5A5' }
+                : { background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.35)', color: '#4ADE80' }}>
               <Baby className="w-3.5 h-3.5" />
-              {p.is_delivered ? 'Delivered ✓' : 'Assign Delivery'}
+              {p.is_delivered ? 'Delivered ✓' : p.is_aborted ? 'Abortion ✓' : 'Delivery / Abortion'}
             </button>
             <button
               onClick={() => setShowEdit(true)}
@@ -526,6 +536,11 @@ export default function PatientExplorer({ user, openPatient, defaultUid, onBack 
                           style={{ background: 'rgba(34,197,94,0.15)', color: '#86EFAC', border: '1px solid rgba(34,197,94,0.3)' }}>
                           DELIVERED
                         </span>
+                      ) : p.is_aborted ? (
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
+                          style={{ background: 'rgba(248,113,113,0.15)', color: '#FCA5A5', border: '1px solid rgba(248,113,113,0.3)' }}>
+                          ABORTION
+                        </span>
                       ) : daysLeft !== null && daysLeft !== undefined ? (
                         <span className="text-xs font-bold"
                           style={{ color: daysLeft < 0 ? '#EF4444' : daysLeft < 7 ? '#F97316' : '#94A3B8' }}>
@@ -543,10 +558,14 @@ export default function PatientExplorer({ user, openPatient, defaultUid, onBack 
                         </button>
                         <button
                           onClick={(e) => { e.stopPropagation(); setDeliveryFor(p); }}
-                          title={p.is_delivered ? 'Delivered — click to edit or undo' : 'Assign this mother to Delivery'}
+                          title={p.is_delivered ? 'Delivered — click to edit or undo'
+                               : p.is_aborted ? 'Abortion recorded — click to edit or undo'
+                               : 'Assign outcome: Delivery or Abortion'}
                           className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-semibold"
-                          style={{ background: 'rgba(34,197,94,0.1)', color: '#4ADE80' }}>
-                          <Baby className="w-3 h-3" /> {p.is_delivered ? 'Done ✓' : 'Delivery'}
+                          style={p.is_aborted
+                            ? { background: 'rgba(248,113,113,0.1)', color: '#FCA5A5' }
+                            : { background: 'rgba(34,197,94,0.1)', color: '#4ADE80' }}>
+                          <Baby className="w-3 h-3" /> {p.is_delivered || p.is_aborted ? 'Done ✓' : 'Outcome'}
                         </button>
                       </div>
                     </td>

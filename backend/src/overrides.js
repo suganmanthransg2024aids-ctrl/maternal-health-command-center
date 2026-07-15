@@ -11,6 +11,9 @@ import { parseRisk } from './riskEngine.js';
  *     delivery: { delivered: true, delivery_date: "...", // app-assigned delivery
  *                 delivery_mode, delivery_place, remarks,
  *                 marked_by, marked_at },
+ *     abortion: { aborted: true, abortion_date: "...",   // app-assigned abortion
+ *                 abortion_type, abortion_place, remarks,
+ *                 marked_by, marked_at },
  *     updated_by, updated_at,
  *   }
  * }
@@ -75,7 +78,29 @@ export function applyOverrides(records) {
       merged.last_edited_at = o.updated_at || '';
     }
 
-    if (o.delivery) {
+    // Abortion and delivery are mutually exclusive; the routes clear one when
+    // setting the other, so at most one of these blocks applies.
+    if (o.abortion && o.abortion.aborted) {
+      const a = o.abortion;
+      merged.is_aborted = true;
+      merged.is_delivered = false;
+      merged.abortion_marked_by = a.marked_by || '';
+      merged.abortion_marked_at = a.marked_at || '';
+      const ad = parseDate(a.abortion_date);
+      merged.abortion_date = ad ? formatDDMMYYYY(ad) : String(a.abortion_date || '');
+      merged.days_since_abortion = ad
+        ? Math.max(0, Math.round((today0.getTime() - ad.getTime()) / 86400000))
+        : null;
+      merged.abortion_type = a.abortion_type || '';
+      const bits = ['ABORTION', merged.abortion_date, a.abortion_type, a.abortion_place]
+        .filter((x) => x && String(x).trim());
+      merged.abortion_info = bits.join(' / ') + (a.remarks ? ` — ${a.remarks}` : '');
+      // Pregnancy ended: no days-to-EDD, so she drops out of every due/overdue/
+      // AN-timeline calculation across the app (they all test days_to_edd).
+      merged.days_to_edd = null;
+      merged.delivery_date = '';
+      merged.days_since_delivery = null;
+    } else if (o.delivery) {
       const d = o.delivery;
       merged.is_delivered = Boolean(d.delivered);
       merged.delivery_source = 'app';

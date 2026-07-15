@@ -122,8 +122,8 @@ export default function CallTracking({ user }) {
       .then(r => r.json()).then(d => setPhcList(d)).catch(() => {});
   }, [user.role]);
 
-  const load = useCallback(() => {
-    setLoading(true);
+  const load = useCallback((background = false) => {
+    if (!background) setLoading(true);
     const p = new URLSearchParams({ role: user.role });
     if (filterStatus) p.set('status', filterStatus);
     if (filterHRT)    p.set('hrt', filterHRT);
@@ -139,6 +139,13 @@ export default function CallTracking({ user }) {
   }, [user.role, filterStatus, filterHRT, filterPHC]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Live sync — all HRT portals update call statuses concurrently, so poll
+  // in the background (no spinner) to show everyone's latest entries.
+  useEffect(() => {
+    const t = setInterval(() => load(true), 15000);
+    return () => clearInterval(t);
+  }, [load]);
 
   const openCallModal = (r) => {
     setCallModal({
@@ -174,7 +181,7 @@ export default function CallTracking({ user }) {
             Call Tracking
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            {total.toLocaleString()} mothers · real-time call status management
+            {total.toLocaleString()} mothers · live sync across all HRT portals (auto-refreshes every 15s)
           </p>
         </div>
         <button onClick={load} disabled={loading}
