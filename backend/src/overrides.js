@@ -1,7 +1,8 @@
-import { loadJson, saveJson } from './jsonStore.js';
-import { OVERRIDES_FILE } from './config.js';
+import { getOverridesMap, overrideFor, overridesVersion } from './store.js';
 import { parseDate, daysToEdd, formatDDMMYYYY } from './parseUtils.js';
 import { parseRisk } from './riskEngine.js';
+
+export { overridesVersion };
 
 /**
  * App-side patient overrides, keyed by uid:
@@ -22,21 +23,6 @@ import { parseRisk } from './riskEngine.js';
  * each re-download.
  */
 
-// Bumped on every save so getData() knows its merged cache is stale.
-let version = 0;
-export function overridesVersion() {
-  return version;
-}
-
-export function loadOverrides() {
-  return loadJson(OVERRIDES_FILE);
-}
-
-export function saveOverrides(data) {
-  saveJson(OVERRIDES_FILE, data);
-  version += 1;
-}
-
 /** Fields a portal user may edit. Derived fields (days_to_edd, risk_*) are recomputed. */
 export const EDITABLE_FIELDS = [
   'mother_name', 'cell_no', 'husband_name', 'address',
@@ -53,12 +39,14 @@ function todayUTC() {
 }
 
 export function applyOverrides(records) {
-  const ov = loadOverrides();
+  const ov = getOverridesMap();
   if (!ov || Object.keys(ov).length === 0) return records;
   const today0 = todayUTC();
 
   return records.map((r) => {
-    const o = ov[r.uid];
+    // Stable RCH-based key first so overrides follow the mother even when
+    // her row moves in the sheet; legacy uid entries still resolve.
+    const o = overrideFor(ov, r);
     if (!o) return r;
     const merged = { ...r };
 

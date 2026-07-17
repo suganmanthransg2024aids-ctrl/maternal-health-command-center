@@ -40,4 +40,11 @@ export function initDb() {
         rejection_reason TEXT
     );
   `);
+  // mother_key = stable RCH-based identity (survives sheet row reordering)
+  for (const table of ['call_logs', 'status_updates']) {
+    const cols = conn.prepare(`PRAGMA table_info(${table})`).all();
+    if (!cols.some((c) => c.name === 'mother_key')) {
+      conn.exec(`ALTER TABLE ${table} ADD COLUMN mother_key TEXT`);
+    }
+  }
 }

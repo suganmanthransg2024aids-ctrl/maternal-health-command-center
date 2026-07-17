@@ -1,7 +1,10 @@
 import { Router } from 'express';
 import { getData } from '../excelLoader.js';
-import { getDb } from '../activityDb.js';
-import { getDataForRole } from '../helpers.js';
+import {
+  stableKey, addCallLog, callLogsToday, callLogsForMother,
+  addStatusUpdate, approvalsList, setApproval, dailySummaryRows,
+} from '../store.js';
+import { getDataForRole, asyncRoute } from '../helpers.js';
 import { parseDate } from '../parseUtils.js';
 
 const router = Router();
@@ -15,7 +18,7 @@ function nowParts() {
   };
 }
 
-router.post('/calls/log', (req, res) => {
+router.post('/calls/log', asyncRoute(async (req, res) => {
   const b = req.body || {};
   const motherId = String(b.mother_id || '').trim();
   const hrtUser = String(b.hrt_user || '').trim();
@@ -29,32 +32,29 @@ router.post('/calls/log', (req, res) => {
   const row = df.find((r) => r.uid === motherId);
   const motherName = row ? String(row.mother_name || '') : '';
   const phc = row ? String(row.phc_key || '') : '';
+  const motherKey = row ? stableKey(row) : motherId;
 
   const { dateStr, isoSeconds } = nowParts();
-  const stmt = getDb().prepare(
-    'INSERT INTO call_logs (mother_id,mother_name,phc,hrt_user,call_date,call_time,outcome,notes) VALUES (?,?,?,?,?,?,?,?)'
-  );
-  const info = stmt.run(motherId, motherName, phc, hrtUser, dateStr, isoSeconds, outcome, notes);
-  res.json({ success: true, id: info.lastInsertRowid });
-});
+  const id = await addCallLog({
+    motherId, motherKey, motherName, phc, hrtUser,
+    callDate: dateStr, callTime: isoSeconds, outcome, notes,
+  });
+  res.json({ success: true, id });
+}));
 
-router.get('/calls/today', (req, res) => {
+router.get('/calls/today', asyncRoute(async (req, res) => {
   const role = String(req.query.role || '').toUpperCase();
   const date = req.query.date || nowParts().dateStr;
-  const db = getDb();
-  let rows;
-  if (role === 'CHO' || role === 'DMCHO') {
-    rows = db.prepare('SELECT * FROM call_logs WHERE call_date=? ORDER BY call_time DESC').all(date);
-  } else {
-    rows = db.prepare('SELECT * FROM call_logs WHERE call_date=? AND hrt_user=? ORDER BY call_time DESC').all(date, role);
-  }
+  const rows = await callLogsToday(date, role === 'CHO' || role === 'DMCHO' ? null : role);
   res.json(rows);
-});
+}));
 
-router.get('/calls/history/:uid', (req, res) => {
-  const rows = getDb().prepare('SELECT * FROM call_logs WHERE mother_id=? ORDER BY call_time DESC LIMIT 30').all(req.params.uid);
+router.get('/calls/history/:uid', asyncRoute(async (req, res) => {
+  const uid = req.params.uid;
+  const row = getData().find((r) => r.uid === uid);
+  const rows = await callLogsForMother(row ? stableKey(row) : uid, uid);
   res.json(rows);
-});
+}));
 
 function fromIsoDateOnly(v) {
   if (v === null || v === undefined) return null;
@@ -67,7 +67,7 @@ function fromIsoDateOnly(v) {
   return dt;
 }
 
-router.get('/tasks/today', (req, res) => {
+router.get('/tasks/today', asyncRoute(async (req, res) => {
   const role = String(req.query.role || '').toUpperCase();
   const today = new Date();
   const today0 = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
@@ -85,8 +85,12 @@ router.get('/tasks/today', (req, res) => {
     return due && due.getTime() === today0.getTime();
   });
 
-  const logged = getDb().prepare('SELECT mother_id, outcome, notes, call_time FROM call_logs WHERE call_date=? AND hrt_user=?').all(todayStr, role);
-  const loggedMap = Object.fromEntries(logged.map((r) => [r.mother_id, r]));
+  const logged = await callLogsToday(todayStr, role);
+  const loggedMap = {};
+  for (const r of logged) {
+    loggedMap[r.mother_id] = r;
+    if (r.mother_key) loggedMap[r.mother_key] = r;
+  }
 
   const NAME_CANDS = ['mother_name', 'name', 'patient_name'];
   const PHC_CANDS = ['phc_key', 'phc', 'phc_name'];
@@ -98,14 +102,14 @@ router.get('/tasks/today', (req, res) => {
 
   const result = dueToday.map((r) => {
     const uidVal = uidCol ? String(r[uidCol]) : '';
-    const log = loggedMap[uidVal] || {};
+    const log = loggedMap[stableKey(r)] || loggedMap[uidVal] || {};
     return {
       uid: uidVal,
       name: nameCol ? String(r[nameCol]) : '',
       phc: phcCol ? String(r[phcCol]) : '',
       phone: phCol ? String(r[phCol]) : '',
       due_date: todayStr,
-      called: uidVal in loggedMap,
+      called: stableKey(r) in loggedMap || uidVal in loggedMap,
       outcome: log.outcome ?? null,
       notes: log.notes ?? null,
       call_time: log.call_time ?? null,
@@ -114,9 +118,9 @@ router.get('/tasks/today', (req, res) => {
 
   result.sort((a, b) => (a.called === b.called ? (a.name < b.name ? -1 : a.name > b.name ? 1 : 0) : (a.called ? 1 : -1)));
   res.json(result);
-});
+}));
 
-router.post('/status/update', (req, res) => {
+router.post('/status/update', asyncRoute(async (req, res) => {
   const b = req.body || {};
   const motherId = String(b.mother_id || '').trim();
   const hrtUser = String(b.hrt_user || '').trim();
@@ -130,43 +134,39 @@ router.post('/status/update', (req, res) => {
   const row = df.find((r) => r.uid === motherId);
   const motherName = row ? String(row.mother_name || '') : '';
   const phc = row ? String(row.phc_key || '') : '';
+  const motherKey = row ? stableKey(row) : motherId;
 
   const { isoSeconds } = nowParts();
-  const stmt = getDb().prepare(
-    'INSERT INTO status_updates (mother_id,mother_name,phc,hrt_user,new_status,notes,submitted_at) VALUES (?,?,?,?,?,?,?)'
-  );
-  const info = stmt.run(motherId, motherName, phc, hrtUser, newStatus, notes, isoSeconds);
-  res.json({ success: true, id: info.lastInsertRowid });
-});
+  const id = await addStatusUpdate({
+    motherId, motherKey, motherName, phc, hrtUser,
+    newStatus, notes, submittedAt: isoSeconds,
+  });
+  res.json({ success: true, id });
+}));
 
-router.get('/approvals', (req, res) => {
-  const db = getDb();
-  const pending = db.prepare('SELECT * FROM status_updates WHERE is_approved=0 ORDER BY submitted_at DESC').all();
-  const recent = db.prepare('SELECT * FROM status_updates WHERE is_approved!=0 ORDER BY approved_at DESC LIMIT 30').all();
-  res.json({ pending, recent });
-});
+router.get('/approvals', asyncRoute(async (req, res) => {
+  res.json(await approvalsList());
+}));
 
-router.post('/approvals/:aid/approve', (req, res) => {
+router.post('/approvals/:aid/approve', asyncRoute(async (req, res) => {
   const b = req.body || {};
   const approvedBy = String(b.approved_by || 'CHO').trim();
   const { isoSeconds } = nowParts();
-  getDb().prepare('UPDATE status_updates SET is_approved=1, approved_by=?, approved_at=? WHERE id=?')
-    .run(approvedBy, isoSeconds, req.params.aid);
+  await setApproval(req.params.aid, true, approvedBy, isoSeconds);
   res.json({ success: true });
-});
+}));
 
-router.post('/approvals/:aid/reject', (req, res) => {
+router.post('/approvals/:aid/reject', asyncRoute(async (req, res) => {
   const b = req.body || {};
   const rejectedBy = String(b.rejected_by || 'CHO').trim();
   const reason = String(b.reason || '').trim();
   const { isoSeconds } = nowParts();
-  getDb().prepare('UPDATE status_updates SET is_approved=-1, approved_by=?, approved_at=?, rejection_reason=? WHERE id=?')
-    .run(rejectedBy, isoSeconds, reason, req.params.aid);
+  await setApproval(req.params.aid, false, rejectedBy, isoSeconds, reason);
   res.json({ success: true });
-});
+}));
 
 /** Smart AI call prioritisation — returns top mothers to call today, ranked by urgency. */
-router.get('/daily-priority', (req, res) => {
+router.get('/daily-priority', asyncRoute(async (req, res) => {
   const role = String(req.query.role || '').toUpperCase();
   const limit = parseInt(req.query.limit || '30', 10);
   const today0 = new Date();
@@ -179,18 +179,16 @@ router.get('/daily-priority', (req, res) => {
   const sint = (v) => (v === null || v === undefined || Number.isNaN(Number(v)) ? null : Math.trunc(Number(v)));
   const sfloat = (v) => (v === null || v === undefined || Number.isNaN(Number(v)) ? 0.0 : Number(v));
 
-  const db = getDb();
-  let calledRows;
-  if (role === 'CHO' || role === 'DMCHO') {
-    calledRows = db.prepare('SELECT DISTINCT mother_id FROM call_logs WHERE call_date=?').all(todayStr);
-  } else {
-    calledRows = db.prepare('SELECT DISTINCT mother_id FROM call_logs WHERE call_date=? AND hrt_user=?').all(todayStr, role);
+  const calledRows = await callLogsToday(todayStr, role === 'CHO' || role === 'DMCHO' ? null : role);
+  const calledToday = new Set();
+  for (const r of calledRows) {
+    calledToday.add(r.mother_id);
+    if (r.mother_key) calledToday.add(r.mother_key);
   }
-  const calledToday = new Set(calledRows.map((r) => r.mother_id));
 
   function score(row) {
     const uid = String(row.uid || '');
-    if (calledToday.has(uid)) return { sc: -1, reasons: [] };
+    if (calledToday.has(uid) || calledToday.has(stableKey(row))) return { sc: -1, reasons: [] };
 
     let sc = 0;
     const reasons = [];
@@ -278,22 +276,20 @@ router.get('/daily-priority', (req, res) => {
   });
 
   res.json(top);
-});
+}));
 
-router.get('/daily-summary', (req, res) => {
+router.get('/daily-summary', asyncRoute(async (req, res) => {
   const date = req.query.date || nowParts().dateStr;
-  const db = getDb();
-  const rows = db.prepare('SELECT hrt_user, outcome, COUNT(*) as cnt FROM call_logs WHERE call_date=? GROUP BY hrt_user, outcome').all(date);
-  const pendingCount = db.prepare('SELECT COUNT(*) as c FROM status_updates WHERE is_approved=0').get().c;
+  const { rows, pendingCount } = await dailySummaryRows(date);
 
   const summary = {};
   for (const r of rows) {
     const u = r.hrt_user;
     if (!summary[u]) summary[u] = { total: 0, contacted: 0, unreachable: 0, no_answer: 0, busy: 0 };
-    summary[u].total += r.cnt;
-    summary[u][r.outcome.toLowerCase().replace(/ /g, '_')] = r.cnt;
+    summary[u].total += Number(r.cnt);
+    summary[u][r.outcome.toLowerCase().replace(/ /g, '_')] = Number(r.cnt);
   }
   res.json({ by_hrt: summary, pending_approvals: pendingCount, date });
-});
+}));
 
 export default router;

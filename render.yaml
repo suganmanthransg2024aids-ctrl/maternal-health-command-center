@@ -10,4 +10,16 @@ services:
         value: https://docs.google.com/spreadsheets/d/1T1sthQZftwJEyve2wuyAwVZ55sr8TvgwhQJFEdEmAmA/export?format=xlsx
       - key: SYNC_INTERVAL_SEC
         value: "60"
-# redeployed: 2026-07-09 | region: ohio | source: google-sheets | sync: 60s
+      # HRT updates (calls, follow-ups, delivery status, edits) persist in
+      # PostgreSQL — they survive restarts, redeploys and crashes. Render's
+      # own disk is wiped on every deploy, so never store them on disk.
+      - key: DATABASE_URL
+        fromDatabase:
+          name: ccmc-db
+          property: connectionString
+
+databases:
+  - name: ccmc-db
+    plan: free
+    region: ohio
+# redeployed: 2026-07-09 | region: ohio | source: google-sheets | sync: 60s | store: postgres

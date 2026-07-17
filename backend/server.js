@@ -7,7 +7,7 @@ import {
   PORT, HOST, EXCEL_URL, EXCEL_PATH, FRONTEND_DIST, DB_PATH, CLOUD_SYNC_INTERVAL,
 } from './src/config.js';
 import { loadExcel, downloadExcel, startAutoSync, cache, syncState } from './src/excelLoader.js';
-import { initDb } from './src/activityDb.js';
+import { initStore, usingPostgres } from './src/store.js';
 
 import healthRouter from './src/routes/health.js';
 import authRouter from './src/routes/auth.js';
@@ -49,6 +49,12 @@ app.use((req, res) => {
   res.sendFile(path.join(FRONTEND_DIST, 'index.html'));
 });
 
+// Last: surface async route failures as JSON instead of crashing the process.
+app.use((err, req, res, next) => { // eslint-disable-line no-unused-vars
+  console.error(`[API] ${req.method} ${req.path} failed:`, err);
+  res.status(500).json({ error: 'Internal server error' });
+});
+
 async function main() {
   console.log('HIGH RISK MOTHER TRACKER - CCMC Backend');
   if (EXCEL_URL) {
@@ -69,8 +75,9 @@ async function main() {
 
   startAutoSync();
 
-  initDb();
-  console.log(`Activity DB: ${DB_PATH}`);
+  // Durable HRT-update store must be ready before we accept requests.
+  await initStore();
+  console.log(`HRT store : ${usingPostgres ? 'PostgreSQL (persistent)' : `local files (${DB_PATH})`}`);
   console.log('Auto-sync : ON');
   console.log(`Open      : http://localhost:${PORT}`);
 

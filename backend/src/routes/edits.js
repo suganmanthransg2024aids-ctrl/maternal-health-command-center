@@ -1,8 +1,11 @@
 import { Router } from 'express';
 import { getData } from '../excelLoader.js';
-import { loadOverrides, saveOverrides, EDITABLE_FIELDS } from '../overrides.js';
+import { EDITABLE_FIELDS } from '../overrides.js';
+import {
+  getOverridesMap, putOverride, removeOverride, stableKey,
+} from '../store.js';
 import { parseDate } from '../parseUtils.js';
-import { filterByRole, groupBy } from '../helpers.js';
+import { filterByRole, groupBy, asyncRoute } from '../helpers.js';
 
 const router = Router();
 
@@ -12,8 +15,24 @@ function findPatient(uid) {
   return getData().find((r) => r.uid === uid);
 }
 
+/**
+ * Load the existing override entry for a patient (stable key first, legacy
+ * uid fallback) and persist it back under the stable RCH-based key, retiring
+ * any legacy-uid entry so state never splits across two keys.
+ */
+function entryFor(rec, uid) {
+  const ov = getOverridesMap();
+  return { ...(ov[stableKey(rec)] || ov[uid] || {}) };
+}
+
+async function saveEntry(rec, uid, entry) {
+  const key = stableKey(rec);
+  await putOverride(key, entry);
+  if (key !== uid) await removeOverride(uid);
+}
+
 /** Edit patient details (EDD, Hb, BP, phone…). Stored as an override merged over sheet data. */
-router.patch('/patients/:uid', (req, res) => {
+router.patch('/patients/:uid', asyncRoute(async (req, res) => {
   const { uid } = req.params;
   const body = req.body || {};
   const updates = body.updates || {};
@@ -38,20 +57,19 @@ router.patch('/patients/:uid', (req, res) => {
     }
   }
 
-  const ov = loadOverrides();
-  const entry = ov[uid] || {};
+  const rec = findPatient(uid);
+  const entry = entryFor(rec, uid);
   entry.fields = { ...(entry.fields || {}), ...clean };
   entry.updated_by = updatedBy || entry.updated_by || '';
   entry.updated_at = nowIso();
-  ov[uid] = entry;
-  saveOverrides(ov);
+  await saveEntry(rec, uid, entry);
 
   console.log(`[EDIT] ${updatedBy || '?'} updated ${uid}: ${Object.keys(clean).join(', ')}`);
   res.json({ success: true, rejected, patient: findPatient(uid) });
-});
+}));
 
 /** Assign (or un-assign) a mother to delivery. Delivered mothers flow into dashboard stats + PN monitoring. */
-router.post('/patients/:uid/delivery', (req, res) => {
+router.post('/patients/:uid/delivery', asyncRoute(async (req, res) => {
   const { uid } = req.params;
   const b = req.body || {};
   if (!findPatient(uid)) return res.status(404).json({ error: 'Patient not found' });
@@ -59,8 +77,8 @@ router.post('/patients/:uid/delivery', (req, res) => {
   const delivered = b.delivered === undefined ? true : Boolean(b.delivered);
   const markedBy = String(b.marked_by || '').trim();
 
-  const ov = loadOverrides();
-  const entry = ov[uid] || {};
+  const rec = findPatient(uid);
+  const entry = entryFor(rec, uid);
 
   if (delivered) {
     const dateStr = String(b.delivery_date || '').trim();
@@ -87,15 +105,14 @@ router.post('/patients/:uid/delivery', (req, res) => {
     entry.delivery = { delivered: false, marked_by: markedBy, marked_at: nowIso() };
   }
 
-  ov[uid] = entry;
-  saveOverrides(ov);
+  await saveEntry(rec, uid, entry);
 
   console.log(`[DELIVERY] ${markedBy || '?'} marked ${uid} delivered=${delivered}`);
   res.json({ success: true, patient: findPatient(uid) });
-});
+}));
 
 /** Assign (or un-assign) abortion status. Aborted mothers leave AN/due lists and show on the Abortions page. */
-router.post('/patients/:uid/abortion', (req, res) => {
+router.post('/patients/:uid/abortion', asyncRoute(async (req, res) => {
   const { uid } = req.params;
   const b = req.body || {};
   if (!findPatient(uid)) return res.status(404).json({ error: 'Patient not found' });
@@ -103,8 +120,8 @@ router.post('/patients/:uid/abortion', (req, res) => {
   const aborted = b.aborted === undefined ? true : Boolean(b.aborted);
   const markedBy = String(b.marked_by || '').trim();
 
-  const ov = loadOverrides();
-  const entry = ov[uid] || {};
+  const rec = findPatient(uid);
+  const entry = entryFor(rec, uid);
 
   if (aborted) {
     const dateStr = String(b.abortion_date || '').trim();
@@ -130,18 +147,16 @@ router.post('/patients/:uid/abortion', (req, res) => {
   } else {
     delete entry.abortion;
     if (Object.keys(entry).length === 0) {
-      delete ov[uid];
-      saveOverrides(ov);
+      await removeOverride(stableKey(rec), uid);
       return res.json({ success: true, patient: findPatient(uid) });
     }
   }
 
-  ov[uid] = entry;
-  saveOverrides(ov);
+  await saveEntry(rec, uid, entry);
 
   console.log(`[ABORTION] ${markedBy || '?'} marked ${uid} aborted=${aborted}`);
   res.json({ success: true, patient: findPatient(uid) });
-});
+}));
 
 /** Abortions grouped by PHC, role-scoped — feeds the sidebar Abortions page. */
 router.get('/abortions', (req, res) => {
@@ -199,13 +214,11 @@ router.get('/abortions', (req, res) => {
 });
 
 /** Remove all app overrides for a patient — reverts to spreadsheet values. */
-router.delete('/patients/:uid/overrides', (req, res) => {
+router.delete('/patients/:uid/overrides', asyncRoute(async (req, res) => {
   const { uid } = req.params;
-  const ov = loadOverrides();
-  if (!(uid in ov)) return res.json({ success: true, removed: false });
-  delete ov[uid];
-  saveOverrides(ov);
-  res.json({ success: true, removed: true, patient: findPatient(uid) });
-});
+  const rec = findPatient(uid);
+  const removed = await removeOverride(...(rec ? [stableKey(rec), uid] : [uid]));
+  res.json({ success: true, removed, patient: findPatient(uid) });
+}));
 
 export default router;

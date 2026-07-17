@@ -1,8 +1,7 @@
 import { Router } from 'express';
 import { CANONICAL_FACTORS, getCanonicalFactors } from '../riskEngine.js';
 import { getData } from '../excelLoader.js';
-import { loadJson } from '../jsonStore.js';
-import { CALLS_FILE, FOLLOWUP_FILE } from '../config.js';
+import { getCallsMap, getFollowupsMap, histFor } from '../store.js';
 import {
   filterByRole, groupBy, safeInt, safeFloat, todayStr,
 } from '../helpers.js';
@@ -46,7 +45,7 @@ router.get('/alerts', (req, res) => {
     ...alertList(noPhone, 'No Contact Number', 'P3'),
   ].slice(0, 500);
 
-  const callsJ = loadJson(CALLS_FILE);
+  const callsJ = getCallsMap();
   const NON_CONNECTED = new Set(['No Response', 'Switched Off', 'Busy', 'Wrong Number']);
 
   const hrtNcAlerts = [];
@@ -54,8 +53,8 @@ router.get('/alerts', (req, res) => {
     const hrtName = grp[0].hrt_name;
     let ncCount = 0;
     const statBkdn = {};
-    for (const uid of grp.map((r) => r.uid)) {
-      const hist = callsJ[uid] || [];
+    for (const rec of grp) {
+      const hist = histFor(callsJ, rec);
       const todayHist = hist.filter((c) => c.date === today);
       if (todayHist.length) {
         const s = todayHist[todayHist.length - 1].status || '';
@@ -120,17 +119,17 @@ router.get('/postdated-edd', (req, res) => {
 
   const pdf = records.filter((r) => !r.is_delivered && r.days_to_edd !== null && r.days_to_edd < 0);
 
-  const calls = loadJson(CALLS_FILE);
-  const followups = loadJson(FOLLOWUP_FILE);
+  const calls = getCallsMap();
+  const followups = getFollowupsMap();
 
   const result = pdf.map((row) => {
     const uid = row.uid;
-    const callHist = calls[uid] || [];
+    const callHist = histFor(calls, row);
     const lastCall = callHist.length ? callHist[callHist.length - 1] : null;
     const callStatus = lastCall ? (lastCall.status || 'No Call') : 'No Call';
     const lastCallDate = lastCall ? (lastCall.date || '') : '';
 
-    const fuHist = followups[uid] || [];
+    const fuHist = histFor(followups, row);
     const lastFu = fuHist.length ? fuHist[fuHist.length - 1] : null;
     const fuStatus = lastFu ? (lastFu.status || 'No Follow-Up') : 'No Follow-Up';
     const lastFuDate = lastFu ? (lastFu.visit_date || '') : '';
@@ -185,23 +184,11 @@ router.get('/drill-down', (req, res) => {
   else if (metric === 'missing_phone') sub = records.filter((r) => r.cell_no.trim() === '');
   else if (metric === 'missing_name') sub = records.filter((r) => r.mother_name.trim() === '');
   else if (metric === 'followups_today') {
-    const fu = loadJson(FOLLOWUP_FILE);
-    const roleUids = new Set(records.map((r) => r.uid));
-    const uidsToday = new Set();
-    for (const [uid, hist] of Object.entries(fu)) {
-      if (!roleUids.has(uid)) continue;
-      for (const entry of hist) if (entry.next_visit_date === today) uidsToday.add(uid);
-    }
-    sub = records.filter((r) => uidsToday.has(r.uid));
+    const fu = getFollowupsMap();
+    sub = records.filter((r) => histFor(fu, r).some((e) => e.next_visit_date === today));
   } else if (metric === 'calls_pending') {
-    const callsJ = loadJson(CALLS_FILE);
-    const roleUids = new Set(records.map((r) => r.uid));
-    const uidsToday = new Set();
-    for (const [uid, hist] of Object.entries(callsJ)) {
-      if (!roleUids.has(uid)) continue;
-      for (const entry of hist) if (entry.next_followup_date === today) uidsToday.add(uid);
-    }
-    sub = records.filter((r) => uidsToday.has(r.uid));
+    const callsJ = getCallsMap();
+    sub = records.filter((r) => histFor(callsJ, r).some((e) => e.next_followup_date === today));
   } else if (metric.startsWith('phc:')) {
     const phcKey = metric.slice(4).toUpperCase();
     sub = records.filter((r) => r.phc_key === phcKey);
@@ -211,17 +198,17 @@ router.get('/drill-down', (req, res) => {
 
   const totalCount = sub.length;
 
-  const callsData = loadJson(CALLS_FILE);
-  const followupsData = loadJson(FOLLOWUP_FILE);
+  const callsData = getCallsMap();
+  const followupsData = getFollowupsMap();
 
   const result = sub.map((row) => {
     const uid = row.uid;
-    const callHist = callsData[uid] || [];
+    const callHist = histFor(callsData, row);
     const lastCall = callHist.length ? callHist[callHist.length - 1] : null;
     const callStatus = lastCall ? (lastCall.status || 'No Call') : 'No Call';
     const lastCallD = lastCall ? (lastCall.date || '') : '';
 
-    const fuHist = followupsData[uid] || [];
+    const fuHist = histFor(followupsData, row);
     const lastFu = fuHist.length ? fuHist[fuHist.length - 1] : null;
     const fuStatus = lastFu ? (lastFu.status || 'No Follow-Up') : 'No Follow-Up';
     const lastFuD = lastFu ? (lastFu.visit_date || '') : '';
