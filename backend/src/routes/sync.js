@@ -120,6 +120,9 @@ router.get('/sync-status', (req, res) => {
     interval_sec: EXCEL_URL ? CLOUD_SYNC_INTERVAL : AUTO_SYNC_INTERVAL,
     records: cache.records ? cache.records.length : 0,
     excel_modified: syncState.lastMtime,
+    // Which source this instance is actually pulling from — surfaced so a
+    // wrong EXCEL_URL on a deployment is visible without server-log access.
+    excel_url: EXCEL_URL || null,
   });
 });
 
