@@ -10,6 +10,7 @@ import {
 XLSX.set_fs(fs);
 import { SHEET_TO_PHC, PHC_MAP } from './constants.js';
 import { saveSheetSnapshot, loadSheetSnapshot } from './activityDb.js';
+import { usingPostgres, getWorkbookMeta, getWorkbookBytes, saveWorkbookBytes } from './store.js';
 import { parseRisk } from './riskEngine.js';
 import { parseDate, daysToEdd, parseDeliveryDate, splitNameAddress, formatDDMMYYYY } from './parseUtils.js';
 import { applyOverrides, overridesVersion } from './overrides.js';
@@ -22,7 +23,12 @@ export const syncState = {
   syncing: false,
   syncCount: 0,
   autoEnabled: true,
+  usingStoredSheet: false,
 };
+
+// Data-hash of a download the sheet guard rejected as stale — repeated
+// downloads of the same stale copy are skipped instead of thrashing.
+let knownStaleHash = null;
 
 function getFileMtime() {
   try {
@@ -460,6 +466,15 @@ export async function downloadExcel() {
       if (oldHash && newHash && oldHash === newHash) changed = false;
     }
 
+    if (changed && knownStaleHash) {
+      const newHash = xlsxDataHash(tmp);
+      if (newHash && newHash === knownStaleHash) {
+        fs.unlinkSync(tmp);
+        console.log('[SHEET-GUARD] Source is still serving the known-stale copy — ignored');
+        return false;
+      }
+    }
+
     if (changed) {
       await replaceFile(tmp, EXCEL_PATH);
       console.log('[CLOUD-SYNC] Data changed — new spreadsheet downloaded');
@@ -471,6 +486,51 @@ export async function downloadExcel() {
   } catch (e) {
     console.log(`[CLOUD-SYNC] Download error: ${e.message}`);
     return false;
+  }
+}
+
+/**
+ * Postgres mode: keep the best-known workbook in the DB and reject stale
+ * downloads. The configured source can serve an outdated copy (a frozen
+ * GitHub release asset, or Google's export cache); if the current parse has
+ * ≥3% fewer records than the stored best, swap the stored workbook in.
+ * Fresher parses become the new stored best. `forceStore` (admin upload)
+ * always replaces the stored best — explicit admin intent wins.
+ */
+export async function ensureFreshest({ forceStore = false } = {}) {
+  if (!usingPostgres) return;
+  try {
+    const cur = cache.records ? cache.records.length : 0;
+
+    if (forceStore && cur > 0) {
+      await saveWorkbookBytes(fs.readFileSync(EXCEL_PATH), cur, 'admin-upload');
+      syncState.usingStoredSheet = false;
+      knownStaleHash = null;
+      console.log(`[SHEET-GUARD] Admin upload stored as best-known workbook (${cur} records)`);
+      return;
+    }
+
+    const meta = await getWorkbookMeta();
+    if (meta && cur < meta.record_count * 0.97) {
+      const bytes = await getWorkbookBytes();
+      if (bytes && bytes.length) {
+        knownStaleHash = xlsxDataHash(EXCEL_PATH);
+        fs.writeFileSync(EXCEL_PATH, bytes);
+        loadExcel();
+        syncState.lastMtime = getFileMtime();
+        syncState.usingStoredSheet = true;
+        console.log(`[SHEET-GUARD] Source copy had ${cur} records vs ${meta.record_count} best-known `
+          + `(${meta.source}, ${meta.saved_at}) — serving stored workbook (${cache.records.length} records)`);
+      }
+      return;
+    }
+
+    if (cur > 0 && (!meta || cur >= meta.record_count)) {
+      await saveWorkbookBytes(fs.readFileSync(EXCEL_PATH), cur, 'download');
+      syncState.usingStoredSheet = false;
+    }
+  } catch (e) {
+    console.log(`[SHEET-GUARD] Check failed: ${e.message}`);
   }
 }
 
@@ -510,6 +570,7 @@ export function startAutoSync() {
         syncState.syncing = true;
         try {
           loadExcel();
+          await ensureFreshest();
           syncState.lastMtime = getFileMtime();
           syncState.lastSyncTime = new Date().toISOString();
           syncState.syncCount += 1;

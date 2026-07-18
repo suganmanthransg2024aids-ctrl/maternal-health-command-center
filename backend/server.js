@@ -6,7 +6,7 @@ import path from 'path';
 import {
   PORT, HOST, EXCEL_URL, EXCEL_PATH, FRONTEND_DIST, DB_PATH, CLOUD_SYNC_INTERVAL,
 } from './src/config.js';
-import { loadExcel, downloadExcel, startAutoSync, cache, syncState } from './src/excelLoader.js';
+import { loadExcel, downloadExcel, startAutoSync, ensureFreshest, cache, syncState } from './src/excelLoader.js';
 import { initStore, usingPostgres, getSettingValue } from './src/store.js';
 import { backupDb } from './src/activityDb.js';
 
@@ -87,6 +87,9 @@ async function main() {
   }
   syncState.autoEnabled = (await getSettingValue('auto_sync_enabled', '1')) === '1';
   console.log(`Sync mode : ${syncState.autoEnabled ? 'AUTO' : 'MANUAL only'}`);
+  // Swap in the DB's best-known workbook if the boot download was stale.
+  await ensureFreshest();
+  console.log(`Serving   : ${cache.records ? cache.records.length : 0} records`);
   console.log('Auto-sync : ON');
   console.log(`Open      : http://localhost:${PORT}`);
 

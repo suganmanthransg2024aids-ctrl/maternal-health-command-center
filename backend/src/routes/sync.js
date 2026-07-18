@@ -3,7 +3,7 @@ import fs from 'fs';
 import multer from 'multer';
 import XLSX from 'xlsx';
 import { EXCEL_PATH, EXCEL_URL, AUTO_SYNC_INTERVAL, CLOUD_SYNC_INTERVAL } from '../config.js';
-import { cache, syncState, loadExcel, downloadExcel, replaceFile } from '../excelLoader.js';
+import { cache, syncState, loadExcel, downloadExcel, replaceFile, ensureFreshest } from '../excelLoader.js';
 import { setSettingValue } from '../store.js';
 import { asyncRoute } from '../helpers.js';
 
@@ -21,6 +21,7 @@ router.post('/refresh', async (req, res) => {
       console.log(`[REFRESH] Download ${downloaded ? 'changed' : 'no change'}`);
     }
     loadExcel();
+    await ensureFreshest();
     syncState.lastSyncTime = new Date().toISOString();
     syncState.syncCount += 1;
     syncState.lastMtime = fs.existsSync(EXCEL_PATH) ? fs.statSync(EXCEL_PATH).mtimeMs : null;
@@ -54,7 +55,9 @@ router.post('/upload-excel', upload.single('file'), async (req, res) => {
   let sheetCount = 0;
   try {
     fs.writeFileSync(tmp, req.file.buffer);
-    const wb = XLSX.readFile(tmp);
+    // bookSheets: names only — a full parse here plus the reload below can
+    // exceed the memory of small cloud instances.
+    const wb = XLSX.readFile(tmp, { bookSheets: true });
     sheetCount = wb.SheetNames.length;
     if (sheetCount < 5) {
       fs.unlinkSync(tmp);
@@ -76,6 +79,7 @@ router.post('/upload-excel', upload.single('file'), async (req, res) => {
   syncState.syncing = true;
   try {
     loadExcel();
+    await ensureFreshest({ forceStore: true });
     syncState.lastSyncTime = new Date().toISOString();
     syncState.syncCount += 1;
     syncState.lastMtime = fs.existsSync(EXCEL_PATH) ? fs.statSync(EXCEL_PATH).mtimeMs : null;
@@ -123,6 +127,7 @@ router.get('/sync-status', (req, res) => {
     // Which source this instance is actually pulling from — surfaced so a
     // wrong EXCEL_URL on a deployment is visible without server-log access.
     excel_url: EXCEL_URL || null,
+    using_stored_sheet: Boolean(syncState.usingStoredSheet),
   });
 });
 

@@ -160,6 +160,28 @@ export async function setSettingValue(key, value, updatedBy = '') {
   sqliteSetSetting(key, value, updatedBy);
 }
 
+// ── Best-known workbook (Postgres mode only) ───────────────────────────────
+export async function getWorkbookMeta() {
+  if (!usingPostgres || !pool) return null;
+  const q = await pool.query('SELECT record_count, source, saved_at FROM sheet_workbook WHERE id=1');
+  return q.rows.length ? q.rows[0] : null;
+}
+
+export async function getWorkbookBytes() {
+  if (!usingPostgres || !pool) return null;
+  const q = await pool.query('SELECT bytes FROM sheet_workbook WHERE id=1');
+  return q.rows.length ? q.rows[0].bytes : null;
+}
+
+export async function saveWorkbookBytes(buf, recordCount, source) {
+  if (!usingPostgres || !pool) return;
+  await pool.query(
+    `INSERT INTO sheet_workbook (id, bytes, record_count, source, saved_at) VALUES (1,$1,$2,$3,now())
+     ON CONFLICT (id) DO UPDATE SET bytes=$1, record_count=$2, source=$3, saved_at=now()`,
+    [buf, recordCount, source],
+  );
+}
+
 // ── Auth ───────────────────────────────────────────────────────────────────
 function pgRowToUser(r) {
   let phcs = [];
@@ -352,6 +374,17 @@ CREATE TABLE IF NOT EXISTS app_settings (
   value       TEXT NOT NULL,
   updated_by  TEXT,
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Best-known copy of the source spreadsheet (single row). Google sometimes
+-- serves cloud egress IPs a stale export revision; keeping the best workbook
+-- here lets a fresh boot reject an obviously stale download.
+CREATE TABLE IF NOT EXISTS sheet_workbook (
+  id           INTEGER PRIMARY KEY CHECK (id = 1),
+  bytes        BYTEA NOT NULL,
+  record_count INTEGER NOT NULL,
+  source       TEXT,
+  saved_at     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE TABLE IF NOT EXISTS users (
