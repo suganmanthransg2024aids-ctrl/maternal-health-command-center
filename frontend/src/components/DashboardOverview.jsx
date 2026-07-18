@@ -163,6 +163,36 @@ export default function DashboardOverview({ stats, user, onRefresh, syncing, set
   const [hrtCallData,   setHrtCallData]   = useState([]);
   const [showPostdated, setShowPostdated] = useState(false);
   const [drillDown,     setDrillDown]     = useState(null);
+  const [autoSync,      setAutoSync]      = useState(null); // null until loaded
+  const [toggling,      setToggling]      = useState(false);
+
+  const isAdmin = Boolean(user?.full_access);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    fetch(`${API}/sync-status`)
+      .then(r => r.json())
+      .then(d => setAutoSync(Boolean(d.auto_enabled)))
+      .catch(() => {});
+  }, [isAdmin]);
+
+  const setSyncMode = async (enabled) => {
+    if (toggling || autoSync === enabled) return;
+    setToggling(true);
+    try {
+      const r = await fetch(`${API}/sync-auto`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled, role: user.role }),
+      });
+      if (r.ok) {
+        const d = await r.json();
+        setAutoSync(Boolean(d.auto_enabled));
+      }
+    } catch { /* keep previous mode on failure */ } finally {
+      setToggling(false);
+    }
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -234,10 +264,34 @@ export default function DashboardOverview({ stats, user, onRefresh, syncing, set
             &nbsp;· click any card to drill down
           </p>
         </div>
-        <button onClick={onRefresh} disabled={syncing} className="btn-ghost flex items-center gap-2" style={{ fontSize: '12px' }}>
-          <RefreshCw className={`w-3.5 h-3.5 ${syncing ? 'animate-spin' : ''}`} style={{ color: syncing ? C.teal : 'inherit' }} />
-          {syncing ? 'Syncing…' : 'Sync Data'}
-        </button>
+        <div className="flex items-center gap-3">
+          {isAdmin && autoSync !== null && (
+            <div className="flex items-center rounded-full p-0.5"
+              title={autoSync
+                ? 'Auto: spreadsheet is fetched every 60 seconds'
+                : 'Manual: spreadsheet is fetched only when you click Sync Data'}
+              style={{ border: '1px solid var(--ccmc-border)', background: 'var(--ccmc-panel)', opacity: toggling ? 0.6 : 1 }}>
+              <button onClick={() => setSyncMode(true)} disabled={toggling}
+                className="rounded-full px-3 py-1 transition-colors"
+                style={{ fontSize: '11px', fontWeight: 600,
+                  background: autoSync ? C.green : 'transparent',
+                  color: autoSync ? '#FFFFFF' : 'var(--ccmc-text-hint)' }}>
+                Auto 60s
+              </button>
+              <button onClick={() => setSyncMode(false)} disabled={toggling}
+                className="rounded-full px-3 py-1 transition-colors"
+                style={{ fontSize: '11px', fontWeight: 600,
+                  background: autoSync ? 'transparent' : C.amber,
+                  color: autoSync ? 'var(--ccmc-text-hint)' : '#FFFFFF' }}>
+                Manual
+              </button>
+            </div>
+          )}
+          <button onClick={onRefresh} disabled={syncing} className="btn-ghost flex items-center gap-2" style={{ fontSize: '12px' }}>
+            <RefreshCw className={`w-3.5 h-3.5 ${syncing ? 'animate-spin' : ''}`} style={{ color: syncing ? C.teal : 'inherit' }} />
+            {syncing ? 'Syncing…' : 'Sync Data'}
+          </button>
+        </div>
       </div>
 
       {/* ── Primary KPI row ─────────────────────────────────────────── */}

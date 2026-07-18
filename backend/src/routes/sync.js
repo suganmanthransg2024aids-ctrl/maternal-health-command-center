@@ -4,6 +4,7 @@ import multer from 'multer';
 import XLSX from 'xlsx';
 import { EXCEL_PATH, EXCEL_URL, AUTO_SYNC_INTERVAL, CLOUD_SYNC_INTERVAL } from '../config.js';
 import { cache, syncState, loadExcel, downloadExcel, replaceFile } from '../excelLoader.js';
+import { setSetting } from '../activityDb.js';
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -89,6 +90,23 @@ router.post('/upload-excel', upload.single('file'), async (req, res) => {
     ts: cache.ts,
     message: `Data updated — ${records.toLocaleString()} mother records loaded from ${sheetCount} PHC sheets`,
   });
+});
+
+/** Switch between automatic (every 60s) and manual-only spreadsheet sync.
+ *  Admin only. The choice is stored in the DB so it survives restarts. */
+router.post('/sync-auto', (req, res) => {
+  const b = req.body || {};
+  const role = String(b.role || '').toUpperCase();
+  if (!['CHO', 'DMCHO'].includes(role)) {
+    return res.status(403).json({ error: 'Only CHO or DMCHO can change the sync mode' });
+  }
+  if (typeof b.enabled !== 'boolean') {
+    return res.status(400).json({ error: '"enabled" must be true or false' });
+  }
+  syncState.autoEnabled = b.enabled;
+  setSetting('auto_sync_enabled', b.enabled ? '1' : '0', role);
+  console.log(`[SYNC] ${role} set sync mode: ${b.enabled ? 'AUTO (interval)' : 'MANUAL only'}`);
+  res.json({ success: true, auto_enabled: syncState.autoEnabled });
 });
 
 /** Returns real-time sync state for the frontend auto-refresh polling. */

@@ -9,6 +9,7 @@ import {
 // (https://docs.sheetjs.com/docs/getting-started/installation/nodejs#esm)
 XLSX.set_fs(fs);
 import { SHEET_TO_PHC, PHC_MAP } from './constants.js';
+import { saveSheetSnapshot, loadSheetSnapshot } from './activityDb.js';
 import { parseRisk } from './riskEngine.js';
 import { parseDate, daysToEdd, parseDeliveryDate, splitNameAddress, formatDDMMYYYY } from './parseUtils.js';
 import { applyOverrides, overridesVersion } from './overrides.js';
@@ -171,7 +172,9 @@ function buildRecordsFromSheet(sheetName, headerRow, rawDataRows) {
     if (HEADER_SKIP_NAMES.has(nameRaw.toUpperCase())) continue;
 
     const rchValRaw = rchId[i];
-    const eddValRaw = edd[i];
+    // A lone "0" in EDD is a spreadsheet fill-down artifact (RAJA STREET has
+    // hundreds of otherwise-empty rows like this), not a real record.
+    const eddValRaw = edd[i] === '0' ? '' : edd[i];
     if (!nameRaw && !rchValRaw && !eddValRaw) continue;
 
     let { name: cleanName, address } = splitNameAddress(nameRaw);
@@ -254,14 +257,33 @@ function buildRecordsFromSheet(sheetName, headerRow, rawDataRows) {
   return out;
 }
 
+/** Spreadsheet file unusable — serve the last good dataset from the DB. */
+function loadFromDbFallback(reason) {
+  let records = null;
+  try {
+    records = loadSheetSnapshot();
+  } catch (e) {
+    console.log(`[DB] Snapshot read failed: ${e.message}`);
+  }
+  if (records) {
+    console.log(`[DB] ${reason} — serving ${records.length} records from database snapshot`);
+  }
+  cache.records = records || [];
+  cache.ts = new Date().toISOString();
+  return cache.records;
+}
+
 export function loadExcel() {
   if (!fs.existsSync(EXCEL_PATH)) {
-    cache.records = [];
-    cache.ts = new Date().toISOString();
-    return cache.records;
+    return loadFromDbFallback('Spreadsheet file missing');
   }
 
-  const wb = XLSX.readFile(EXCEL_PATH, { cellDates: true });
+  let wb;
+  try {
+    wb = XLSX.readFile(EXCEL_PATH, { cellDates: true });
+  } catch (e) {
+    return loadFromDbFallback(`Spreadsheet unreadable (${e.message})`);
+  }
   const records = [];
 
   for (const sheetName of wb.SheetNames) {
@@ -277,13 +299,33 @@ export function loadExcel() {
       continue;
     }
     if (!rows || rows.length === 0) continue;
-    const [headerRow, ...dataRows] = rows;
+    // Some tabs (e.g. SN PALAYAM) have blank rows above the real header row.
+    // Taking row 0 as the header would make every column lookup miss and the
+    // whole tab silently load as zero records.
+    const headerIdx = rows.findIndex((r) => r.some((v) => trimStr(v) !== ''));
+    if (headerIdx === -1) continue;
+    const headerRow = rows[headerIdx];
+    const dataRows = rows.slice(headerIdx + 1);
     records.push(...buildRecordsFromSheet(sheetName, headerRow, dataRows));
+  }
+
+  // A workbook that parses to zero records is a bad download, not real data —
+  // don't let it replace the last good snapshot.
+  if (records.length === 0) {
+    return loadFromDbFallback('Spreadsheet parsed to 0 records');
   }
 
   cache.records = records;
   cache.ts = new Date().toISOString();
   syncState.lastSyncTime = cache.ts;
+
+  // Mirror every successful sheet load into the DB so the full dataset
+  // survives even if the sheet or its cache file is lost.
+  try {
+    saveSheetSnapshot(records);
+  } catch (e) {
+    console.log(`[DB] Snapshot save failed: ${e.message}`);
+  }
   return records;
 }
 

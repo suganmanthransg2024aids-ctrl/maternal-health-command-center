@@ -1,5 +1,4 @@
-import { loadJson, saveJson } from './jsonStore.js';
-import { OVERRIDES_FILE } from './config.js';
+import { getOverridesMap, saveOverridesMap } from './activityDb.js';
 import { parseDate, daysToEdd, formatDDMMYYYY } from './parseUtils.js';
 import { parseRisk } from './riskEngine.js';
 
@@ -29,11 +28,11 @@ export function overridesVersion() {
 }
 
 export function loadOverrides() {
-  return loadJson(OVERRIDES_FILE);
+  return getOverridesMap();
 }
 
 export function saveOverrides(data) {
-  saveJson(OVERRIDES_FILE, data);
+  saveOverridesMap(data);
   version += 1;
 }
 

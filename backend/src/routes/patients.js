@@ -5,8 +5,7 @@ import { EXCEL_PATH } from '../config.js';
 import { PHC_MAP } from '../constants.js';
 import { getData } from '../excelLoader.js';
 import { getCanonicalFactors } from '../riskEngine.js';
-import { loadJson } from '../jsonStore.js';
-import { CALLS_FILE, FOLLOWUP_FILE } from '../config.js';
+import { getCallsMap, getFollowupsMap } from '../activityDb.js';
 import { filterByRole, groupBy, sortedCountBy } from '../helpers.js';
 import { runValidation } from '../validation.js';
 
@@ -46,8 +45,8 @@ router.get('/patients/:uid', (req, res) => {
   const row = records.find((r) => r.uid === req.params.uid);
   if (!row) return res.status(404).json({ error: 'Not found' });
 
-  const calls = loadJson(CALLS_FILE);
-  const followups = loadJson(FOLLOWUP_FILE);
+  const calls = getCallsMap();
+  const followups = getFollowupsMap();
   res.json({
     ...row,
     call_history: calls[req.params.uid] || [],
@@ -83,8 +82,8 @@ router.get('/stats', (req, res) => {
   const invalidPhoneCnt = countIf(records, (r) => r.cell_no.trim() !== '' && !phoneRe.test(r.cell_no.trim()));
   const validationIssues = missingPhone + missingName + invalidPhoneCnt;
 
-  const calls = loadJson(CALLS_FILE);
-  const followups = loadJson(FOLLOWUP_FILE);
+  const calls = getCallsMap();
+  const followups = getFollowupsMap();
   const roleUids = new Set(records.map((r) => r.uid));
 
   let followupsDueToday = 0;

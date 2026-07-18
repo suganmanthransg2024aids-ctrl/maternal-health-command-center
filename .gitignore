@@ -55,3 +55,6 @@ backend/patient_overrides.json
 backend/*.json.bak
 backend/*.json.tmp
 backend/*.json.corrupt-*
+backend/logs.db.bak
+backend/logs.db-shm
+backend/logs.db-wal

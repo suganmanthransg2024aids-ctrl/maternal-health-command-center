@@ -7,7 +7,7 @@ import {
   PORT, HOST, EXCEL_URL, EXCEL_PATH, FRONTEND_DIST, DB_PATH, CLOUD_SYNC_INTERVAL,
 } from './src/config.js';
 import { loadExcel, downloadExcel, startAutoSync, cache, syncState } from './src/excelLoader.js';
-import { initDb } from './src/activityDb.js';
+import { initDb, migrateJsonStores, backupDb, getSetting } from './src/activityDb.js';
 
 import healthRouter from './src/routes/health.js';
 import authRouter from './src/routes/auth.js';
@@ -70,6 +70,14 @@ async function main() {
   startAutoSync();
 
   initDb();
+  const migrated = migrateJsonStores();
+  if (migrated.calls || migrated.followups || migrated.overrides) {
+    console.log(`Migrated legacy JSON history into SQLite — calls: ${migrated.calls}, follow-ups: ${migrated.followups}, overrides: ${migrated.overrides}`);
+  }
+  backupDb();
+  setInterval(backupDb, 24 * 3600 * 1000);
+  syncState.autoEnabled = getSetting('auto_sync_enabled', '1') === '1';
+  console.log(`Sync mode : ${syncState.autoEnabled ? 'AUTO' : 'MANUAL only'}`);
   console.log(`Activity DB: ${DB_PATH}`);
   console.log('Auto-sync : ON');
   console.log(`Open      : http://localhost:${PORT}`);

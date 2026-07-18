@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import { getData } from '../excelLoader.js';
-import { loadJson, saveJson } from '../jsonStore.js';
-import { CALLS_FILE, FOLLOWUP_FILE } from '../config.js';
+import {
+  addCallEntry, addFollowupEntry, getCallsMap, getFollowupsMap, getCallHistory,
+} from '../activityDb.js';
 import { filterByRole, groupBy } from '../helpers.js';
 import { DEO_PERFORMANCE, deoCallsFor } from '../constants.js';
 
@@ -26,7 +27,7 @@ router.get('/calls', (req, res) => {
   const dateFilter = req.query.date || '';
 
   const df = filterByRole(getData(), role);
-  const calls = loadJson(CALLS_FILE);
+  const calls = getCallsMap();
 
   let records = df.map((row) => {
     const uid = row.uid;
@@ -66,8 +67,6 @@ router.get('/calls', (req, res) => {
 router.post('/calls/:uid', (req, res) => {
   const { uid } = req.params;
   const body = req.body || {};
-  const calls = loadJson(CALLS_FILE);
-  const now = new Date();
   const entry = {
     date: body.date || nowDateStr(),
     time: body.time || nowTimeStr(),
@@ -77,17 +76,20 @@ router.post('/calls/:uid', (req, res) => {
     outcome: body.outcome || '',
     next_followup_date: body.next_followup_date || '',
     next_followup_time: body.next_followup_time || '',
-    recorded_at: now.toISOString(),
+    recorded_at: new Date().toISOString(),
   };
-  if (!calls[uid]) calls[uid] = [];
-  calls[uid].push(entry);
-  saveJson(CALLS_FILE, calls);
-  res.json({ success: true, entry, total_calls: calls[uid].length });
+  // Snapshot the mother's identity into the row so the record stays
+  // attributable even if her spreadsheet row later moves or is removed.
+  const row = getData().find((r) => r.uid === uid);
+  const meta = row
+    ? { mother_name: row.mother_name, phc_key: row.phc_key, hrt_code: row.hrt_code }
+    : {};
+  const totalCalls = addCallEntry(uid, entry, meta);
+  res.json({ success: true, entry, total_calls: totalCalls });
 });
 
 router.get('/calls/:uid/history', (req, res) => {
-  const calls = loadJson(CALLS_FILE);
-  res.json(calls[req.params.uid] || []);
+  res.json(getCallHistory(req.params.uid));
 });
 
 // ── Follow-Up Tracking ─────────────────────────────────────────────────────
@@ -98,7 +100,7 @@ router.get('/followups', (req, res) => {
   const phc = req.query.phc || '';
 
   const df = filterByRole(getData(), role);
-  const followups = loadJson(FOLLOWUP_FILE);
+  const followups = getFollowupsMap();
 
   let records = df.map((row) => {
     const uid = row.uid;
@@ -136,19 +138,19 @@ router.get('/followups', (req, res) => {
 router.post('/followups/:uid', (req, res) => {
   const { uid } = req.params;
   const body = req.body || {};
-  const followups = loadJson(FOLLOWUP_FILE);
-  const now = new Date();
   const entry = {
     visit_date: body.visit_date || nowDateStr(),
     status: body.status || 'Completed',
     remarks: body.remarks || '',
     escalation_status: body.escalation_status || '',
     next_visit_date: body.next_visit_date || '',
-    recorded_at: now.toISOString(),
+    recorded_at: new Date().toISOString(),
   };
-  if (!followups[uid]) followups[uid] = [];
-  followups[uid].push(entry);
-  saveJson(FOLLOWUP_FILE, followups);
+  const row = getData().find((r) => r.uid === uid);
+  const meta = row
+    ? { mother_name: row.mother_name, phc_key: row.phc_key, hrt_code: row.hrt_code }
+    : {};
+  addFollowupEntry(uid, entry, meta);
   res.json({ success: true, entry });
 });
 
@@ -165,8 +167,8 @@ router.get('/hrt-call-performance', (req, res) => {
   const dateFilter = req.query.date || '';
 
   const df = filterByRole(getData(), role);
-  const callsJ = loadJson(CALLS_FILE);
-  const followupsJ = loadJson(FOLLOWUP_FILE);
+  const callsJ = getCallsMap();
+  const followupsJ = getFollowupsMap();
   const now = new Date();
   const todayStr = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`;
   const fuDate = dateFilter || todayStr;
@@ -247,7 +249,7 @@ router.get('/hrt-call-performance', (req, res) => {
 router.get('/hrt-weekly-performance', (req, res) => {
   const role = req.query.role || 'DMCHO';
   const df = filterByRole(getData(), role);
-  const callsJ = loadJson(CALLS_FILE);
+  const callsJ = getCallsMap();
 
   const today = new Date();
   const today0 = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));

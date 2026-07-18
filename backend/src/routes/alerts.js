@@ -1,8 +1,7 @@
 import { Router } from 'express';
 import { CANONICAL_FACTORS, getCanonicalFactors } from '../riskEngine.js';
 import { getData } from '../excelLoader.js';
-import { loadJson } from '../jsonStore.js';
-import { CALLS_FILE, FOLLOWUP_FILE } from '../config.js';
+import { getCallsMap, getFollowupsMap } from '../activityDb.js';
 import {
   filterByRole, groupBy, safeInt, safeFloat, todayStr,
 } from '../helpers.js';
@@ -46,7 +45,7 @@ router.get('/alerts', (req, res) => {
     ...alertList(noPhone, 'No Contact Number', 'P3'),
   ].slice(0, 500);
 
-  const callsJ = loadJson(CALLS_FILE);
+  const callsJ = getCallsMap();
   const NON_CONNECTED = new Set(['No Response', 'Switched Off', 'Busy', 'Wrong Number']);
 
   const hrtNcAlerts = [];
@@ -120,8 +119,8 @@ router.get('/postdated-edd', (req, res) => {
 
   const pdf = records.filter((r) => !r.is_delivered && r.days_to_edd !== null && r.days_to_edd < 0);
 
-  const calls = loadJson(CALLS_FILE);
-  const followups = loadJson(FOLLOWUP_FILE);
+  const calls = getCallsMap();
+  const followups = getFollowupsMap();
 
   const result = pdf.map((row) => {
     const uid = row.uid;
@@ -185,7 +184,7 @@ router.get('/drill-down', (req, res) => {
   else if (metric === 'missing_phone') sub = records.filter((r) => r.cell_no.trim() === '');
   else if (metric === 'missing_name') sub = records.filter((r) => r.mother_name.trim() === '');
   else if (metric === 'followups_today') {
-    const fu = loadJson(FOLLOWUP_FILE);
+    const fu = getFollowupsMap();
     const roleUids = new Set(records.map((r) => r.uid));
     const uidsToday = new Set();
     for (const [uid, hist] of Object.entries(fu)) {
@@ -194,7 +193,7 @@ router.get('/drill-down', (req, res) => {
     }
     sub = records.filter((r) => uidsToday.has(r.uid));
   } else if (metric === 'calls_pending') {
-    const callsJ = loadJson(CALLS_FILE);
+    const callsJ = getCallsMap();
     const roleUids = new Set(records.map((r) => r.uid));
     const uidsToday = new Set();
     for (const [uid, hist] of Object.entries(callsJ)) {
@@ -211,8 +210,8 @@ router.get('/drill-down', (req, res) => {
 
   const totalCount = sub.length;
 
-  const callsData = loadJson(CALLS_FILE);
-  const followupsData = loadJson(FOLLOWUP_FILE);
+  const callsData = getCallsMap();
+  const followupsData = getFollowupsMap();
 
   const result = sub.map((row) => {
     const uid = row.uid;
