@@ -538,14 +538,22 @@ export async function initStore() {
   }
 
   const { default: pg } = await import('pg');
-  const local = /localhost|127\.0\.0\.1/.test(DATABASE_URL);
+  // Render's *internal* connection string has a bare hostname (no dots) and
+  // its private network speaks plain TCP — asking for SSL there stalls the
+  // connection instead of erroring. Only external hosts get SSL.
+  let hostname = '';
+  try { hostname = new URL(DATABASE_URL).hostname; } catch { /* keep '' */ }
+  const plainTcp = !hostname.includes('.') || /^(localhost|127\.0\.0\.1)$/.test(hostname);
   const maxAttempts = 5;
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       pool = new pg.Pool({
         connectionString: DATABASE_URL,
-        ssl: local ? undefined : { rejectUnauthorized: false },
+        ssl: plainTcp ? undefined : { rejectUnauthorized: false },
         max: 5,
+        // Without this a dead/misconfigured host hangs the connect forever,
+        // which blocks boot before app.listen and fails the whole deploy.
+        connectionTimeoutMillis: 10000,
       });
       await pool.query('SELECT 1');
       break;
