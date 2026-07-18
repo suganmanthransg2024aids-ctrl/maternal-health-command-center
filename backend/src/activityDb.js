@@ -128,6 +128,13 @@ export function getDb() {
     db = new Database(DB_PATH);
     db.pragma('journal_mode = WAL');
     db.exec(SCHEMA);
+    // mother_key = stable RCH-based identity (survives sheet row reordering)
+    for (const table of ['call_logs', 'status_updates']) {
+      const cols = db.prepare(`PRAGMA table_info(${table})`).all();
+      if (!cols.some((c) => c.name === 'mother_key')) {
+        db.exec(`ALTER TABLE ${table} ADD COLUMN mother_key TEXT`);
+      }
+    }
     seedUsers(db);
   }
   return db;
@@ -184,7 +191,8 @@ export function addCallEntry(uid, entry, meta = {}) {
 }
 
 export function addFollowupEntry(uid, entry, meta = {}) {
-  getDb().prepare(`INSERT INTO followup_tracking
+  const conn = getDb();
+  conn.prepare(`INSERT INTO followup_tracking
       (uid, mother_name, phc_key, hrt_code, visit_date, status, remarks,
        escalation_status, next_visit_date, recorded_at)
       VALUES (?,?,?,?,?,?,?,?,?,?)`)
@@ -192,6 +200,7 @@ export function addFollowupEntry(uid, entry, meta = {}) {
       entry.visit_date || '', entry.status || '', entry.remarks || '',
       entry.escalation_status || '', entry.next_visit_date || '',
       entry.recorded_at || new Date().toISOString());
+  return conn.prepare('SELECT COUNT(*) AS c FROM followup_tracking WHERE uid=?').get(uid).c;
 }
 
 /** All call history as { uid: [entries in chronological order] } — the same
@@ -285,6 +294,36 @@ export function saveOverridesMap(map) {
     }
   });
   tx();
+}
+
+/** Upsert one override row + append to the edit_history audit. */
+export function putOverrideRow(key, entry) {
+  const conn = getDb();
+  const now = new Date().toISOString();
+  const json = JSON.stringify(entry);
+  conn.prepare(
+    'INSERT OR REPLACE INTO patient_overrides (uid, data, updated_by, updated_at) VALUES (?,?,?,?)'
+  ).run(key, json, entry.updated_by || '', entry.updated_at || now);
+  conn.prepare(
+    'INSERT INTO edit_history (uid, action, data, updated_by, recorded_at) VALUES (?,?,?,?,?)'
+  ).run(key, 'saved', json, entry.updated_by || '', now);
+}
+
+/** Delete override rows (audited); returns true if anything was removed. */
+export function removeOverrideRows(keys) {
+  const conn = getDb();
+  const now = new Date().toISOString();
+  let removed = false;
+  for (const key of keys) {
+    const row = conn.prepare('SELECT data FROM patient_overrides WHERE uid=?').get(key);
+    if (!row) continue;
+    conn.prepare('DELETE FROM patient_overrides WHERE uid=?').run(key);
+    conn.prepare(
+      'INSERT INTO edit_history (uid, action, data, updated_by, recorded_at) VALUES (?,?,?,?,?)'
+    ).run(key, 'removed', row.data, '', now);
+    removed = true;
+  }
+  return removed;
 }
 
 // ── App settings ───────────────────────────────────────────────────────────

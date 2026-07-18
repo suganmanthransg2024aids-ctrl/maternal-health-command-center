@@ -7,7 +7,8 @@ import {
   PORT, HOST, EXCEL_URL, EXCEL_PATH, FRONTEND_DIST, DB_PATH, CLOUD_SYNC_INTERVAL,
 } from './src/config.js';
 import { loadExcel, downloadExcel, startAutoSync, cache, syncState } from './src/excelLoader.js';
-import { initDb, migrateJsonStores, backupDb, getSetting } from './src/activityDb.js';
+import { initStore, usingPostgres, getSettingValue } from './src/store.js';
+import { backupDb } from './src/activityDb.js';
 
 import healthRouter from './src/routes/health.js';
 import authRouter from './src/routes/auth.js';
@@ -49,6 +50,12 @@ app.use((req, res) => {
   res.sendFile(path.join(FRONTEND_DIST, 'index.html'));
 });
 
+// Last: surface async route failures as JSON instead of crashing the process.
+app.use((err, req, res, next) => { // eslint-disable-line no-unused-vars
+  console.error(`[API] ${req.method} ${req.path} failed:`, err);
+  res.status(500).json({ error: 'Internal server error' });
+});
+
 async function main() {
   console.log('HIGH RISK MOTHER TRACKER - CCMC Backend');
   if (EXCEL_URL) {
@@ -69,16 +76,17 @@ async function main() {
 
   startAutoSync();
 
-  initDb();
-  const migrated = migrateJsonStores();
-  if (migrated.calls || migrated.followups || migrated.overrides) {
-    console.log(`Migrated legacy JSON history into SQLite — calls: ${migrated.calls}, follow-ups: ${migrated.followups}, overrides: ${migrated.overrides}`);
+  // Durable HRT-update store must be ready before we accept requests.
+  await initStore();
+  console.log(`HRT store : ${usingPostgres ? 'PostgreSQL (persistent)' : `SQLite (${DB_PATH})`}`);
+  if (!usingPostgres) {
+    // Local SQLite is the only copy — snapshot it daily. In Postgres mode the
+    // managed database has its own durability and the local disk is ephemeral.
+    backupDb();
+    setInterval(backupDb, 24 * 3600 * 1000);
   }
-  backupDb();
-  setInterval(backupDb, 24 * 3600 * 1000);
-  syncState.autoEnabled = getSetting('auto_sync_enabled', '1') === '1';
+  syncState.autoEnabled = (await getSettingValue('auto_sync_enabled', '1')) === '1';
   console.log(`Sync mode : ${syncState.autoEnabled ? 'AUTO' : 'MANUAL only'}`);
-  console.log(`Activity DB: ${DB_PATH}`);
   console.log('Auto-sync : ON');
   console.log(`Open      : http://localhost:${PORT}`);
 

@@ -5,7 +5,7 @@ import { EXCEL_PATH } from '../config.js';
 import { PHC_MAP } from '../constants.js';
 import { getData } from '../excelLoader.js';
 import { getCanonicalFactors } from '../riskEngine.js';
-import { getCallsMap, getFollowupsMap } from '../activityDb.js';
+import { getCallsMap, getFollowupsMap, histFor, stableKey } from '../store.js';
 import { filterByRole, groupBy, sortedCountBy } from '../helpers.js';
 import { runValidation } from '../validation.js';
 
@@ -49,8 +49,8 @@ router.get('/patients/:uid', (req, res) => {
   const followups = getFollowupsMap();
   res.json({
     ...row,
-    call_history: calls[req.params.uid] || [],
-    followup_history: followups[req.params.uid] || [],
+    call_history: histFor(calls, row),
+    followup_history: histFor(followups, row),
   });
 });
 
@@ -84,16 +84,18 @@ router.get('/stats', (req, res) => {
 
   const calls = getCallsMap();
   const followups = getFollowupsMap();
-  const roleUids = new Set(records.map((r) => r.uid));
+  // Stores are keyed by stable RCH key (legacy entries by uid) — accept both.
+  const roleKeys = new Set();
+  for (const r of records) { roleKeys.add(r.uid); roleKeys.add(stableKey(r)); }
 
   let followupsDueToday = 0;
-  for (const [uid, hist] of Object.entries(followups)) {
-    if (!roleUids.has(uid)) continue;
+  for (const [key, hist] of Object.entries(followups)) {
+    if (!roleKeys.has(key)) continue;
     for (const entry of hist) if (entry.next_visit_date === todayStr) followupsDueToday += 1;
   }
   let callsPendingToday = 0;
-  for (const [uid, hist] of Object.entries(calls)) {
-    if (!roleUids.has(uid)) continue;
+  for (const [key, hist] of Object.entries(calls)) {
+    if (!roleKeys.has(key)) continue;
     for (const entry of hist) if (entry.next_followup_date === todayStr) callsPendingToday += 1;
   }
 

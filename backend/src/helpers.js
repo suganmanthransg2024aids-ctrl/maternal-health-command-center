@@ -73,3 +73,8 @@ export function sortedCountBy(records, keyFn) {
   const counts = countBy(records, keyFn);
   return Object.fromEntries(Object.entries(counts).sort((a, b) => b[1] - a[1]));
 }
+
+/** Wrap an async route handler so a rejection reaches Express error handling. */
+export const asyncRoute = (fn) => (req, res, next) => {
+  Promise.resolve(fn(req, res, next)).catch(next);
+};

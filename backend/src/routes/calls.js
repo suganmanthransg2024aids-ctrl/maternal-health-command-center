@@ -1,12 +1,18 @@
 import { Router } from 'express';
 import { getData } from '../excelLoader.js';
 import {
-  addCallEntry, addFollowupEntry, getCallsMap, getFollowupsMap, getCallHistory,
-} from '../activityDb.js';
-import { filterByRole, groupBy } from '../helpers.js';
+  getCallsMap, getFollowupsMap, addCall, addFollowup, stableKey, histFor,
+} from '../store.js';
+import { filterByRole, groupBy, asyncRoute } from '../helpers.js';
 import { DEO_PERFORMANCE, deoCallsFor } from '../constants.js';
 
 const router = Router();
+
+/** Durable write key for a mother: stable RCH key when she's in the sheet. */
+function keyForUid(uid) {
+  const rec = getData().find((r) => r.uid === uid);
+  return rec ? stableKey(rec) : uid;
+}
 
 function pad2(n) { return String(n).padStart(2, '0'); }
 function nowDateStr() {
@@ -31,7 +37,7 @@ router.get('/calls', (req, res) => {
 
   let records = df.map((row) => {
     const uid = row.uid;
-    const hist = calls[uid] || [];
+    const hist = histFor(calls, row);
     const latest = hist.length ? hist[hist.length - 1] : {};
     return {
       uid,
@@ -64,9 +70,10 @@ router.get('/calls', (req, res) => {
   res.json({ total: records.length, records: records.slice(0, 500), status_counts: statusCounts });
 });
 
-router.post('/calls/:uid', (req, res) => {
+router.post('/calls/:uid', asyncRoute(async (req, res) => {
   const { uid } = req.params;
   const body = req.body || {};
+  const now = new Date();
   const entry = {
     date: body.date || nowDateStr(),
     time: body.time || nowTimeStr(),
@@ -76,20 +83,16 @@ router.post('/calls/:uid', (req, res) => {
     outcome: body.outcome || '',
     next_followup_date: body.next_followup_date || '',
     next_followup_time: body.next_followup_time || '',
-    recorded_at: new Date().toISOString(),
+    recorded_at: now.toISOString(),
   };
-  // Snapshot the mother's identity into the row so the record stays
-  // attributable even if her spreadsheet row later moves or is removed.
-  const row = getData().find((r) => r.uid === uid);
-  const meta = row
-    ? { mother_name: row.mother_name, phc_key: row.phc_key, hrt_code: row.hrt_code }
-    : {};
-  const totalCalls = addCallEntry(uid, entry, meta);
-  res.json({ success: true, entry, total_calls: totalCalls });
-});
+  const total = await addCall(keyForUid(uid), entry);
+  res.json({ success: true, entry, total_calls: total });
+}));
 
 router.get('/calls/:uid/history', (req, res) => {
-  res.json(getCallHistory(req.params.uid));
+  const calls = getCallsMap();
+  const rec = getData().find((r) => r.uid === req.params.uid);
+  res.json(rec ? histFor(calls, rec) : (calls[req.params.uid] || []));
 });
 
 // ── Follow-Up Tracking ─────────────────────────────────────────────────────
@@ -104,7 +107,7 @@ router.get('/followups', (req, res) => {
 
   let records = df.map((row) => {
     const uid = row.uid;
-    const hist = followups[uid] || [];
+    const hist = histFor(followups, row);
     const latest = hist.length ? hist[hist.length - 1] : {};
     const fuStatus = latest.status !== undefined ? latest.status : 'Pending';
     return {
@@ -135,24 +138,21 @@ router.get('/followups', (req, res) => {
   res.json({ total: records.length, records: records.slice(0, 500), status_counts: statusCounts });
 });
 
-router.post('/followups/:uid', (req, res) => {
+router.post('/followups/:uid', asyncRoute(async (req, res) => {
   const { uid } = req.params;
   const body = req.body || {};
+  const now = new Date();
   const entry = {
     visit_date: body.visit_date || nowDateStr(),
     status: body.status || 'Completed',
     remarks: body.remarks || '',
     escalation_status: body.escalation_status || '',
     next_visit_date: body.next_visit_date || '',
-    recorded_at: new Date().toISOString(),
+    recorded_at: now.toISOString(),
   };
-  const row = getData().find((r) => r.uid === uid);
-  const meta = row
-    ? { mother_name: row.mother_name, phc_key: row.phc_key, hrt_code: row.hrt_code }
-    : {};
-  addFollowupEntry(uid, entry, meta);
+  await addFollowup(keyForUid(uid), entry);
   res.json({ success: true, entry });
-});
+}));
 
 router.get('/deo-performance', (req, res) => {
   const { dates, deos } = DEO_PERFORMANCE;
@@ -183,8 +183,8 @@ router.get('/hrt-call-performance', (req, res) => {
     let wrongNumber = 0; let callBackLater = 0; let followupRequired = 0; let resolved = 0; let pending = 0;
     let lastCallDate = ''; let lastCallTime = '';
 
-    for (const uid of grp.map((r) => r.uid)) {
-      const hist = callsJ[uid] || [];
+    for (const rec of grp) {
+      const hist = histFor(callsJ, rec);
       if (!hist.length) { pending += 1; continue; }
       const dayHist = dateFilter ? hist.filter((c) => c.date === dateFilter) : hist;
       if (!dayHist.length) { pending += 1; continue; }
@@ -204,8 +204,8 @@ router.get('/hrt-call-performance', (req, res) => {
     }
 
     let fuDue = 0;
-    for (const uid of grp.map((r) => r.uid)) {
-      for (const entry of (followupsJ[uid] || [])) {
+    for (const rec of grp) {
+      for (const entry of histFor(followupsJ, rec)) {
         if (entry.next_visit_date === fuDate) fuDue += 1;
       }
     }
@@ -272,8 +272,8 @@ router.get('/hrt-weekly-performance', (req, res) => {
     for (const d of weekDates) {
       const dateStr = dstr(d);
       let attempted = 0; let connected = 0; let notConnected = 0;
-      for (const uid of uids) {
-        const hist = callsJ[uid] || [];
+      for (const rec of grp) {
+        const hist = histFor(callsJ, rec);
         const dayCalls = hist.filter((c) => c.date === dateStr);
         if (dayCalls.length) {
           const s = dayCalls[dayCalls.length - 1].status || '';
