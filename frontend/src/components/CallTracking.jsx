@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Phone, Filter, RefreshCw, X, Clock, CheckCircle, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import HRTCallPerformance from './HRTCallPerformance';
+import { useTheme } from '../ThemeContext';
 
 const API = '/api';
 
@@ -10,20 +11,30 @@ const CALL_STATUSES = [
 ];
 
 const STATUS_COLORS = {
-  'Connected':           '#22C55E',
-  'No Response':         '#EF4444',
-  'Wrong Number':        '#F97316',
+  'Connected':           '#16A34A',
+  'No Response':         '#DC2626',
+  'Wrong Number':        '#D97706',
   'Switched Off':        '#94A3B8',
-  'Busy':                '#EAB308',
+  'Busy':                '#CA8A04',
   'Call Back Later':     '#60A5FA',
   'Follow-Up Required':  '#A78BFA',
-  'Escalated':           '#EF4444',
-  'Resolved':            '#22C55E',
+  'Escalated':           '#DC2626',
+  'Resolved':            '#16A34A',
   'Pending':             '#94A3B8',
-  'No Number':           '#EF4444',
+  'No Number':           '#DC2626',
 };
 
+const BRIGHT_SHADE = {
+  '#16A34A': '#16A34A', '#DC2626': '#DC2626', '#D97706': '#EA580C',
+  '#94A3B8': '#475569', '#CA8A04': '#B45309', '#60A5FA': '#2563EB',
+  '#A78BFA': '#7C3AED', '#3B82F6': '#1D4ED8', '#93C5FD': '#1D4ED8',
+  '#86EFAC': '#15803D',
+};
+function shade(hex, dark) { return dark ? hex : (BRIGHT_SHADE[hex] || hex); }
+
 function DEOPerformance() {
+  const { theme } = useTheme();
+  const dark = theme !== 'bright';
   const [deoData, setDeoData] = useState(null);
   const [open,    setOpen]    = useState(true);
 
@@ -36,17 +47,17 @@ function DEOPerformance() {
 
   return (
     <div className="rounded-xl overflow-hidden"
-      style={{ background: 'var(--ccmc-panel)', border: '1px solid rgba(66,165,245,0.25)' }}>
+      style={{ background: 'var(--ccmc-panel)', border: '1px solid rgba(59,130,246,0.25)' }}>
       <button className="w-full flex items-center justify-between px-5 py-3"
         onClick={() => setOpen(o => !o)}
-        style={{ borderBottom: open ? '1px solid rgba(30,58,95,0.6)' : 'none' }}>
+        style={{ borderBottom: open ? '1px solid var(--ccmc-border)' : 'none' }}>
         <div className="flex items-center gap-2">
-          <Phone className="w-4 h-4" style={{ color: '#42A5F5' }} />
+          <Phone className="w-4 h-4" style={{ color: shade('#3B82F6', dark) }} />
           <span className="text-sm font-bold text-white" style={{ fontFamily: 'Poppins,sans-serif' }}>
             MCH Call Center — DEO Connected Calls Per Day
           </span>
           <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-            style={{ background: 'rgba(66,165,245,0.12)', color: '#42A5F5' }}>{month}</span>
+            style={{ background: 'rgba(59,130,246,0.12)', color: shade('#3B82F6', dark) }}>{month}</span>
         </div>
         {open ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
       </button>
@@ -56,12 +67,12 @@ function DEOPerformance() {
           <table className="data-table text-[11px]">
             <thead>
               <tr>
-                <th style={{ color: '#CBD5E1' }}>S.No</th>
-                <th style={{ color: '#CBD5E1' }}>Name</th>
+                <th style={{ color: 'var(--ccmc-text-sec)' }}>S.No</th>
+                <th style={{ color: 'var(--ccmc-text-sec)' }}>Name</th>
                 {dates.map(d => (
-                  <th key={d} className="text-right" style={{ color: '#CBD5E1', minWidth: 58 }}>{d}</th>
+                  <th key={d} className="text-right" style={{ color: 'var(--ccmc-text-sec)', minWidth: 58 }}>{d}</th>
                 ))}
-                <th className="text-right" style={{ color: '#93C5FD' }}>Total</th>
+                <th className="text-right" style={{ color: shade('#93C5FD', dark) }}>Total</th>
               </tr>
             </thead>
             <tbody>
@@ -70,30 +81,30 @@ function DEOPerformance() {
                 return (
                   <tr key={deo.sno}>
                     <td className="text-slate-500 text-center">{deo.sno}</td>
-                    <td className="font-semibold" style={{ color: '#F1F5F9' }}>{deo.name}</td>
+                    <td className="font-semibold" style={{ color: 'var(--ccmc-text)' }}>{deo.name}</td>
                     {dates.map(d => {
                       const v = deo.calls[d];
                       return (
                         <td key={d} className="text-right font-bold"
-                          style={{ color: v === 0 ? '#475569' : v >= 35 ? '#22C55E' : v >= 25 ? '#F97316' : '#F1F5F9' }}>
+                          style={{ color: v === 0 ? 'var(--ccmc-text-hint)' : v >= 35 ? shade('#16A34A', dark) : v >= 25 ? shade('#D97706', dark) : 'var(--ccmc-text)' }}>
                           {v === 0 ? '–' : v}
                         </td>
                       );
                     })}
-                    <td className="text-right font-bold" style={{ color: '#60A5FA' }}>{rowTotal}</td>
+                    <td className="text-right font-bold" style={{ color: shade('#60A5FA', dark) }}>{rowTotal}</td>
                   </tr>
                 );
               })}
             </tbody>
             <tfoot>
-              <tr style={{ borderTop: '2px solid rgba(66,165,245,0.3)' }}>
-                <td colSpan={2} className="font-bold" style={{ color: '#93C5FD' }}>Daily Total</td>
+              <tr style={{ borderTop: '2px solid rgba(59,130,246,0.3)' }}>
+                <td colSpan={2} className="font-bold" style={{ color: shade('#93C5FD', dark) }}>Daily Total</td>
                 {dates.map(d => (
-                  <td key={d} className="text-right font-bold" style={{ color: '#60A5FA' }}>
+                  <td key={d} className="text-right font-bold" style={{ color: shade('#60A5FA', dark) }}>
                     {totals[d] || 0}
                   </td>
                 ))}
-                <td className="text-right font-bold" style={{ color: '#42A5F5' }}>
+                <td className="text-right font-bold" style={{ color: shade('#3B82F6', dark) }}>
                   {Object.values(totals).reduce((s, v) => s + v, 0)}
                 </td>
               </tr>
@@ -106,6 +117,8 @@ function DEOPerformance() {
 }
 
 export default function CallTracking({ user }) {
+  const { theme } = useTheme();
+  const dark = theme !== 'bright';
   const [records, setRecords]   = useState([]);
   const [total,   setTotal]     = useState(0);
   const [loading, setLoading]   = useState(false);
@@ -177,16 +190,16 @@ export default function CallTracking({ user }) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-bold text-white" style={{ fontFamily: 'Poppins, sans-serif' }}>
+          <h1 className="page-title" style={{ fontFamily: 'Poppins, sans-serif' }}>
             Call Tracking
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="page-subtitle mt-1" style={{ color: 'var(--ccmc-text-hint)' }}>
             {total.toLocaleString()} mothers · live sync across all HRT portals (auto-refreshes every 15s)
           </p>
         </div>
         <button onClick={load} disabled={loading}
           className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold"
-          style={{ background: 'rgba(25,118,210,0.2)', border: '1px solid rgba(25,118,210,0.4)', color: '#42A5F5' }}>
+          style={{ background: 'var(--ccmc-pill-info-bg)', border: '1px solid rgba(37,99,235,0.4)', color: 'var(--ccmc-pill-info-text)' }}>
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
           Refresh
         </button>
@@ -200,33 +213,36 @@ export default function CallTracking({ user }) {
 
       {/* Status summary cards */}
       <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
-        {['Connected','No Response','Pending','Escalated','Follow-Up Required'].map(s => (
+        {['Connected','No Response','Pending','Escalated','Follow-Up Required'].map(s => {
+          const sc = shade(STATUS_COLORS[s] || '#94A3B8', dark);
+          return (
           <button key={s} onClick={() => setFilterStatus(filterStatus === s ? '' : s)}
             className="rounded-xl p-3 text-center transition-all"
             style={{
-              background: filterStatus === s ? `${STATUS_COLORS[s]}15` : '#0F172A',
-              border: `1px solid ${filterStatus === s ? `${STATUS_COLORS[s]}40` : 'rgba(30,58,95,0.5)'}`,
+              background: filterStatus === s ? `${sc}15` : 'var(--ccmc-panel)',
+              border: `1px solid ${filterStatus === s ? `${sc}40` : 'var(--ccmc-border)'}`,
             }}>
-            <div className="text-lg font-bold" style={{ color: STATUS_COLORS[s] || '#94A3B8' }}>
+            <div className="text-lg font-bold" style={{ color: sc }}>
               {statusCounts[s] || 0}
             </div>
             <div className="text-[9px] text-slate-500 font-semibold uppercase tracking-wider">{s}</div>
           </button>
-        ))}
+          );
+        })}
       </div>
 
       {/* Filters */}
       <div className="flex gap-2 flex-wrap">
         <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
           className="px-3 py-2 rounded-lg text-xs text-white outline-none"
-          style={{ background: 'var(--ccmc-panel)', border: '1px solid rgba(30,58,95,0.7)' }}>
+          style={{ background: 'var(--ccmc-panel)', border: '1px solid var(--ccmc-border)' }}>
           <option value="">All Statuses</option>
           {CALL_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
           <option value="Pending">Pending</option>
         </select>
         <select value={filterPHC} onChange={e => setFilterPHC(e.target.value)}
           className="px-3 py-2 rounded-lg text-xs text-white outline-none"
-          style={{ background: 'var(--ccmc-panel)', border: '1px solid rgba(30,58,95,0.7)' }}>
+          style={{ background: 'var(--ccmc-panel)', border: '1px solid var(--ccmc-border)' }}>
           <option value="">All PHCs</option>
           {phcList.map(p => (
             <option key={p.phc_key} value={p.phc_key}>{p.phc_display} ({p.count})</option>
@@ -235,7 +251,7 @@ export default function CallTracking({ user }) {
         {user.full_access && (
           <select value={filterHRT} onChange={e => setFilterHRT(e.target.value)}
             className="px-3 py-2 rounded-lg text-xs text-white outline-none"
-            style={{ background: 'var(--ccmc-panel)', border: '1px solid rgba(30,58,95,0.7)' }}>
+            style={{ background: 'var(--ccmc-panel)', border: '1px solid var(--ccmc-border)' }}>
             <option value="">All HRTs</option>
             {['HRT1','HRT2','HRT3','HRT4','HRT5','HRT6','HRT7','HRT8'].map(h => (
               <option key={h} value={h}>{h}</option>
@@ -246,7 +262,7 @@ export default function CallTracking({ user }) {
 
       {/* Table */}
       <div className="rounded-xl overflow-hidden"
-        style={{ background: 'var(--ccmc-panel)', border: '1px solid rgba(30,58,95,0.7)' }}>
+        style={{ background: 'var(--ccmc-panel)', border: '1px solid var(--ccmc-border)' }}>
         <div className="overflow-x-auto">
           <table className="data-table">
             <thead>
@@ -261,13 +277,15 @@ export default function CallTracking({ user }) {
               {loading ? (
                 <tr><td colSpan={11} className="text-center py-8">
                   <div className="w-5 h-5 border-2 rounded-full animate-spin mx-auto"
-                    style={{ borderColor: '#1E3A5F', borderTopColor: '#42A5F5' }} />
+                    style={{ borderColor: 'var(--ccmc-border-s)', borderTopColor: '#3B82F6' }} />
                 </td></tr>
               ) : records.length === 0 ? (
                 <tr><td colSpan={11} className="text-center py-8 text-slate-500 text-xs">
                   No call records found
                 </td></tr>
-              ) : records.slice(0, 300).map(r => (
+              ) : records.slice(0, 300).map(r => {
+                const rsc = shade(STATUS_COLORS[r.call_status] || '#94A3B8', dark);
+                return (
                 <tr key={r.uid}>
                   <td>
                     <div className="font-semibold text-white max-w-[140px] truncate">{r.mother_name || '—'}</div>
@@ -275,15 +293,15 @@ export default function CallTracking({ user }) {
                   <td className="text-slate-400 text-xs">{r.phc_display}</td>
                   <td>
                     <span className="text-[10px] font-bold px-1.5 py-0.5 rounded"
-                      style={{ background: 'rgba(66,165,245,0.15)', color: '#93C5FD' }}>{r.hrt_code}</span>
+                      style={{ background: 'var(--ccmc-pill-info-bg)', color: 'var(--ccmc-pill-info-text)' }}>{r.hrt_code}</span>
                   </td>
                   <td className="text-slate-400 text-xs">{r.cell_no || '—'}</td>
                   <td>
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
                       style={{
-                        background: `${STATUS_COLORS[r.call_status] || '#94A3B8'}15`,
-                        color: STATUS_COLORS[r.call_status] || '#94A3B8',
-                        border: `1px solid ${STATUS_COLORS[r.call_status] || '#94A3B8'}30`,
+                        background: `${rsc}15`,
+                        color: rsc,
+                        border: `1px solid ${rsc}30`,
                       }}>
                       {r.call_status || 'Pending'}
                     </span>
@@ -293,22 +311,23 @@ export default function CallTracking({ user }) {
                   <td className="max-w-[120px]">
                     <div className="text-[10px] text-slate-400 truncate">{r.remarks || '—'}</div>
                   </td>
-                  <td className="text-[10px] text-blue-300">{r.next_followup_date || '—'}</td>
+                  <td className="text-[10px]" style={{ color: 'var(--ccmc-pill-info-text)' }}>{r.next_followup_date || '—'}</td>
                   <td className="text-center">
                     <span className="text-[10px] font-bold px-1.5 py-0.5 rounded"
-                      style={{ background: 'rgba(66,165,245,0.1)', color: '#60A5FA' }}>
+                      style={{ background: 'var(--ccmc-pill-info-bg)', color: shade('#60A5FA', dark) }}>
                       {r.call_count}
                     </span>
                   </td>
                   <td>
                     <button onClick={() => openCallModal(r)}
                       className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-semibold whitespace-nowrap"
-                      style={{ background: 'rgba(34,197,94,0.1)', color: '#86EFAC', border: '1px solid rgba(34,197,94,0.2)' }}>
+                      style={{ background: 'var(--ccmc-pill-success-bg)', color: 'var(--ccmc-pill-success-text)', border: '1px solid rgba(22,163,74,0.2)' }}>
                       <Phone className="w-3 h-3" /> Log Call
                     </button>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -317,9 +336,9 @@ export default function CallTracking({ user }) {
       {/* Call modal */}
       {callModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ background: 'rgba(2,6,23,0.9)', backdropFilter: 'blur(8px)' }}>
+          style={{ background: 'var(--ccmc-modal-backdrop)', backdropFilter: 'blur(8px)' }}>
           <div className="w-full max-w-lg rounded-2xl p-6"
-            style={{ background: 'var(--ccmc-panel)', border: '1px solid rgba(30,58,95,0.9)' }}>
+            style={{ background: 'var(--ccmc-panel)', border: '1px solid var(--ccmc-border)' }}>
             <div className="flex items-center justify-between mb-5">
               <div>
                 <h3 className="text-sm font-bold text-white">Log Call</h3>
@@ -336,7 +355,7 @@ export default function CallTracking({ user }) {
                   <select value={callModal.status}
                     onChange={e => setCallModal(m => ({ ...m, status: e.target.value }))}
                     className="w-full mt-1 px-3 py-2 rounded-lg text-sm text-white outline-none"
-                    style={{ background: '#1E293B', border: '1px solid rgba(30,58,95,0.8)' }}>
+                    style={{ background: 'var(--ccmc-input-bg)', border: '1px solid var(--ccmc-input-border)' }}>
                     {CALL_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </label>
@@ -346,7 +365,7 @@ export default function CallTracking({ user }) {
                     onChange={e => setCallModal(m => ({ ...m, outcome: e.target.value }))}
                     placeholder="e.g., Advised ANC visit"
                     className="w-full mt-1 px-3 py-2 rounded-lg text-sm text-white outline-none"
-                    style={{ background: '#1E293B', border: '1px solid rgba(30,58,95,0.8)' }} />
+                    style={{ background: 'var(--ccmc-input-bg)', border: '1px solid var(--ccmc-input-border)' }} />
                 </label>
               </div>
               <label className="block">
@@ -355,7 +374,7 @@ export default function CallTracking({ user }) {
                   onChange={e => setCallModal(m => ({ ...m, remarks: e.target.value }))}
                   rows={2} placeholder="Detailed call notes…"
                   className="w-full mt-1 px-3 py-2 rounded-lg text-sm text-white outline-none resize-none"
-                  style={{ background: '#1E293B', border: '1px solid rgba(30,58,95,0.8)' }} />
+                  style={{ background: 'var(--ccmc-input-bg)', border: '1px solid var(--ccmc-input-border)' }} />
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <label className="block">
@@ -363,25 +382,25 @@ export default function CallTracking({ user }) {
                   <input type="date" value={callModal.next_followup_date}
                     onChange={e => setCallModal(m => ({ ...m, next_followup_date: e.target.value }))}
                     className="w-full mt-1 px-3 py-2 rounded-lg text-sm text-white outline-none"
-                    style={{ background: '#1E293B', border: '1px solid rgba(30,58,95,0.8)', colorScheme: 'dark' }} />
+                    style={{ background: 'var(--ccmc-input-bg)', border: '1px solid var(--ccmc-input-border)', colorScheme: dark ? 'dark' : 'light' }} />
                 </label>
                 <label className="block">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Next Follow-Up Time</span>
                   <input type="time" value={callModal.next_followup_time}
                     onChange={e => setCallModal(m => ({ ...m, next_followup_time: e.target.value }))}
                     className="w-full mt-1 px-3 py-2 rounded-lg text-sm text-white outline-none"
-                    style={{ background: '#1E293B', border: '1px solid rgba(30,58,95,0.8)', colorScheme: 'dark' }} />
+                    style={{ background: 'var(--ccmc-input-bg)', border: '1px solid var(--ccmc-input-border)', colorScheme: dark ? 'dark' : 'light' }} />
                 </label>
               </div>
               <div className="flex gap-2 mt-4">
                 <button onClick={() => setCallModal(null)}
                   className="flex-1 py-2.5 rounded-lg text-sm font-semibold text-slate-400"
-                  style={{ background: 'rgba(30,41,59,0.8)', border: '1px solid rgba(30,58,95,0.5)' }}>
+                  style={{ background: 'var(--ccmc-input-bg)', border: '1px solid var(--ccmc-border)' }}>
                   Cancel
                 </button>
                 <button onClick={saveCall} disabled={saving}
                   className="flex-1 py-2.5 rounded-lg text-sm font-bold text-white"
-                  style={{ background: 'linear-gradient(135deg, #0F4C81, #1976D2)' }}>
+                  style={{ background: 'linear-gradient(135deg, #1E40AF, #2563EB)' }}>
                   {saving ? 'Saving…' : 'Save Call Record'}
                 </button>
               </div>

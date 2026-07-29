@@ -1,24 +1,37 @@
 import React, { useEffect, useState } from 'react';
 import { Baby, Clock, AlertTriangle, Heart, RefreshCw, BarChart2, MapPin } from 'lucide-react';
+import { useTheme } from '../ThemeContext';
 
 const API = '/api';
 
+// Some categorical accent colors below are pale/light (tuned for dark
+// backgrounds) and read as near-invisible text on the bright theme's white
+// panels — darken just those for legibility there.
+const BRIGHT_SHADE = {
+  '#CA8A04': '#B45309',
+  '#34D399': '#16A34A',
+  '#6EE7B7': '#15803D',
+  '#A7F3D0': '#166534',
+  '#FCA5A5': '#DC2626',
+};
+function shade(hex, dark) { return dark ? hex : (BRIGHT_SHADE[hex] || hex); }
+
 /* ── AN Timeline tabs ───────────────────────────────────────── */
-const AN_TABS = [
+const AN_TABS_BASE = [
   { id: 'an_today',  label: 'Due Today',      color: '#DC2626', urgent: true },
-  { id: 'an_w7',    label: 'Within 7 Days',   color: '#EF4444' },
-  { id: 'an_8_14',  label: '8–14 Days',       color: '#F97316' },
-  { id: 'an_15_30', label: '15–30 Days',      color: '#EAB308' },
+  { id: 'an_w7',    label: 'Within 7 Days',   color: '#DC2626' },
+  { id: 'an_8_14',  label: '8–14 Days',       color: '#D97706' },
+  { id: 'an_15_30', label: '15–30 Days',      color: '#CA8A04' },
   { id: 'an_31_60', label: '31–60 Days',      color: '#3B82F6' },
   { id: 'an_61_90', label: '61–90 Days',      color: '#6366F1' },
   { id: 'an_90plus',label: '> 90 Days',       color: '#8B5CF6' },
 ];
 
 /* ── PN tabs ────────────────────────────────────────────────── */
-const PN_TABS = [
-  { id: 'pn_1_7',   label: 'Day 1–7',    color: '#EF4444',  desc: 'Within 7 days of delivery (actual date)' },
-  { id: 'pn_8_14',  label: 'Day 8–14',   color: '#F97316',  desc: '8–14 days post delivery (actual date)'   },
-  { id: 'pn_15_21', label: 'Day 15–21',  color: '#22C55E',  desc: '15–21 days post delivery' },
+const PN_TABS_BASE = [
+  { id: 'pn_1_7',   label: 'Day 1–7',    color: '#DC2626',  desc: 'Within 7 days of delivery (actual date)' },
+  { id: 'pn_8_14',  label: 'Day 8–14',   color: '#D97706',  desc: '8–14 days post delivery (actual date)'   },
+  { id: 'pn_15_21', label: 'Day 15–21',  color: '#16A34A',  desc: '15–21 days post delivery' },
   { id: 'pn_21_28', label: 'Day 21–28',  color: '#34D399',  desc: '21–28 days post delivery' },
   { id: 'pn_28_42', label: 'Day 28–42',  color: '#6EE7B7',  desc: '28–42 days post delivery' },
   { id: 'pn_42plus',label: '> 42 Days',  color: '#A7F3D0',  desc: 'Beyond 42 days post delivery' },
@@ -32,8 +45,8 @@ function DeliveryCard({ p, openPatient, accentColor }) {
               : days === 0     ? 'Due Today!'
               : days < 0       ? `${Math.abs(days)}d post`
               :                  `${days}d left`;
-  const dColor  = p.is_delivered ? '#22C55E'
-                : days === 0 ? '#DC2626' : days !== null && days < 0 ? '#22C55E' : accentColor;
+  const dColor  = p.is_delivered ? '#16A34A'
+                : days === 0 ? '#DC2626' : days !== null && days < 0 ? '#16A34A' : accentColor;
   const dateSub = p.is_delivered && p.delivery_date ? `DEL ${p.delivery_date}` : `EDD ${p.edd || '—'}`;
 
   return (
@@ -68,12 +81,12 @@ function DeliveryCard({ p, openPatient, accentColor }) {
       <div className="flex flex-wrap gap-1.5 items-center">
         {p.birth_plan && p.birth_plan !== 'nan' && p.birth_plan.trim() && (
           <span className="text-[9px] px-1.5 py-0.5 rounded"
-            style={{ background: 'rgba(59,130,246,0.1)', color: '#93C5FD' }}>
+            style={{ background: 'var(--ccmc-pill-info-bg)', color: 'var(--ccmc-pill-info-text)' }}>
             {p.birth_plan}
           </span>
         )}
         {p.delivery_info && p.delivery_info !== 'nan' && p.delivery_info.trim() && (
-          <span className="text-[9px] font-semibold" style={{ color: '#22C55E' }}>
+          <span className="text-[9px] font-semibold" style={{ color: '#16A34A' }}>
             {p.delivery_info}
           </span>
         )}
@@ -122,12 +135,12 @@ function PHCSummaryBar({ data, max, color }) {
             <span className="text-[9px] truncate flex-shrink-0" style={{ width: 110, color: 'var(--ccmc-text-sec)' }}>
               {d.phc}
             </span>
-            <div className="flex-1 h-3 rounded-full overflow-hidden" style={{ background: 'rgba(30,58,95,0.4)' }}>
+            <div className="flex-1 h-3 rounded-full overflow-hidden" style={{ background: 'var(--ccmc-border-s)' }}>
               <div className="h-full rounded-full" style={{ width: `${pct}%`, background: color }} />
             </div>
             <span className="text-[9px] font-bold w-6 text-right" style={{ color }}>{d.count}</span>
             {d.critical > 0 && (
-              <span className="text-[9px] w-10 text-right" style={{ color: '#FCA5A5' }}>{d.critical} crit</span>
+              <span className="text-[9px] w-10 text-right" style={{ color: 'var(--ccmc-pill-critical-text)' }}>{d.critical} crit</span>
             )}
           </div>
         );
@@ -137,6 +150,10 @@ function PHCSummaryBar({ data, max, color }) {
 }
 
 export default function DeliveryMonitoring({ user, openPatient }) {
+  const { theme } = useTheme();
+  const dark = theme !== 'bright';
+  const AN_TABS = AN_TABS_BASE.map(t => ({ ...t, color: shade(t.color, dark) }));
+  const PN_TABS = PN_TABS_BASE.map(t => ({ ...t, color: shade(t.color, dark) }));
   const [data,    setData]    = useState(null);
   const [anTab,   setAnTab]   = useState('an_today');
   const [pnTab,   setPnTab]   = useState('pn_1_7');
@@ -158,8 +175,8 @@ export default function DeliveryMonitoring({ user, openPatient }) {
   const anList       = data?.[anTab]  || [];
   const pnList       = data?.[pnTab]  || [];
 
-  const anColor = AN_TABS.find(t => t.id === anTab)?.color || '#EF4444';
-  const pnColor = PN_TABS.find(t => t.id === pnTab)?.color || '#22C55E';
+  const anColor = AN_TABS.find(t => t.id === anTab)?.color || '#DC2626';
+  const pnColor = PN_TABS.find(t => t.id === pnTab)?.color || '#16A34A';
 
   const totalAN = (counts.an_today||0)+(counts.an_w7||0)+(counts.an_8_14||0)
                 + (counts.an_15_30||0)+(counts.an_31_60||0)+(counts.an_61_90||0)+(counts.an_90plus||0);
@@ -174,7 +191,7 @@ export default function DeliveryMonitoring({ user, openPatient }) {
       {/* Page header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-bold" style={{ fontFamily: 'Poppins,sans-serif', color: 'var(--ccmc-text)' }}>
+          <h1 className="page-title" style={{ fontFamily: 'Poppins,sans-serif' }}>
             Delivery Monitoring
           </h1>
           <p className="text-xs mt-0.5" style={{ color: 'var(--ccmc-text-hint)' }}>
@@ -183,7 +200,7 @@ export default function DeliveryMonitoring({ user, openPatient }) {
         </div>
         <button onClick={load} disabled={loading}
           className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold"
-          style={{ background: 'rgba(25,118,210,0.2)', border: '1px solid rgba(25,118,210,0.4)', color: '#42A5F5' }}>
+          style={{ background: 'var(--ccmc-pill-info-bg)', border: '1px solid rgba(37,99,235,0.4)', color: 'var(--ccmc-pill-info-text)' }}>
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
           Refresh
         </button>
@@ -194,9 +211,9 @@ export default function DeliveryMonitoring({ user, openPatient }) {
         {[
           { label: 'Due Today',          val: counts.an_today,  color: '#DC2626', icon: AlertTriangle, urgent: true },
           { label: 'AN Due ≤7 Days',     val: (counts.an_today||0)+(counts.an_w7||0),
-            color: '#EF4444', icon: Clock },
+            color: '#DC2626', icon: Clock },
           { label: 'AN Total (All EDD)', val: totalAN,           color: '#3B82F6', icon: Baby },
-          { label: 'PN Total Delivered', val: totalPN,           color: '#22C55E', icon: Heart },
+          { label: 'PN Total Delivered', val: totalPN,           color: '#16A34A', icon: Heart },
         ].map(({ label, val, color, icon: Icon, urgent }) => (
           <div key={label} className="rounded-xl p-4 flex items-center gap-3"
             style={{ background: 'var(--ccmc-panel)', border: `1px solid ${color}25` }}>
@@ -217,7 +234,7 @@ export default function DeliveryMonitoring({ user, openPatient }) {
       {loading ? (
         <div className="flex items-center justify-center py-20">
           <div className="w-8 h-8 border-2 rounded-full animate-spin"
-            style={{ borderColor: 'var(--ccmc-border-s)', borderTopColor: '#42A5F5' }} />
+            style={{ borderColor: 'var(--ccmc-border-s)', borderTopColor: '#3B82F6' }} />
         </div>
       ) : (
         <>
@@ -315,8 +332,8 @@ export default function DeliveryMonitoring({ user, openPatient }) {
             {/* PN header */}
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg flex items-center justify-center"
-                style={{ background: 'rgba(34,197,94,0.15)' }}>
-                <Heart className="w-4 h-4" style={{ color: '#22C55E' }} />
+                style={{ background: 'rgba(22,163,74,0.15)' }}>
+                <Heart className="w-4 h-4" style={{ color: '#16A34A' }} />
               </div>
               <div className="flex-1">
                 <div className="text-sm font-bold" style={{ color: 'var(--ccmc-text)', fontFamily: 'Poppins,sans-serif' }}>
@@ -354,13 +371,13 @@ export default function DeliveryMonitoring({ user, openPatient }) {
               <div className="rounded-xl p-4"
                 style={{ background: 'var(--ccmc-panel)', border: '1px solid var(--ccmc-border)' }}>
                 <div className="flex items-center gap-2 mb-3">
-                  <MapPin className="w-3.5 h-3.5" style={{ color: '#22C55E' }} />
+                  <MapPin className="w-3.5 h-3.5" style={{ color: '#16A34A' }} />
                   <span className="text-[10px] font-bold uppercase tracking-wider"
                     style={{ color: 'var(--ccmc-text-sec)' }}>
                     PHC Distribution (PN Mothers)
                   </span>
                 </div>
-                <PHCSummaryBar data={pnPHCSummary} max={maxPnPhc} color="#22C55E" />
+                <PHCSummaryBar data={pnPHCSummary} max={maxPnPhc} color="#16A34A" />
               </div>
             )}
 

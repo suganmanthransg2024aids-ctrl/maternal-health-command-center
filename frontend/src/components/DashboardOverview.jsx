@@ -51,7 +51,7 @@ function KPICard({ icon: Icon, label, value, color, sub, onClick, gradient, icon
           : 'var(--ccmc-card-shadow)',
         transform: hovered ? 'translateY(-3px)' : 'translateY(0)',
         cursor: onClick ? 'pointer' : 'default',
-        transition: 'all 0.22s ease',
+        transition: 'box-shadow 0.15s ease-out, border-color 0.15s ease-out, transform 0.12s ease-out',
       }}
     >
       {/* Gradient top accent bar */}
@@ -76,13 +76,13 @@ function KPICard({ icon: Icon, label, value, color, sub, onClick, gradient, icon
       </div>
 
       {/* Metric value */}
-      <div className="text-[32px] font-bold leading-none mb-2"
-        style={{ color: bright ? '#0F172A' : 'var(--ccmc-text)', fontFamily: 'Poppins, sans-serif', letterSpacing: '-1.5px' }}>
+      <div className="text-[34px] font-bold leading-none mb-2"
+        style={{ color: bright ? '#0F172A' : 'var(--ccmc-text)', fontFamily: 'Poppins, sans-serif', letterSpacing: '-1.5px', fontVariantNumeric: 'tabular-nums' }}>
         {value ?? '—'}
       </div>
 
       {/* Label */}
-      <div className="text-[12px] font-semibold" style={{ color: 'var(--ccmc-text-sec)' }}>
+      <div className="text-[13px] font-semibold" style={{ color: 'var(--ccmc-text-sec)' }}>
         {label}
       </div>
       {sub && (
@@ -215,9 +215,9 @@ export default function DashboardOverview({ stats, user, onRefresh, syncing, set
     amber:  '#D97706', rose:   '#E11D48', teal:   '#0F766E',
     purple: '#7C3AED',
   } : {
-    blue:   '#3B9FFF', red:    '#EF4444', orange: '#A78BFA',
-    green:  '#22C55E', redAlt: '#F97316', blueLt: '#60A5FA',
-    amber:  '#F59E0B', rose:   '#EF4444', teal:   '#3B9FFF',
+    blue:   '#3B82F6', red:    '#DC2626', orange: '#D97706',
+    green:  '#16A34A', redAlt: '#D97706', blueLt: '#60A5FA',
+    amber:  '#D97706', rose:   '#FB7185', teal:   '#0EA5E9',
     purple: '#A78BFA',
   };
 
@@ -228,9 +228,9 @@ export default function DashboardOverview({ stats, user, onRefresh, syncing, set
     ? { critical: '#DC2626', veryHigh: '#EA580C', dueSoon: '#7C3AED', delivered: '#059669' }
     : { critical: '#FCA5A5', veryHigh: '#FDBA74', dueSoon: '#C4B5FD', delivered: '#86EFAC' };
 
-  const hrtChipBg  = bright ? '#EFF6FF' : 'rgba(59,159,255,0.12)';
-  const hrtChipClr = bright ? '#2563EB' : '#3B9FFF';
-  const hrtChipBd  = bright ? '1px solid #BFDBFE' : '1px solid rgba(59,159,255,0.2)';
+  const hrtChipBg  = bright ? '#EFF6FF' : 'rgba(37,99,235,0.12)';
+  const hrtChipClr = bright ? '#2563EB' : '#3B82F6';
+  const hrtChipBd  = bright ? '1px solid #BFDBFE' : '1px solid rgba(37,99,235,0.2)';
 
   const cardStyle = {
     background: 'var(--ccmc-panel)',
@@ -254,11 +254,11 @@ export default function DashboardOverview({ stats, user, onRefresh, syncing, set
       {/* ── Page header ─────────────────────────────────────────────── */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-[22px] font-bold leading-tight"
-            style={{ color: 'var(--ccmc-text)', fontFamily: 'Poppins, sans-serif', letterSpacing: '-0.3px', fontWeight: bright ? 800 : 700 }}>
+          <h1 className="text-[26px] font-bold leading-tight"
+            style={{ color: 'var(--ccmc-text)', fontFamily: 'Poppins, sans-serif', letterSpacing: '-0.4px', fontWeight: bright ? 800 : 700 }}>
             {bright ? 'Command Center Overview' : 'Dashboard Overview'}
           </h1>
-          <p className="text-[12px] mt-0.5" style={{ color: 'var(--ccmc-text-hint)' }}>
+          <p className="text-[13px] mt-1" style={{ color: 'var(--ccmc-text-hint)' }}>
             {bright ? 'Live healthcare intelligence · ' : 'Live maternal health intelligence · '}
             <span style={{ color: C.blue }}>{s.total_mothers?.toLocaleString() ?? '…'} records</span>
             &nbsp;· click any card to drill down
@@ -323,7 +323,7 @@ export default function DashboardOverview({ stats, user, onRefresh, syncing, set
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Activity className="w-4 h-4" style={{ color: C.teal }} />
-            <h2 className="text-[13px] font-bold" style={{ color: 'var(--ccmc-text)' }}>
+            <h2 className="text-[15px] font-bold" style={{ color: 'var(--ccmc-text)' }}>
               {bright ? 'Operational Intelligence' : 'Live Operational Intelligence'}
             </h2>
           </div>
@@ -351,33 +351,33 @@ export default function DashboardOverview({ stats, user, onRefresh, syncing, set
             style={{ borderBottom: bright ? '1px solid #F1F5F9' : '1px solid var(--ccmc-border)' }}>
             <div className="flex items-center gap-2">
               <Bell className="w-4 h-4" style={{ color: C.red }} />
-              <h2 className="text-[14px] font-bold" style={{ color: 'var(--ccmc-text)' }}>Priority Alerts</h2>
+              <h2 className="text-[15px] font-bold" style={{ color: 'var(--ccmc-text)' }}>Priority Alerts</h2>
             </div>
             <span className="chip"
               style={{
-                background: bright ? '#FEE2E2' : 'rgba(239,68,68,0.12)',
+                background: bright ? '#FEE2E2' : 'rgba(220,38,38,0.13)',
                 color: bright ? '#DC2626' : '#FCA5A5',
-                border: bright ? '1px solid #FECACA' : '1px solid rgba(239,68,68,0.2)',
+                border: bright ? '1px solid #FECACA' : '1px solid rgba(220,38,38,0.28)',
               }}>
               P1 · {alerts.filter(a => a.priority === 'P1').length}
             </span>
           </div>
           <div className="divide-y" style={{ borderColor: bright ? '#F1F5F9' : 'var(--ccmc-border)', maxHeight: 256, overflowY: 'auto' }}>
             {p1Alerts.length === 0 ? (
-              <div className="px-6 py-8 text-center text-[12px]" style={{ color: 'var(--ccmc-text-hint)' }}>Loading alerts…</div>
+              <div className="px-6 py-8 text-center text-[13px]" style={{ color: 'var(--ccmc-text-hint)' }}>Loading alerts…</div>
             ) : p1Alerts.map((a, i) => (
               <div key={i} onClick={() => openPatient(a.uid)}
                 className="flex items-center gap-3 px-5 py-3.5 cursor-pointer transition-colors"
-                onMouseEnter={(e) => { e.currentTarget.style.background = bright ? '#FEF2F2' : 'rgba(239,68,68,0.05)'; }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = bright ? '#FEF2F2' : 'rgba(220,38,38,0.06)'; }}
                 onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}>
                 <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: C.red }} />
                 <div className="min-w-0 flex-1">
-                  <div className="text-[12px] font-semibold truncate" style={{ color: 'var(--ccmc-text)' }}>{a.mother_name || 'Unknown'}</div>
-                  <div className="text-[11px]" style={{ color: 'var(--ccmc-text-hint)' }}>{a.phc_display} · {a.alert_type}</div>
+                  <div className="text-[13px] font-semibold truncate" style={{ color: 'var(--ccmc-text)' }}>{a.mother_name || 'Unknown'}</div>
+                  <div className="text-[12px]" style={{ color: 'var(--ccmc-text-hint)' }}>{a.phc_display} · {a.alert_type}</div>
                 </div>
                 {a.days_to_edd != null && (
-                  <span className="text-[10px] font-bold flex-shrink-0"
-                    style={{ color: a.days_to_edd < 0 ? '#EF4444' : a.days_to_edd < 7 ? '#F97316' : '#94A3B8' }}>
+                  <span className="text-[11px] font-bold flex-shrink-0"
+                    style={{ color: a.days_to_edd < 0 ? '#DC2626' : a.days_to_edd < 7 ? '#D97706' : '#94A3B8' }}>
                     {a.days_to_edd < 0 ? `${Math.abs(a.days_to_edd)}d over` : `${a.days_to_edd}d`}
                   </span>
                 )}
@@ -399,7 +399,7 @@ export default function DashboardOverview({ stats, user, onRefresh, syncing, set
             style={{ borderBottom: bright ? '1px solid #F1F5F9' : '1px solid var(--ccmc-border)' }}>
             <div className="flex items-center gap-2">
               <Phone className="w-4 h-4" style={{ color: C.teal }} />
-              <h2 className="text-[14px] font-bold" style={{ color: 'var(--ccmc-text)' }}>HRT Performance — Today</h2>
+              <h2 className="text-[15px] font-bold" style={{ color: 'var(--ccmc-text)' }}>HRT Performance — Today</h2>
             </div>
             <span className="text-[11px]" style={{ color: 'var(--ccmc-text-hint)' }}>Connected · Pending · Follow-ups</span>
           </div>
@@ -407,7 +407,7 @@ export default function DashboardOverview({ stats, user, onRefresh, syncing, set
             {hrtCallData.map(h => {
               const c   = HRT_COLORS[h.hrt_code] || C.blue;
               const pct = h.total_mothers > 0 ? Math.round((h.calls_connected / h.total_mothers) * 100) : 0;
-              const connColor = h.deo_source ? '#06B6D4' : (bright ? '#059669' : '#22C55E');
+              const connColor = h.deo_source ? '#06B6D4' : (bright ? '#059669' : '#16A34A');
               return (
                 <div key={h.hrt_code} className="rounded-xl p-3 text-center"
                   style={{ background: bright ? `${c}10` : `${c}09`, border: `1px solid ${c}${bright ? '30' : '22'}` }}>
@@ -420,7 +420,7 @@ export default function DashboardOverview({ stats, user, onRefresh, syncing, set
                     {[
                       { label: 'Connected', value: h.calls_connected, color: connColor },
                       { label: 'Pending',   value: h.calls_pending,   color: 'var(--ccmc-text-hint)' },
-                      { label: 'FU Due',    value: h.followups_due,   color: bright ? '#D97706' : '#F59E0B' },
+                      { label: 'FU Due',    value: h.followups_due,   color: bright ? '#D97706' : '#D97706' },
                     ].map(({ label, value, color }) => (
                       <div key={label} className="flex justify-between items-center">
                         <span className="text-[9px]" style={{ color: 'var(--ccmc-text-hint)' }}>{label}</span>
@@ -429,7 +429,7 @@ export default function DashboardOverview({ stats, user, onRefresh, syncing, set
                     ))}
                   </div>
                   <div className="mt-3 progress-track">
-                    <div className="progress-fill" style={{ width: `${pct}%`, background: h.deo_source ? '#06B6D4' : (bright ? 'linear-gradient(90deg,#059669,#10B981)' : '#22C55E') }} />
+                    <div className="progress-fill" style={{ width: `${pct}%`, background: h.deo_source ? '#06B6D4' : (bright ? 'linear-gradient(90deg,#059669,#10B981)' : '#16A34A') }} />
                   </div>
                   <div className="text-[9px] mt-1" style={{ color: 'var(--ccmc-text-hint)' }}>{pct}% done</div>
                 </div>
@@ -481,8 +481,8 @@ export default function DashboardOverview({ stats, user, onRefresh, syncing, set
                   <td className="text-right font-semibold" style={{ color: phcClr.dueSoon }}>{p.due_soon}</td>
                   <td className="text-right font-semibold" style={{ color: phcClr.delivered }}>{p.delivered}</td>
                   <td className="text-right">
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded"
-                      style={{ background: 'rgba(66,165,245,0.12)', color: '#60A5FA' }}>{p.risk_pct}%</span>
+                    <span className="text-[11px] font-bold px-1.5 py-0.5 rounded"
+                      style={{ background: 'rgba(37,99,235,0.13)', color: '#60A5FA' }}>{p.risk_pct}%</span>
                   </td>
                 </tr>
               ))}

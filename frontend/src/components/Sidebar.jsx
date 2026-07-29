@@ -46,19 +46,19 @@ const NAV_SECTIONS = [
 const EXEC_SECTION = {
   label: 'Executive',
   items: [
-    { id: 'executive', label: 'Executive Analytics', icon: TrendingUp, execOnly: true },
+    { id: 'executive', label: 'Analytics', icon: TrendingUp, execOnly: true },
   ],
 };
 
 const ROLE_COLOR_DARK = {
-  DMCHO: '#3B9FFF', CHO: '#34D399',
+  DMCHO: '#3B82F6', CHO: '#34D399',
   HRT1: '#F472B6', HRT2: '#A78BFA', HRT3: '#60A5FA',
   HRT4: '#FBBF24', HRT5: '#34D399', HRT6: '#F87171',
   HRT7: '#C084FC', HRT8: '#FB923C',
 };
 
 const ROLE_BG = {
-  DMCHO: 'rgba(59,159,255,0.15)', CHO: 'rgba(52,211,153,0.15)',
+  DMCHO: 'rgba(59,130,246,0.15)', CHO: 'rgba(52,211,153,0.15)',
   HRT1: 'rgba(244,114,182,0.15)', HRT2: 'rgba(167,139,250,0.15)', HRT3: 'rgba(96,165,250,0.15)',
   HRT4: 'rgba(251,191,36,0.15)',  HRT5: 'rgba(52,211,153,0.15)',  HRT6: 'rgba(248,113,113,0.15)',
   HRT7: 'rgba(192,132,252,0.15)', HRT8: 'rgba(251,146,60,0.15)',
@@ -68,11 +68,11 @@ export default function Sidebar({ activePage, setActivePage, user, onLogout, sta
   const { theme } = useTheme();
   const dark = theme !== 'bright';
 
-  const roleColor       = ROLE_COLOR_DARK[user?.role] || '#3B9FFF';
-  const roleBg          = ROLE_BG[user?.role] || 'rgba(59,159,255,0.15)';
+  const roleColor       = ROLE_COLOR_DARK[user?.role] || '#3B82F6';
+  const roleBg          = ROLE_BG[user?.role] || 'rgba(37,99,235,0.15)';
   const isExec          = user?.full_access === true;
   const sections        = isExec ? [EXEC_SECTION, ...NAV_SECTIONS] : NAV_SECTIONS;
-  const activeNavAccent = dark ? '#3B9FFF' : '#2563EB';
+  const activeNavAccent = dark ? '#3B82F6' : '#2563EB';
 
   return (
     <>
@@ -90,7 +90,7 @@ export default function Sidebar({ activePage, setActivePage, user, onLogout, sta
         ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}
         lg:static lg:translate-x-0 lg:transition-none`}
       style={{
-        width: 228,
+        width: 248,
         background: 'var(--ccmc-panel)',
         borderRight: dark ? '1px solid var(--ccmc-border)' : '1px solid #E2E8F0',
         boxShadow: dark ? 'none' : '2px 0 16px rgba(0,0,0,0.04)',
@@ -114,7 +114,7 @@ export default function Sidebar({ activePage, setActivePage, user, onLogout, sta
         <div className="flex items-center gap-3 mb-4">
           <div className="w-11 h-11 rounded-xl overflow-hidden flex-shrink-0"
             style={{
-              border: dark ? '1.5px solid rgba(59,159,255,0.35)' : '1.5px solid rgba(15,118,110,0.25)',
+              border: dark ? '1.5px solid rgba(37,99,235,0.35)' : '1.5px solid rgba(15,118,110,0.25)',
               boxShadow: dark ? '0 2px 10px rgba(0,0,0,0.35)' : '0 2px 10px rgba(15,118,110,0.12)',
             }}>
             <img
@@ -124,7 +124,7 @@ export default function Sidebar({ activePage, setActivePage, user, onLogout, sta
               onError={(e) => {
                 e.target.style.display = 'none';
                 e.target.parentElement.style.background = dark
-                  ? 'linear-gradient(135deg, #0F4C81, #1B6BD4)'
+                  ? 'linear-gradient(135deg, #1E40AF, #2563EB)'
                   : 'linear-gradient(135deg, #0F766E, #14B8A6)';
                 e.target.parentElement.style.display = 'flex';
                 e.target.parentElement.style.alignItems = 'center';
@@ -134,11 +134,11 @@ export default function Sidebar({ activePage, setActivePage, user, onLogout, sta
             />
           </div>
           <div>
-            <div className="text-[13px] font-bold leading-tight"
+            <div className="text-[15px] font-bold leading-tight"
               style={{ color: 'var(--ccmc-text)' }}>
               CCMC Health
             </div>
-            <div className="text-[10px] font-semibold mt-0.5"
+            <div className="text-[11px] font-semibold mt-0.5"
               style={{ color: dark ? 'var(--ccmc-text-hint)' : '#0F766E' }}>
               {dark ? 'Maternal Tracker' : 'Maternal Intelligence'}
             </div>
@@ -172,7 +172,7 @@ export default function Sidebar({ activePage, setActivePage, user, onLogout, sta
             </div>
           </div>
           <div className="live-dot flex-shrink-0"
-            style={{ background: dark ? '#22C55E' : 'rgba(255,255,255,0.65)' }} />
+            style={{ background: dark ? '#16A34A' : 'rgba(255,255,255,0.65)' }} />
         </div>
       </div>
 
@@ -180,30 +180,30 @@ export default function Sidebar({ activePage, setActivePage, user, onLogout, sta
       {stats && (
         <div className="px-4 py-3 grid grid-cols-2 gap-2"
           style={{ borderBottom: dark ? '1px solid var(--ccmc-border)' : '1px solid #F1F5F9' }}>
-          <div className="rounded-lg px-3 py-2 text-center"
+          <div className="rounded-lg px-3 py-2.5 text-center"
             style={{
-              background: dark ? 'rgba(59,159,255,0.07)' : '#EFF6FF',
-              border: dark ? '1px solid rgba(59,159,255,0.12)' : '1px solid #BFDBFE',
+              background: dark ? 'rgba(37,99,235,0.08)' : '#EFF6FF',
+              border: dark ? '1px solid rgba(37,99,235,0.16)' : '1px solid #BFDBFE',
             }}>
-            <div className="text-[15px] font-bold leading-none"
+            <div className="text-[16px] font-bold leading-none"
               style={{ color: dark ? 'var(--ccmc-text)' : '#1D4ED8' }}>
               {stats.total_mothers?.toLocaleString() || '—'}
             </div>
-            <div className="text-[9px] font-semibold mt-1 uppercase tracking-wider"
+            <div className="text-[10px] font-semibold mt-1.5 uppercase tracking-wider"
               style={{ color: dark ? 'var(--ccmc-text-hint)' : '#3B82F6' }}>
               Mothers
             </div>
           </div>
-          <div className="rounded-lg px-3 py-2 text-center"
+          <div className="rounded-lg px-3 py-2.5 text-center"
             style={{
-              background: dark ? 'rgba(239,68,68,0.07)' : '#FEF2F2',
-              border: dark ? '1px solid rgba(239,68,68,0.14)' : '1px solid #FECACA',
+              background: dark ? 'rgba(217,119,6,0.08)' : '#FEF2F2',
+              border: dark ? '1px solid rgba(217,119,6,0.18)' : '1px solid #FECACA',
             }}>
-            <div className="text-[15px] font-bold leading-none"
-              style={{ color: dark ? '#F97316' : '#EA580C' }}>
+            <div className="text-[16px] font-bold leading-none"
+              style={{ color: dark ? '#D97706' : '#EA580C' }}>
               {stats.due_7_days?.toLocaleString() || '—'}
             </div>
-            <div className="text-[9px] font-semibold mt-1 uppercase tracking-wider"
+            <div className="text-[10px] font-semibold mt-1.5 uppercase tracking-wider"
               style={{ color: dark ? 'var(--ccmc-text-hint)' : '#EA580C' }}>
               Due ≤7 Days
             </div>
@@ -212,7 +212,7 @@ export default function Sidebar({ activePage, setActivePage, user, onLogout, sta
       )}
 
       {/* ── Navigation ─────────────────────────────────────────────────── */}
-      <nav className="flex-1 px-3 py-2 overflow-y-auto">
+      <nav className="flex-1 px-3 py-3 overflow-y-auto">
         {sections.map((section) => {
           const visibleItems = section.items.filter(({ hrtOnly, supervisorOnly, execOnly }) => {
             const role = user?.role || '';
@@ -228,14 +228,10 @@ export default function Sidebar({ activePage, setActivePage, user, onLogout, sta
           return (
           <div key={section.label}>
             <div className="nav-section-label">{section.label}</div>
-            <div className="space-y-0.5">
+            <div className="space-y-1">
               {visibleItems.map(({ id, label, icon: Icon, execOnly, hrtOnly, supervisorOnly }) => {
                 const isActive = activePage === id || (id === 'patients' && activePage === 'patient-profile');
-                const itemAccent = execOnly
-                  ? (dark ? '#34D399' : '#059669')
-                  : hrtOnly ? '#F472B6'
-                  : supervisorOnly ? '#F97316'
-                  : activeNavAccent;
+                const itemAccent = execOnly ? (dark ? '#34D399' : '#059669') : activeNavAccent;
                 return (
                   <button
                     key={id}
@@ -244,8 +240,9 @@ export default function Sidebar({ activePage, setActivePage, user, onLogout, sta
                     style={isActive ? { '--nav-accent': itemAccent } : {}}
                   >
                     <Icon
-                      className="w-4 h-4 flex-shrink-0"
+                      className="w-[18px] h-[18px] flex-shrink-0"
                       style={{ color: isActive ? itemAccent : 'inherit' }}
+                      strokeWidth={1.75}
                     />
                     <span className="flex-1 truncate">{label}</span>
                     {execOnly && (
@@ -254,13 +251,13 @@ export default function Sidebar({ activePage, setActivePage, user, onLogout, sta
                           background: dark ? 'rgba(52,211,153,0.12)' : '#DCFCE7',
                           color: dark ? '#34D399' : '#15803D',
                           border: dark ? '1px solid rgba(52,211,153,0.2)' : '1px solid #BBF7D0',
-                          fontSize: '9px', padding: '2px 6px',
+                          fontSize: '10px', padding: '2px 7px',
                         }}>
                         EXEC
                       </span>
                     )}
                     {isActive && !execOnly && (
-                      <ChevronRight className="w-3 h-3 flex-shrink-0"
+                      <ChevronRight className="w-3.5 h-3.5 flex-shrink-0"
                         style={{ color: itemAccent, opacity: 0.6 }} />
                     )}
                   </button>
@@ -278,19 +275,19 @@ export default function Sidebar({ activePage, setActivePage, user, onLogout, sta
         <button
           onClick={onLogout}
           className="nav-item w-full"
-          style={{ color: dark ? '#EF4444' : '#DC2626' }}
+          style={{ color: dark ? '#DC2626' : '#DC2626' }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.background = dark ? 'rgba(239,68,68,0.08)' : '#FEF2F2';
+            e.currentTarget.style.background = dark ? 'rgba(220,38,38,0.08)' : '#FEF2F2';
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.background = 'transparent';
           }}
         >
-          <LogOut className="w-4 h-4 flex-shrink-0" style={{ color: 'inherit' }} />
+          <LogOut className="w-[18px] h-[18px] flex-shrink-0" style={{ color: 'inherit' }} strokeWidth={1.75} />
           <span>Sign Out</span>
         </button>
-        <div className="text-center text-[9px] mt-2 font-medium"
-          style={{ color: 'var(--ccmc-text-hint)', opacity: dark ? 0.5 : 0.8 }}>
+        <div className="text-center text-[10px] mt-2.5 font-medium"
+          style={{ color: 'var(--ccmc-text-hint)', opacity: dark ? 0.6 : 0.8 }}>
           {dark ? 'CCMC · Maternal Health · 2026' : 'Coimbatore City Municipal Corp · 2026'}
         </div>
       </div>

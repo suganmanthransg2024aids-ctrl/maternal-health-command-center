@@ -81,16 +81,16 @@ function LogCallModal({ mother, hrtUser, onClose, onSaved }) {
     } catch { } finally { setSaving(false); }
   };
 
-  const panel = bright ? '#FFFFFF'            : '#0D1729';
-  const bdr   = bright ? '#E8EDF5'            : 'rgba(99,102,241,0.18)';
-  const tx    = bright ? '#1E293B'            : '#EEF2FF';
-  const sub   = bright ? '#64748B'            : '#4B5E7A';
-  const field = bright ? '#F4F7FB'            : 'rgba(7,13,26,0.7)';
+  const panel = bright ? '#FFFFFF'            : 'var(--ccmc-panel)';
+  const bdr   = bright ? '#E8EDF5'            : 'rgba(35,55,84,0.9)';
+  const tx    = bright ? '#1E293B'            : '#F8FAFC';
+  const sub   = bright ? '#64748B'            : '#94A3B8';
+  const field = bright ? '#F4F7FB'            : 'rgba(19,34,56,0.7)';
 
   return (
     <>
       <div className="fixed inset-0 z-[60]"
-        style={{ background: 'rgba(7,13,26,0.82)', backdropFilter: 'blur(8px)' }}
+        style={{ background: 'rgba(3,8,15,0.85)', backdropFilter: 'blur(8px)' }}
         onClick={onClose} />
 
       <div className="fixed z-[70] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(420px,95vw)] rounded-2xl overflow-hidden"
@@ -98,7 +98,7 @@ function LogCallModal({ mother, hrtUser, onClose, onSaved }) {
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b"
-          style={{ borderColor: bdr, background: bright ? '#F4F7FB' : 'rgba(99,102,241,0.06)' }}>
+          style={{ borderColor: bdr, background: bright ? '#F4F7FB' : 'rgba(37,99,235,0.06)' }}>
           <div>
             <div className="text-sm font-bold tracking-tight" style={{ color: tx }}>Log Call</div>
             <div className="text-[11px] mt-0.5 font-medium" style={{ color: sub }}>{mother.name}</div>
@@ -188,10 +188,10 @@ function PriorityCard({ p, onCall, isHRT, bright }) {
   const hasPhone = p.phone && !['nan', 'None', ''].includes(p.phone);
   const scorePct = Math.min(100, p.priority_score);
 
-  const tx     = bright ? '#1E293B' : '#EEF2FF';
-  const sub    = bright ? '#64748B' : '#4B5E7A';
-  const cardBg = bright ? '#FFFFFF' : '#0D1729';
-  const divBdr = bright ? '#F0F4FA' : 'rgba(99,102,241,0.09)';
+  const tx     = bright ? '#1E293B' : '#F8FAFC';
+  const sub    = bright ? '#64748B' : '#94A3B8';
+  const cardBg = bright ? '#FFFFFF' : 'var(--ccmc-panel)';
+  const divBdr = bright ? '#F0F4FA' : 'rgba(35,55,84,0.6)';
 
   const [hovered, setHovered] = useState(false);
   const [callHov, setCallHov] = useState(false);
@@ -200,7 +200,7 @@ function PriorityCard({ p, onCall, isHRT, bright }) {
     <div
       style={{
         borderBottom: `1px solid ${divBdr}`,
-        background: hovered ? (bright ? '#F8FAFF' : 'rgba(99,102,241,0.04)') : cardBg,
+        background: hovered ? (bright ? '#F8FAFF' : 'rgba(37,99,235,0.05)') : cardBg,
         transition: 'background 0.15s',
         position: 'relative',
         overflow: 'hidden',
@@ -366,17 +366,17 @@ export default function DailyWorkflow({ user }) {
   const p3c = priorityCalls.filter(p => p.priority_tier === 'P3').length;
 
   // Theme tokens
-  const panel = bright ? '#FFFFFF'                   : '#0D1729';
-  const bdr   = bright ? '1px solid #E8EDF5'         : '1px solid rgba(99,102,241,0.14)';
-  const divBdr = bright ? '#F0F4FA'                  : 'rgba(99,102,241,0.09)';
-  const tx    = bright ? '#1E293B'                   : '#EEF2FF';
-  const sub   = bright ? '#64748B'                   : '#4B5E7A';
-  const bg    = bright ? '#F4F7FB'                   : 'rgba(7,13,26,0.5)';
+  const panel = bright ? '#FFFFFF'                   : 'var(--ccmc-panel)';
+  const bdr   = bright ? '1px solid #E8EDF5'         : '1px solid rgba(35,55,84,0.8)';
+  const divBdr = bright ? '#F0F4FA'                  : 'rgba(35,55,84,0.6)';
+  const tx    = bright ? '#1E293B'                   : '#F8FAFC';
+  const sub   = bright ? '#64748B'                   : '#94A3B8';
+  const bg    = bright ? '#F4F7FB'                   : 'rgba(19,34,56,0.5)';
 
   const TABS = [
-    { id: 'priority', label: 'Priority Queue', count: priorityCalls.length, accent: '#F59E0B' },
-    { id: 'tasks',    label: 'Due Today',   count: total,                accent: '#60A5FA' },
-    { id: 'log',      label: 'Call Log',    count: todayCalls.length,    accent: '#34D399' },
+    { id: 'priority', label: 'Priority Queue', count: priorityCalls.length, accent: '#D97706' },
+    { id: 'tasks',    label: 'Due Today',   count: total,                accent: '#3B82F6' },
+    { id: 'log',      label: 'Call Log',    count: todayCalls.length,    accent: '#16A34A' },
   ];
 
   return (
@@ -388,10 +388,10 @@ export default function DailyWorkflow({ user }) {
         padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
         <div>
-          <h1 style={{ fontSize: 15, fontWeight: 700, color: tx, margin: 0, letterSpacing: '-0.3px' }}>
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: tx, margin: 0, letterSpacing: '-0.3px' }}>
             Daily Workflow
           </h1>
-          <p style={{ fontSize: 11, color: sub, margin: '3px 0 0' }}>{todayStr} · {user.name}</p>
+          <p style={{ fontSize: 13, color: sub, margin: '4px 0 0' }}>{todayStr} · {user.name}</p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {todayCalls.length > 0 && (
@@ -449,11 +449,11 @@ export default function DailyWorkflow({ user }) {
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               padding: '10px 20px', borderBottom: `1px solid ${divBdr}`,
-              background: bright ? '#F8FAFF' : 'rgba(99,102,241,0.04)',
+              background: bright ? '#F8FAFF' : 'rgba(37,99,235,0.05)',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                <Activity size={13} color="#F59E0B" />
-                <span style={{ fontSize: 11, fontWeight: 600, color: '#F59E0B' }}>Daily Call Queue</span>
+                <Activity size={13} color="#D97706" />
+                <span style={{ fontSize: 11, fontWeight: 600, color: '#D97706' }}>Daily Call Queue</span>
                 <span style={{ fontSize: 10, color: sub }}>· excludes already-called mothers</span>
               </div>
               <div style={{ display: 'flex', gap: 14 }}>
@@ -477,7 +477,7 @@ export default function DailyWorkflow({ user }) {
 
             {loading ? (
               <div style={{ padding: '56px 0', textAlign: 'center' }}>
-                <Activity size={32} color="#F59E0B" style={{ margin: '0 auto 12px', display: 'block', opacity: 0.5 }} />
+                <Activity size={32} color="#D97706" style={{ margin: '0 auto 12px', display: 'block', opacity: 0.5 }} />
                 <p style={{ fontSize: 12, color: sub, margin: 0 }}>Ranking mothers by urgency…</p>
               </div>
             ) : priorityCalls.length === 0 ? (

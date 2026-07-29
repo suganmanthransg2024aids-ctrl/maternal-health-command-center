@@ -11,8 +11,8 @@ const HRT_COLORS = {
 };
 
 const STATUS_COLORS = {
-  Active: '#22C55E', Delivered: '#3B9FFF', Referred: '#F97316',
-  Transferred: '#A78BFA', Deceased: '#EF4444',
+  Active: '#16A34A', Delivered: '#3B82F6', Referred: '#D97706',
+  Transferred: '#A78BFA', Deceased: '#DC2626',
 };
 
 function HRTBadge({ role }) {
@@ -81,11 +81,11 @@ export default function ApprovalQueue({ user }) {
   };
 
   const panel  = bright ? '#FFFFFF' : 'var(--ccmc-panel)';
-  const border = bright ? '1px solid #E2E8F0' : '1px solid rgba(30,58,95,0.7)';
-  const text   = bright ? '#1E293B' : '#E2E8F0';
+  const border = bright ? '1px solid #E2E8F0' : '1px solid rgba(35,55,84,0.7)';
+  const text   = bright ? '#1E293B' : '#F1F5F9';
   const sub    = bright ? '#64748B' : '#94A3B8';
-  const bg     = bright ? '#F8FAFC' : 'rgba(30,58,95,0.25)';
-  const divider = bright ? '#F1F5F9' : 'rgba(30,58,95,0.5)';
+  const bg     = bright ? '#F8FAFC' : 'rgba(35,55,84,0.3)';
+  const divider = bright ? '#F1F5F9' : 'rgba(35,55,84,0.5)';
 
   const today = new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' });
 
@@ -96,10 +96,10 @@ export default function ApprovalQueue({ user }) {
       <div className="rounded-2xl p-5" style={{ background: panel, border }}>
         <div className="flex items-start justify-between mb-4">
           <div>
-            <h1 className="text-lg font-bold" style={{ color: text, fontFamily: 'Poppins,sans-serif' }}>
+            <h1 className="page-title" style={{ fontFamily: 'Poppins,sans-serif' }}>
               Approval Queue
             </h1>
-            <p className="text-xs mt-0.5" style={{ color: sub }}>{today} · {user.name}</p>
+            <p className="page-subtitle mt-1" style={{ color: sub }}>{today} · {user.name}</p>
           </div>
           <button onClick={load} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold"
             style={{ background: bg, border, color: sub }}>
@@ -112,10 +112,10 @@ export default function ApprovalQueue({ user }) {
         {summary && (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
-              { label: 'Pending Approval', value: data.pending.length, color: '#F97316', icon: Clock },
-              { label: 'Total Calls Today', value: Object.values(summary.by_hrt || {}).reduce((s, h) => s + (h.total || 0), 0), color: '#3B9FFF', icon: Phone },
-              { label: 'Contacted', value: Object.values(summary.by_hrt || {}).reduce((s, h) => s + (h.contacted || 0), 0), color: '#22C55E', icon: CheckCircle2 },
-              { label: 'Unreachable', value: Object.values(summary.by_hrt || {}).reduce((s, h) => s + (h.unreachable || 0), 0), color: '#EF4444', icon: XCircle },
+              { label: 'Pending Approval', value: data.pending.length, color: '#D97706', icon: Clock },
+              { label: 'Total Calls Today', value: Object.values(summary.by_hrt || {}).reduce((s, h) => s + (h.total || 0), 0), color: '#3B82F6', icon: Phone },
+              { label: 'Contacted', value: Object.values(summary.by_hrt || {}).reduce((s, h) => s + (h.contacted || 0), 0), color: '#16A34A', icon: CheckCircle2 },
+              { label: 'Unreachable', value: Object.values(summary.by_hrt || {}).reduce((s, h) => s + (h.unreachable || 0), 0), color: '#DC2626', icon: XCircle },
             ].map(c => {
               const Icon = c.icon;
               return (
@@ -152,13 +152,13 @@ export default function ApprovalQueue({ user }) {
                     {s.contacted > 0 && (
                       <div className="flex justify-between text-[10px]">
                         <span style={{ color: sub }}>Contacted</span>
-                        <span className="font-bold" style={{ color: '#22C55E' }}>{s.contacted}</span>
+                        <span className="font-bold" style={{ color: '#16A34A' }}>{s.contacted}</span>
                       </div>
                     )}
                     {s.unreachable > 0 && (
                       <div className="flex justify-between text-[10px]">
                         <span style={{ color: sub }}>Unreachable</span>
-                        <span className="font-bold" style={{ color: '#EF4444' }}>{s.unreachable}</span>
+                        <span className="font-bold" style={{ color: '#DC2626' }}>{s.unreachable}</span>
                       </div>
                     )}
                   </div>
@@ -178,7 +178,7 @@ export default function ApprovalQueue({ user }) {
           <button key={tab.id} onClick={() => setActiveTab(tab.id)}
             className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold transition-all"
             style={{
-              background: activeTab === tab.id ? '#3B9FFF' : 'transparent',
+              background: activeTab === tab.id ? '#3B82F6' : 'transparent',
               color: activeTab === tab.id ? '#fff' : sub,
             }}>
             {tab.alert && activeTab !== tab.id && (
@@ -194,7 +194,7 @@ export default function ApprovalQueue({ user }) {
         <div className="rounded-2xl overflow-hidden" style={{ background: panel, border }}>
           {data.pending.length === 0 ? (
             <div className="py-12 text-center">
-              <CheckCheck className="w-10 h-10 mx-auto mb-3" style={{ color: '#22C55E' }} />
+              <CheckCheck className="w-10 h-10 mx-auto mb-3" style={{ color: '#16A34A' }} />
               <p className="text-sm font-semibold" style={{ color: text }}>No pending approvals</p>
               <p className="text-xs mt-1" style={{ color: sub }}>All status changes have been reviewed</p>
             </div>
@@ -222,7 +222,7 @@ export default function ApprovalQueue({ user }) {
                     <div className="flex flex-col gap-1.5 flex-shrink-0">
                       <button onClick={() => approve(item.id)}
                         className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-bold"
-                        style={{ background: '#22C55E20', border: '1px solid #22C55E50', color: '#22C55E' }}>
+                        style={{ background: '#16A34A20', border: '1px solid #16A34A50', color: '#16A34A' }}>
                         <CheckCircle2 className="w-3 h-3" /> Approve
                       </button>
                       {rejectId === item.id ? (
@@ -234,7 +234,7 @@ export default function ApprovalQueue({ user }) {
                           <div className="flex gap-1">
                             <button onClick={() => reject(item.id)}
                               className="flex-1 py-1 rounded-lg text-[10px] font-bold"
-                              style={{ background: '#EF444420', border: '1px solid #EF444450', color: '#EF4444' }}>
+                              style={{ background: '#DC262620', border: '1px solid #DC262650', color: '#DC2626' }}>
                               Confirm
                             </button>
                             <button onClick={() => setRejectId(null)}
@@ -247,7 +247,7 @@ export default function ApprovalQueue({ user }) {
                       ) : (
                         <button onClick={() => setRejectId(item.id)}
                           className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-bold"
-                          style={{ background: '#EF444420', border: '1px solid #EF444450', color: '#EF4444' }}>
+                          style={{ background: '#DC262620', border: '1px solid #DC262650', color: '#DC2626' }}>
                           <XCircle className="w-3 h-3" /> Reject
                         </button>
                       )}
@@ -279,11 +279,11 @@ export default function ApprovalQueue({ user }) {
                     <div className="text-xs font-semibold" style={{ color: text }}>{item.mother_name || item.mother_id}</div>
                     <div className="text-[10px]" style={{ color: sub }}>{item.hrt_user} · {item.submitted_at?.slice(0, 10)}</div>
                     {item.rejection_reason && (
-                      <div className="text-[10px] mt-0.5 italic" style={{ color: '#EF4444' }}>Reason: {item.rejection_reason}</div>
+                      <div className="text-[10px] mt-0.5 italic" style={{ color: '#DC2626' }}>Reason: {item.rejection_reason}</div>
                     )}
                   </div>
                   <StatusBadge status={item.new_status} />
-                  <span className="text-[11px] font-bold" style={{ color: item.is_approved === 1 ? '#22C55E' : '#EF4444' }}>
+                  <span className="text-[11px] font-bold" style={{ color: item.is_approved === 1 ? '#16A34A' : '#DC2626' }}>
                     {item.is_approved === 1 ? 'Approved' : 'Rejected'}
                   </span>
                   <span className="text-[10px]" style={{ color: sub }}>{item.approved_by}</span>

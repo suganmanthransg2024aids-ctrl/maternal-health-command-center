@@ -1,22 +1,30 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { X, Search, AlertTriangle, ChevronUp, ChevronDown, Filter } from 'lucide-react';
+import { useTheme } from '../ThemeContext';
 
 const API = '/api';
 
 const CALL_BADGE = {
-  'Connected':    { color: '#86EFAC', bg: 'rgba(34,197,94,0.12)'  },
-  'Not Reachable':{ color: '#FDBA74', bg: 'rgba(249,115,22,0.12)' },
-  'No Call':      { color: '#94A3B8', bg: 'rgba(148,163,184,0.08)'},
+  'Connected':    { color: 'var(--ccmc-pill-success-text)', bg: 'var(--ccmc-pill-success-bg)' },
+  'Not Reachable':{ color: 'var(--ccmc-pill-warning-text)', bg: 'var(--ccmc-pill-warning-bg)' },
+  'No Call':      { color: 'var(--ccmc-pill-neutral-text)', bg: 'var(--ccmc-pill-neutral-bg)' },
 };
 
+const BRIGHT_SHADE = { '#3B82F6': '#1D4ED8', '#DC2626': '#DC2626', '#FCA5A5': '#DC2626', '#FDBA74': '#C2410C', '#93C5FD': '#1D4ED8', '#94A3B8': '#475569', '#86EFAC': '#15803D' };
+function shade(hex, dark) { return dark ? hex : (BRIGHT_SHADE[hex] || hex); }
+
 function SortIcon({ col, sortCol, sortDir }) {
+  const { theme } = useTheme();
+  const dark = theme !== 'bright';
   if (sortCol !== col) return <ChevronUp className="w-3 h-3 opacity-20" />;
   return sortDir === 'asc'
-    ? <ChevronUp className="w-3 h-3" style={{ color: '#42A5F5' }} />
-    : <ChevronDown className="w-3 h-3" style={{ color: '#42A5F5' }} />;
+    ? <ChevronUp className="w-3 h-3" style={{ color: shade('#3B82F6', dark) }} />
+    : <ChevronDown className="w-3 h-3" style={{ color: shade('#3B82F6', dark) }} />;
 }
 
 export default function PostdatedEDDModal({ user, onClose, openPatient }) {
+  const { theme } = useTheme();
+  const dark = theme !== 'bright';
   const [mothers,  setMothers]  = useState([]);
   const [loading,  setLoading]  = useState(true);
   const [search,   setSearch]   = useState('');
@@ -68,7 +76,7 @@ export default function PostdatedEDDModal({ user, onClose, openPatient }) {
     <th
       onClick={() => toggleSort(col)}
       className={`px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider cursor-pointer select-none whitespace-nowrap ${right ? 'text-right' : 'text-left'}`}
-      style={{ color: sortCol === col ? '#42A5F5' : 'var(--ccmc-text-sec)', background: 'var(--ccmc-surface)', position: 'sticky', top: 0, zIndex: 1 }}
+      style={{ color: sortCol === col ? shade('#3B82F6', dark) : 'var(--ccmc-text-sec)', background: 'var(--ccmc-surface)', position: 'sticky', top: 0, zIndex: 1 }}
     >
       <span className="inline-flex items-center gap-1">
         {label} <SortIcon col={col} sortCol={sortCol} sortDir={sortDir} />
@@ -78,7 +86,7 @@ export default function PostdatedEDDModal({ user, onClose, openPatient }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: 'rgba(2,6,23,0.8)', backdropFilter: 'blur(6px)' }}>
+      style={{ background: 'var(--ccmc-modal-backdrop)', backdropFilter: 'blur(6px)' }}>
 
       <div className="flex flex-col w-full max-w-7xl rounded-2xl overflow-hidden"
         style={{
@@ -93,8 +101,8 @@ export default function PostdatedEDDModal({ user, onClose, openPatient }) {
           style={{ background: 'var(--ccmc-panel)', borderBottom: '1px solid var(--ccmc-border)' }}>
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-              style={{ background: 'rgba(239,68,68,0.15)' }}>
-              <AlertTriangle className="w-5 h-5" style={{ color: '#EF4444' }} />
+              style={{ background: 'var(--ccmc-pill-critical-bg)' }}>
+              <AlertTriangle className="w-5 h-5" style={{ color: 'var(--ccmc-pill-critical-text)' }} />
             </div>
             <div>
               <h2 className="text-sm font-bold" style={{ color: 'var(--ccmc-text)', fontFamily: 'Poppins,sans-serif' }}>
@@ -102,7 +110,7 @@ export default function PostdatedEDDModal({ user, onClose, openPatient }) {
               </h2>
               <p className="text-[10px] mt-0.5" style={{ color: 'var(--ccmc-text-hint)' }}>
                 Mothers whose Expected Delivery Date has passed but delivery is not yet recorded
-                {!loading && <span className="ml-2 font-bold" style={{ color: '#EF4444' }}>
+                {!loading && <span className="ml-2 font-bold" style={{ color: 'var(--ccmc-pill-critical-text)' }}>
                   {filtered.length} of {mothers.length} mothers
                 </span>}
               </p>
@@ -110,9 +118,9 @@ export default function PostdatedEDDModal({ user, onClose, openPatient }) {
           </div>
           <button onClick={onClose}
             className="w-8 h-8 flex items-center justify-center rounded-lg transition-all"
-            style={{ background: 'rgba(239,68,68,0.08)', color: '#EF4444', border: '1px solid rgba(239,68,68,0.2)' }}
-            onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.18)'}
-            onMouseLeave={e => e.currentTarget.style.background = 'rgba(239,68,68,0.08)'}>
+            style={{ background: 'var(--ccmc-pill-critical-bg)', color: 'var(--ccmc-pill-critical-text)', border: '1px solid rgba(220,38,38,0.2)' }}
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(220,38,38,0.18)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'var(--ccmc-pill-critical-bg)'}>
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -129,7 +137,7 @@ export default function PostdatedEDDModal({ user, onClose, openPatient }) {
               placeholder="Search by name, ID, mobile, PHC…"
               className="w-full pl-9 pr-3 py-2 rounded-lg text-xs outline-none"
               style={{ background: 'var(--ccmc-panel)', border: '1px solid var(--ccmc-border)', color: 'var(--ccmc-text)' }}
-              onFocus={e => e.target.style.borderColor = '#1976D2'}
+              onFocus={e => e.target.style.borderColor = '#2563EB'}
               onBlur={e  => e.target.style.borderColor = 'var(--ccmc-border)'}
             />
           </div>
@@ -155,7 +163,7 @@ export default function PostdatedEDDModal({ user, onClose, openPatient }) {
           {(search || phcFilter || hrtFilter) && (
             <button onClick={() => { setSearch(''); setPhcFilter(''); setHrtFilter(''); }}
               className="px-2 py-2 rounded-lg text-[10px] font-semibold"
-              style={{ background: 'rgba(239,68,68,0.1)', color: '#FCA5A5', border: '1px solid rgba(239,68,68,0.2)' }}>
+              style={{ background: 'var(--ccmc-pill-critical-bg)', color: 'var(--ccmc-pill-critical-text)', border: '1px solid rgba(220,38,38,0.2)' }}>
               Clear
             </button>
           )}
@@ -166,7 +174,7 @@ export default function PostdatedEDDModal({ user, onClose, openPatient }) {
           {loading ? (
             <div className="flex items-center justify-center py-20">
               <div className="w-8 h-8 border-2 rounded-full animate-spin"
-                style={{ borderColor: 'var(--ccmc-border)', borderTopColor: '#EF4444' }} />
+                style={{ borderColor: 'var(--ccmc-border)', borderTopColor: shade('#DC2626', dark) }} />
               <span className="ml-3 text-sm" style={{ color: 'var(--ccmc-text-hint)' }}>Loading postdated mothers…</span>
             </div>
           ) : filtered.length === 0 ? (
@@ -204,7 +212,7 @@ export default function PostdatedEDDModal({ user, onClose, openPatient }) {
                         background: idx % 2 === 0 ? 'transparent' : 'rgba(15,76,129,0.04)',
                         borderBottom: '1px solid var(--ccmc-border)',
                       }}
-                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(25,118,210,0.08)'}
+                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(37,99,235,0.08)'}
                       onMouseLeave={e => e.currentTarget.style.background = idx % 2 === 0 ? 'transparent' : 'rgba(15,76,129,0.04)'}
                     >
                       {/* ID */}
@@ -228,7 +236,7 @@ export default function PostdatedEDDModal({ user, onClose, openPatient }) {
 
                       {/* Mobile */}
                       <td className="px-3 py-2.5">
-                        <span className="text-[10px]" style={{ color: m.cell_no ? 'var(--ccmc-text-sec)' : '#EF4444' }}>
+                        <span className="text-[10px]" style={{ color: m.cell_no ? 'var(--ccmc-text-sec)' : shade('#DC2626', dark) }}>
                           {m.cell_no || 'No Phone'}
                         </span>
                       </td>
@@ -241,7 +249,7 @@ export default function PostdatedEDDModal({ user, onClose, openPatient }) {
                       {/* HRT */}
                       <td className="px-3 py-2.5">
                         <span className="text-[10px] font-bold px-1.5 py-0.5 rounded"
-                          style={{ background: 'rgba(66,165,245,0.12)', color: '#93C5FD' }}>
+                          style={{ background: 'var(--ccmc-pill-info-bg)', color: 'var(--ccmc-pill-info-text)' }}>
                           {m.hrt_code}
                         </span>
                         <span className="text-[9px] ml-1" style={{ color: 'var(--ccmc-text-hint)' }}>{m.hrt_name}</span>
@@ -256,15 +264,15 @@ export default function PostdatedEDDModal({ user, onClose, openPatient }) {
 
                       {/* EDD */}
                       <td className="px-3 py-2.5">
-                        <span className="text-[10px] font-mono" style={{ color: '#FDBA74' }}>{m.edd || '—'}</span>
+                        <span className="text-[10px] font-mono" style={{ color: 'var(--ccmc-pill-warning-text)' }}>{m.edd || '—'}</span>
                       </td>
 
                       {/* Days Past EDD */}
                       <td className="px-3 py-2.5 text-right">
                         <span className="text-xs font-bold px-2 py-0.5 rounded-full"
                           style={{
-                            background: m.days_past_edd > 30 ? 'rgba(239,68,68,0.18)' : 'rgba(249,115,22,0.15)',
-                            color:      m.days_past_edd > 30 ? '#FCA5A5' : '#FDBA74',
+                            background: m.days_past_edd > 30 ? 'var(--ccmc-pill-critical-bg)' : 'var(--ccmc-pill-warning-bg)',
+                            color:      m.days_past_edd > 30 ? 'var(--ccmc-pill-critical-text)' : 'var(--ccmc-pill-warning-text)',
                           }}>
                           {m.days_past_edd}d
                         </span>
@@ -284,7 +292,7 @@ export default function PostdatedEDDModal({ user, onClose, openPatient }) {
 
                       {/* Follow-Up */}
                       <td className="px-3 py-2.5">
-                        <span className="text-[9px]" style={{ color: m.followup_status === 'No Follow-Up' ? '#94A3B8' : '#86EFAC' }}>
+                        <span className="text-[9px]" style={{ color: m.followup_status === 'No Follow-Up' ? shade('#94A3B8', dark) : shade('#86EFAC', dark) }}>
                           {m.followup_status}
                         </span>
                       </td>
@@ -307,7 +315,7 @@ export default function PostdatedEDDModal({ user, onClose, openPatient }) {
         {!loading && filtered.length > 0 && (
           <div className="flex items-center justify-between px-5 py-3 flex-shrink-0 text-[10px]"
             style={{ background: 'var(--ccmc-surface)', borderTop: '1px solid var(--ccmc-border)', color: 'var(--ccmc-text-hint)' }}>
-            <span>Showing <b style={{ color: 'var(--ccmc-text)' }}>{filtered.length}</b> mothers · Sorted by <b style={{ color: '#42A5F5' }}>{sortCol.replace(/_/g,' ')}</b> ({sortDir})</span>
+            <span>Showing <b style={{ color: 'var(--ccmc-text)' }}>{filtered.length}</b> mothers · Sorted by <b style={{ color: shade('#3B82F6', dark) }}>{sortCol.replace(/_/g,' ')}</b> ({sortDir})</span>
             <span>Click any row to view full patient details</span>
           </div>
         )}

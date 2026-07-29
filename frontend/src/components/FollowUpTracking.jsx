@@ -1,17 +1,26 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { CalendarCheck, RefreshCw, X, CheckCircle, AlertCircle } from 'lucide-react';
+import { useTheme } from '../ThemeContext';
 
 const API = '/api';
 
 const STATUS_STYLES = {
-  Completed: { color: '#22C55E', bg: 'rgba(34,197,94,0.1)',   border: 'rgba(34,197,94,0.3)'   },
+  Completed: { color: '#16A34A', bg: 'rgba(22,163,74,0.1)',   border: 'rgba(22,163,74,0.3)'   },
   Pending:   { color: '#60A5FA', bg: 'rgba(96,165,250,0.1)',  border: 'rgba(96,165,250,0.3)'  },
   Scheduled: { color: '#A78BFA', bg: 'rgba(167,139,250,0.1)', border: 'rgba(167,139,250,0.3)' },
-  Missed:    { color: '#EF4444', bg: 'rgba(239,68,68,0.1)',   border: 'rgba(239,68,68,0.3)'   },
-  Overdue:   { color: '#F97316', bg: 'rgba(249,115,22,0.1)',  border: 'rgba(249,115,22,0.3)'  },
+  Missed:    { color: '#DC2626', bg: 'rgba(220,38,38,0.1)',   border: 'rgba(220,38,38,0.3)'   },
+  Overdue:   { color: '#D97706', bg: 'rgba(249,115,22,0.1)',  border: 'rgba(249,115,22,0.3)'  },
 };
 
+const BRIGHT_SHADE = {
+  '#16A34A': '#16A34A', '#60A5FA': '#2563EB', '#A78BFA': '#7C3AED',
+  '#DC2626': '#DC2626', '#D97706': '#EA580C',
+};
+function shade(hex, dark) { return dark ? hex : (BRIGHT_SHADE[hex] || hex); }
+
 export default function FollowUpTracking({ user }) {
+  const { theme } = useTheme();
+  const dark = theme !== 'bright';
   const [records, setRecords] = useState([]);
   const [total,   setTotal]   = useState(0);
   const [statusCounts, setStatusCounts] = useState({});
@@ -61,16 +70,16 @@ export default function FollowUpTracking({ user }) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-bold text-white" style={{ fontFamily: 'Poppins, sans-serif' }}>
+          <h1 className="page-title" style={{ fontFamily: 'Poppins, sans-serif' }}>
             Follow-Up Tracking
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="page-subtitle mt-1" style={{ color: 'var(--ccmc-text-hint)' }}>
             {total.toLocaleString()} mothers — visit scheduling and completion tracking
           </p>
         </div>
         <button onClick={load} disabled={loading}
           className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold"
-          style={{ background: 'rgba(25,118,210,0.2)', border: '1px solid rgba(25,118,210,0.4)', color: '#42A5F5' }}>
+          style={{ background: 'var(--ccmc-pill-info-bg)', border: '1px solid rgba(37,99,235,0.4)', color: 'var(--ccmc-pill-info-text)' }}>
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
           Refresh
         </button>
@@ -80,14 +89,15 @@ export default function FollowUpTracking({ user }) {
       <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
         {['Completed','Pending','Scheduled','Missed','Overdue'].map(s => {
           const st = STATUS_STYLES[s] || {};
+          const stColor = shade(st.color, dark);
           return (
             <button key={s} onClick={() => setFilterStatus(filterStatus === s ? '' : s)}
               className="rounded-xl p-3 text-center transition-all"
               style={{
                 background: filterStatus === s ? st.bg : 'var(--ccmc-panel)',
-                border: `1px solid ${filterStatus === s ? st.border : 'rgba(30,58,95,0.5)'}`,
+                border: `1px solid ${filterStatus === s ? st.border : 'var(--ccmc-border)'}`,
               }}>
-              <div className="text-lg font-bold" style={{ color: st.color }}>{statusCounts[s] || 0}</div>
+              <div className="text-lg font-bold" style={{ color: stColor }}>{statusCounts[s] || 0}</div>
               <div className="text-[9px] text-slate-500 font-semibold uppercase tracking-wider">{s}</div>
             </button>
           );
@@ -98,7 +108,7 @@ export default function FollowUpTracking({ user }) {
       <div className="flex gap-2 flex-wrap">
         <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
           className="px-3 py-2 rounded-lg text-xs text-white outline-none"
-          style={{ background: 'var(--ccmc-panel)', border: '1px solid rgba(30,58,95,0.7)' }}>
+          style={{ background: 'var(--ccmc-panel)', border: '1px solid var(--ccmc-border)' }}>
           <option value="">All Statuses</option>
           {['Completed','Pending','Scheduled','Missed','Overdue'].map(s => (
             <option key={s} value={s}>{s}</option>
@@ -106,7 +116,7 @@ export default function FollowUpTracking({ user }) {
         </select>
         <select value={filterPHC} onChange={e => setFilterPHC(e.target.value)}
           className="px-3 py-2 rounded-lg text-xs text-white outline-none"
-          style={{ background: 'var(--ccmc-panel)', border: '1px solid rgba(30,58,95,0.7)' }}>
+          style={{ background: 'var(--ccmc-panel)', border: '1px solid var(--ccmc-border)' }}>
           <option value="">All PHCs</option>
           {phcList.map(p => (
             <option key={p.phc_key} value={p.phc_key}>{p.phc_display} ({p.count})</option>
@@ -115,7 +125,7 @@ export default function FollowUpTracking({ user }) {
         {user.full_access && (
           <select value={filterHRT} onChange={e => setFilterHRT(e.target.value)}
             className="px-3 py-2 rounded-lg text-xs text-white outline-none"
-            style={{ background: 'var(--ccmc-panel)', border: '1px solid rgba(30,58,95,0.7)' }}>
+            style={{ background: 'var(--ccmc-panel)', border: '1px solid var(--ccmc-border)' }}>
             <option value="">All HRTs</option>
             {['HRT1','HRT2','HRT3','HRT4','HRT5','HRT6','HRT7','HRT8'].map(h => (
               <option key={h} value={h}>{h}</option>
@@ -126,7 +136,7 @@ export default function FollowUpTracking({ user }) {
 
       {/* Table */}
       <div className="rounded-xl overflow-hidden"
-        style={{ background: 'var(--ccmc-panel)', border: '1px solid rgba(30,58,95,0.7)' }}>
+        style={{ background: 'var(--ccmc-panel)', border: '1px solid var(--ccmc-border)' }}>
         <div className="overflow-x-auto">
           <table className="data-table">
             <thead>
@@ -140,7 +150,7 @@ export default function FollowUpTracking({ user }) {
               {loading ? (
                 <tr><td colSpan={11} className="text-center py-8">
                   <div className="w-5 h-5 border-2 rounded-full animate-spin mx-auto"
-                    style={{ borderColor: '#1E3A5F', borderTopColor: '#42A5F5' }} />
+                    style={{ borderColor: 'var(--ccmc-border-s)', borderTopColor: '#3B82F6' }} />
                 </td></tr>
               ) : records.length === 0 ? (
                 <tr><td colSpan={11} className="text-center py-8 text-slate-500 text-xs">
@@ -148,6 +158,7 @@ export default function FollowUpTracking({ user }) {
                 </td></tr>
               ) : records.slice(0, 300).map(r => {
                 const st = STATUS_STYLES[r.followup_status] || {};
+                const stColor = shade(st.color, dark);
                 return (
                   <tr key={r.uid}>
                     <td>
@@ -156,28 +167,28 @@ export default function FollowUpTracking({ user }) {
                     <td className="text-slate-400 text-xs">{r.phc_display}</td>
                     <td>
                       <span className="text-[10px] font-bold px-1.5 py-0.5 rounded"
-                        style={{ background: 'rgba(66,165,245,0.15)', color: '#93C5FD' }}>{r.hrt_code}</span>
+                        style={{ background: 'var(--ccmc-pill-info-bg)', color: 'var(--ccmc-pill-info-text)' }}>{r.hrt_code}</span>
                     </td>
                     <td className="text-slate-400 text-xs">{r.cell_no || '—'}</td>
                     <td>
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                        style={{ background: st.bg, color: st.color, border: `1px solid ${st.border}` }}>
+                        style={{ background: st.bg, color: stColor, border: `1px solid ${st.border}` }}>
                         {r.followup_status || 'Pending'}
                       </span>
                     </td>
                     <td className="text-[10px] text-slate-400">{r.last_visit_date || '—'}</td>
-                    <td className="text-[10px] text-blue-300">{r.next_visit_date || '—'}</td>
+                    <td className="text-[10px]" style={{ color: 'var(--ccmc-pill-info-text)' }}>{r.next_visit_date || '—'}</td>
                     <td>
                       <div className="text-[10px] text-slate-400 max-w-[120px] truncate">{r.remarks || '—'}</div>
                     </td>
                     <td>
                       {r.escalation_status ? (
-                        <span className="text-[10px] font-bold text-red-400">{r.escalation_status}</span>
+                        <span className="text-[10px] font-bold" style={{ color: 'var(--ccmc-pill-critical-text)' }}>{r.escalation_status}</span>
                       ) : <span className="text-[10px] text-slate-600">—</span>}
                     </td>
                     <td className="text-center">
                       <span className="text-[10px] font-bold px-1.5 py-0.5 rounded"
-                        style={{ background: 'rgba(167,139,250,0.1)', color: '#A78BFA' }}>
+                        style={{ background: 'var(--ccmc-pill-info-bg)', color: shade('#A78BFA', dark) }}>
                         {r.followup_count}
                       </span>
                     </td>
@@ -193,7 +204,7 @@ export default function FollowUpTracking({ user }) {
                           next_visit_date:  '',
                         })}
                         className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-semibold whitespace-nowrap"
-                        style={{ background: 'rgba(167,139,250,0.1)', color: '#A78BFA', border: '1px solid rgba(167,139,250,0.2)' }}>
+                        style={{ background: 'var(--ccmc-pill-info-bg)', color: shade('#A78BFA', dark), border: '1px solid rgba(167,139,250,0.2)' }}>
                         <CalendarCheck className="w-3 h-3" /> Update
                       </button>
                     </td>
@@ -208,9 +219,9 @@ export default function FollowUpTracking({ user }) {
       {/* Follow-up modal */}
       {fuModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ background: 'rgba(2,6,23,0.9)', backdropFilter: 'blur(8px)' }}>
+          style={{ background: 'var(--ccmc-modal-backdrop)', backdropFilter: 'blur(8px)' }}>
           <div className="w-full max-w-lg rounded-2xl p-6"
-            style={{ background: 'var(--ccmc-panel)', border: '1px solid rgba(30,58,95,0.9)' }}>
+            style={{ background: 'var(--ccmc-panel)', border: '1px solid var(--ccmc-border)' }}>
             <div className="flex items-center justify-between mb-5">
               <div>
                 <h3 className="text-sm font-bold text-white">Log Follow-Up Visit</h3>
@@ -227,7 +238,7 @@ export default function FollowUpTracking({ user }) {
                   <select value={fuModal.status}
                     onChange={e => setFuModal(m => ({ ...m, status: e.target.value }))}
                     className="w-full mt-1 px-3 py-2 rounded-lg text-sm text-white outline-none"
-                    style={{ background: 'var(--ccmc-surface)', border: '1px solid rgba(30,58,95,0.8)' }}>
+                    style={{ background: 'var(--ccmc-surface)', border: '1px solid var(--ccmc-border)' }}>
                     {['Completed','Pending','Scheduled','Missed','Overdue'].map(s => (
                       <option key={s} value={s}>{s}</option>
                     ))}
@@ -238,7 +249,7 @@ export default function FollowUpTracking({ user }) {
                   <input type="date" value={fuModal.visit_date}
                     onChange={e => setFuModal(m => ({ ...m, visit_date: e.target.value }))}
                     className="w-full mt-1 px-3 py-2 rounded-lg text-sm text-white outline-none"
-                    style={{ background: 'var(--ccmc-surface)', border: '1px solid rgba(30,58,95,0.8)', colorScheme: 'dark' }} />
+                    style={{ background: 'var(--ccmc-surface)', border: '1px solid var(--ccmc-border)', colorScheme: dark ? 'dark' : 'light' }} />
                 </label>
               </div>
               <label className="block">
@@ -247,7 +258,7 @@ export default function FollowUpTracking({ user }) {
                   onChange={e => setFuModal(m => ({ ...m, remarks: e.target.value }))}
                   rows={2} placeholder="Visit notes…"
                   className="w-full mt-1 px-3 py-2 rounded-lg text-sm text-white outline-none resize-none"
-                  style={{ background: 'var(--ccmc-surface)', border: '1px solid rgba(30,58,95,0.8)' }} />
+                  style={{ background: 'var(--ccmc-surface)', border: '1px solid var(--ccmc-border)' }} />
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <label className="block">
@@ -256,20 +267,20 @@ export default function FollowUpTracking({ user }) {
                     onChange={e => setFuModal(m => ({ ...m, escalation_status: e.target.value }))}
                     placeholder="e.g., Referred to CHC"
                     className="w-full mt-1 px-3 py-2 rounded-lg text-sm text-white outline-none"
-                    style={{ background: 'var(--ccmc-surface)', border: '1px solid rgba(30,58,95,0.8)' }} />
+                    style={{ background: 'var(--ccmc-surface)', border: '1px solid var(--ccmc-border)' }} />
                 </label>
                 <label className="block">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Next Visit Date</span>
                   <input type="date" value={fuModal.next_visit_date}
                     onChange={e => setFuModal(m => ({ ...m, next_visit_date: e.target.value }))}
                     className="w-full mt-1 px-3 py-2 rounded-lg text-sm text-white outline-none"
-                    style={{ background: 'var(--ccmc-surface)', border: '1px solid rgba(30,58,95,0.8)', colorScheme: 'dark' }} />
+                    style={{ background: 'var(--ccmc-surface)', border: '1px solid var(--ccmc-border)', colorScheme: dark ? 'dark' : 'light' }} />
                 </label>
               </div>
               <div className="flex gap-2 mt-4">
                 <button onClick={() => setFuModal(null)}
                   className="flex-1 py-2.5 rounded-lg text-sm font-semibold text-slate-400"
-                  style={{ background: 'rgba(30,41,59,0.8)', border: '1px solid rgba(30,58,95,0.5)' }}>
+                  style={{ background: 'var(--ccmc-input-bg)', border: '1px solid var(--ccmc-border)' }}>
                   Cancel
                 </button>
                 <button onClick={saveFU} disabled={saving}

@@ -13,20 +13,20 @@ const HRT_COLORS = {
 const STAT_COLS = [
   { key: 'total_mothers',     label: 'Assigned',    color: '#93C5FD', drillStatus: null },
   { key: 'calls_attempted',   label: 'Attempted',   color: '#60A5FA', drillStatus: '' },
-  { key: 'calls_connected',   label: 'Connected',   color: '#22C55E', drillStatus: 'Connected' },
-  { key: 'no_response',       label: 'No Response', color: '#EF4444', drillStatus: 'No Response' },
+  { key: 'calls_connected',   label: 'Connected',   color: '#16A34A', drillStatus: 'Connected' },
+  { key: 'no_response',       label: 'No Response', color: '#DC2626', drillStatus: 'No Response' },
   { key: 'switched_off',      label: 'Switched Off',color: '#94A3B8', drillStatus: 'Switched Off' },
-  { key: 'wrong_number',      label: 'Wrong No.',   color: '#F97316', drillStatus: 'Wrong Number' },
+  { key: 'wrong_number',      label: 'Wrong No.',   color: '#D97706', drillStatus: 'Wrong Number' },
   { key: 'call_back_later',   label: 'Call Back',   color: '#60A5FA', drillStatus: 'Call Back Later' },
   { key: 'followup_required', label: 'Follow-Up',   color: '#A78BFA', drillStatus: 'Follow-Up Required' },
   { key: 'resolved',          label: 'Resolved',    color: '#34D399', drillStatus: 'Resolved' },
   { key: 'calls_pending',     label: 'Pending',     color: '#64748B', drillStatus: 'Pending' },
-  { key: 'followups_due',     label: 'FU Due',      color: '#F59E0B', drillStatus: null },
+  { key: 'followups_due',     label: 'FU Due',      color: '#CA8A04', drillStatus: null },
 ];
 
 const STATUS_COLORS = {
-  'Connected': '#22C55E', 'No Response': '#EF4444',
-  'Switched Off': '#94A3B8', 'Wrong Number': '#F97316',
+  'Connected': '#16A34A', 'No Response': '#DC2626',
+  'Switched Off': '#94A3B8', 'Wrong Number': '#D97706',
   'Call Back Later': '#60A5FA', 'Follow-Up Required': '#A78BFA',
   'Resolved': '#34D399', 'Pending': '#64748B',
 };
@@ -34,7 +34,7 @@ const STATUS_COLORS = {
 const NON_CONNECTED_KEYS = ['no_response', 'switched_off', 'wrong_number'];
 
 /* ── Drill-down modal ─────────────────────────────────────────────────────── */
-function DrillModal({ hrtCode, hrtName, status, date, role, onClose }) {
+function DrillModal({ hrtCode, hrtName, status, date, role, onClose, bright }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -51,9 +51,9 @@ function DrillModal({ hrtCode, hrtName, status, date, role, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: 'rgba(2,6,23,0.92)', backdropFilter: 'blur(8px)' }}>
-      <div className="w-full max-w-5xl rounded-2xl flex flex-col" style={{ maxHeight: '88vh', background: 'var(--ccmc-panel)', border: '1px solid rgba(30,58,95,0.9)' }}>
-        <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: 'rgba(30,58,95,0.7)' }}>
+      style={{ background: 'var(--ccmc-modal-backdrop)', backdropFilter: 'blur(8px)' }}>
+      <div className="w-full max-w-5xl rounded-2xl flex flex-col" style={{ maxHeight: '88vh', background: 'var(--ccmc-panel)', border: `1px solid ${bright ? '#E2E8F0' : 'rgba(30,58,95,0.9)'}` }}>
+        <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: bright ? '#E2E8F0' : 'rgba(30,58,95,0.7)' }}>
           <div>
             <h3 className="text-sm font-bold text-white">{hrtName} — {status || 'All Calls'}</h3>
             <p className="text-[10px] text-slate-500 mt-0.5">{rows.length} mothers · {date || 'All dates'}</p>
@@ -63,7 +63,7 @@ function DrillModal({ hrtCode, hrtName, status, date, role, onClose }) {
         <div className="flex-1 overflow-auto">
           {loading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="w-6 h-6 border-2 rounded-full animate-spin" style={{ borderColor: '#1E3A5F', borderTopColor: '#42A5F5' }} />
+              <div className="w-6 h-6 border-2 rounded-full animate-spin" style={{ borderColor: bright ? '#DBEAFE' : '#233754', borderTopColor: '#3B82F6' }} />
             </div>
           ) : rows.length === 0 ? (
             <div className="text-center py-12 text-xs text-slate-500">No records found</div>
@@ -102,7 +102,7 @@ function DrillModal({ hrtCode, hrtName, status, date, role, onClose }) {
 
 /* ── Weekly card for one HRT ─────────────────────────────────────────────── */
 function WeeklyCard({ hrt, maxDay, bright }) {
-  const color  = HRT_COLORS[hrt.hrt_code] || '#42A5F5';
+  const color  = HRT_COLORS[hrt.hrt_code] || '#3B82F6';
   const todayD = hrt.daily.find(d => d.is_today);
   const ncToday = todayD ? todayD.not_connected : 0;
   const hasAlert = ncToday >= 5;
@@ -118,10 +118,10 @@ function WeeklyCard({ hrt, maxDay, bright }) {
       style={{
         background: bright ? '#FFFFFF' : 'var(--ccmc-surface)',
         border: hasAlert
-          ? '1px solid rgba(239,68,68,0.5)'
+          ? '1px solid rgba(220,38,38,0.5)'
           : bright ? `1px solid ${color}25` : `1px solid ${color}20`,
         boxShadow: hasAlert
-          ? '0 0 0 2px rgba(239,68,68,0.12)'
+          ? '0 0 0 2px rgba(220,38,38,0.12)'
           : bright ? '0 1px 4px rgba(0,0,0,0.05)' : 'none',
       }}>
 
@@ -138,7 +138,7 @@ function WeeklyCard({ hrt, maxDay, bright }) {
             </span>
             {hasAlert && (
               <span className="flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full"
-                style={{ background: 'rgba(239,68,68,0.12)', color: '#EF4444' }}>
+                style={{ background: 'rgba(220,38,38,0.12)', color: '#DC2626' }}>
                 <AlertTriangle className="w-2.5 h-2.5" /> {ncToday} missed today
               </span>
             )}
@@ -154,9 +154,9 @@ function WeeklyCard({ hrt, maxDay, bright }) {
             <span style={{ color: bright ? '#94A3B8' : '#475569', fontWeight: 400 }}>calls</span>
           </div>
           <div className="text-[9px]" style={{ color: bright ? '#94A3B8' : '#475569' }}>
-            <span style={{ color: '#22C55E' }}>{totalConnected}✓</span>
+            <span style={{ color: '#16A34A' }}>{totalConnected}✓</span>
             {' '}
-            <span style={{ color: '#EF4444' }}>{hrt.week_not_connected}✗</span>
+            <span style={{ color: '#DC2626' }}>{hrt.week_not_connected}✗</span>
           </div>
         </div>
       </div>
@@ -210,9 +210,9 @@ function WeeklyCard({ hrt, maxDay, bright }) {
                   </div>
                 ) : (
                   <>
-                    {connH > 0  && <div style={{ height: connH,  background: isDeoBased ? '#06B6D4' : '#22C55E', width: '100%', flexShrink: 0 }} />}
+                    {connH > 0  && <div style={{ height: connH,  background: isDeoBased ? '#06B6D4' : '#16A34A', width: '100%', flexShrink: 0 }} />}
                     {otherH > 0 && <div style={{ height: otherH, background: '#60A5FA',                          width: '100%', flexShrink: 0 }} />}
-                    {ncH > 0    && <div style={{ height: ncH,    background: '#EF4444',                          width: '100%', flexShrink: 0 }} />}
+                    {ncH > 0    && <div style={{ height: ncH,    background: '#DC2626',                          width: '100%', flexShrink: 0 }} />}
                   </>
                 )}
               </div>
@@ -224,11 +224,11 @@ function WeeklyCard({ hrt, maxDay, bright }) {
               {/* Connected / missed */}
               {!d.is_future && effective > 0 && (
                 <div className="text-[7px] leading-none text-center">
-                  <div style={{ color: isDeoBased ? '#06B6D4' : '#22C55E' }}>
+                  <div style={{ color: isDeoBased ? '#06B6D4' : '#16A34A' }}>
                     {isDeoBased ? effective : d.connected}✓
                   </div>
                   {!isDeoBased && d.not_connected > 0 && (
-                    <div style={{ color: '#EF4444' }}>{d.not_connected}✗</div>
+                    <div style={{ color: '#DC2626' }}>{d.not_connected}✗</div>
                   )}
                 </div>
               )}
@@ -295,7 +295,7 @@ export default function HRTCallPerformance({ user, defaultDate }) {
     ))
   );
 
-  const panelBorder = bright ? '1px solid rgba(37,99,235,0.25)' : '1px solid rgba(66,165,245,0.35)';
+  const panelBorder = bright ? '1px solid rgba(37,99,235,0.25)' : '1px solid rgba(59,130,246,0.35)';
   const panelBg     = bright ? '#FFFFFF' : 'var(--ccmc-panel)';
 
   return (
@@ -306,12 +306,12 @@ export default function HRTCallPerformance({ user, defaultDate }) {
       <div className="flex items-center justify-between px-5 py-3 border-b"
         style={{ borderColor: bright ? '#E2E8F0' : 'rgba(30,58,95,0.7)' }}>
         <div className="flex items-center gap-3">
-          <Phone className="w-4 h-4" style={{ color: bright ? '#2563EB' : '#42A5F5' }} />
+          <Phone className="w-4 h-4" style={{ color: bright ? '#2563EB' : '#3B82F6' }} />
           <h2 className="text-sm font-bold" style={{ color: bright ? '#1E293B' : '#F1F5F9' }}>
             HRT Call Performance
           </h2>
           <span className="text-[9px] font-bold px-1.5 py-0.5 rounded"
-            style={{ background: bright ? '#EFF6FF' : 'rgba(66,165,245,0.15)', color: bright ? '#2563EB' : '#42A5F5' }}>
+            style={{ background: bright ? '#EFF6FF' : 'rgba(59,130,246,0.15)', color: bright ? '#2563EB' : '#3B82F6' }}>
             LIVE
           </span>
           {/* Daily/Weekly tabs */}
@@ -321,7 +321,7 @@ export default function HRTCallPerformance({ user, defaultDate }) {
               <button key={t} onClick={() => setTab(t)}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-bold transition-all"
                 style={{
-                  background: tab === t ? (bright ? '#2563EB' : '#3B9FFF') : 'transparent',
+                  background: tab === t ? (bright ? '#2563EB' : '#3B82F6') : 'transparent',
                   color:      tab === t ? '#FFFFFF' : (bright ? '#64748B' : '#475569'),
                 }}>
                 <Icon className="w-3 h-3" /> {label}
@@ -348,7 +348,7 @@ export default function HRTCallPerformance({ user, defaultDate }) {
           )}
           <button onClick={tab === 'daily' ? loadDaily : loadWeekly} disabled={loading}
             className="p-1.5 rounded transition-all"
-            style={{ background: bright ? '#EFF6FF' : 'rgba(25,118,210,0.2)', color: bright ? '#2563EB' : '#42A5F5' }}>
+            style={{ background: bright ? '#EFF6FF' : 'rgba(37,99,235,0.2)', color: bright ? '#2563EB' : '#3B82F6' }}>
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
           </button>
           <button onClick={() => setExpanded(v => !v)} className="p-1.5 rounded"
@@ -384,7 +384,7 @@ export default function HRTCallPerformance({ user, defaultDate }) {
                 {loading ? (
                   <div className="flex items-center justify-center py-8">
                     <div className="w-5 h-5 border-2 rounded-full animate-spin"
-                      style={{ borderColor: bright ? '#DBEAFE' : '#1E3A5F', borderTopColor: bright ? '#2563EB' : '#42A5F5' }} />
+                      style={{ borderColor: bright ? '#DBEAFE' : '#233754', borderTopColor: bright ? '#2563EB' : '#3B82F6' }} />
                   </div>
                 ) : data.length === 0 ? (
                   <div className="text-center py-8 text-xs" style={{ color: bright ? '#94A3B8' : '#475569' }}>
@@ -410,17 +410,17 @@ export default function HRTCallPerformance({ user, defaultDate }) {
                     </thead>
                     <tbody>
                       {data.map(hrt => {
-                        const hrtColor = HRT_COLORS[hrt.hrt_code] || '#42A5F5';
+                        const hrtColor = HRT_COLORS[hrt.hrt_code] || '#3B82F6';
                         const ncToday  = (hrt.no_response || 0) + (hrt.switched_off || 0) + (hrt.wrong_number || 0);
                         const hasAlert = ncToday >= 5;
                         return (
                           <tr key={hrt.hrt_code}
                             style={{
                               borderBottom: bright ? '1px solid #F8FAFC' : '1px solid rgba(30,58,95,0.3)',
-                              background: hasAlert ? (bright ? 'rgba(239,68,68,0.04)' : 'rgba(239,68,68,0.04)') : 'transparent',
+                              background: hasAlert ? (bright ? 'rgba(220,38,38,0.04)' : 'rgba(220,38,38,0.04)') : 'transparent',
                             }}
-                            onMouseEnter={e => e.currentTarget.style.background = bright ? '#F8FAFC' : 'rgba(25,118,210,0.05)'}
-                            onMouseLeave={e => e.currentTarget.style.background = hasAlert ? (bright ? 'rgba(239,68,68,0.04)' : 'rgba(239,68,68,0.04)') : 'transparent'}>
+                            onMouseEnter={e => e.currentTarget.style.background = bright ? '#F8FAFC' : 'rgba(37,99,235,0.05)'}
+                            onMouseLeave={e => e.currentTarget.style.background = hasAlert ? (bright ? 'rgba(220,38,38,0.04)' : 'rgba(220,38,38,0.04)') : 'transparent'}>
 
                             <td className="px-4 py-3">
                               <div className="flex items-center gap-2">
@@ -430,7 +430,7 @@ export default function HRTCallPerformance({ user, defaultDate }) {
                                   style={{ color: bright ? '#1E293B' : '#F1F5F9' }}>{hrt.hrt_name}</span>
                                 {hasAlert && (
                                   <span className="flex items-center gap-0.5 text-[9px] font-bold"
-                                    style={{ color: '#EF4444' }}>
+                                    style={{ color: '#DC2626' }}>
                                     <AlertTriangle className="w-2.5 h-2.5" /> {ncToday} missed
                                   </span>
                                 )}
@@ -453,12 +453,12 @@ export default function HRTCallPerformance({ user, defaultDate }) {
                                     <button onClick={() => openDrill(hrt, c)}
                                       className="text-sm font-bold px-2 py-0.5 rounded transition-all min-w-[32px]"
                                       style={{
-                                        color:      isNcCol && val >= 5 ? '#EF4444' : c.color,
-                                        background: isNcCol && val >= 5 ? 'rgba(239,68,68,0.12)' : `${c.color}12`,
+                                        color:      isNcCol && val >= 5 ? '#DC2626' : c.color,
+                                        background: isNcCol && val >= 5 ? 'rgba(220,38,38,0.12)' : `${c.color}12`,
                                         fontWeight: isNcCol && val >= 5 ? 900 : 700,
                                       }}
                                       onMouseEnter={e => { e.currentTarget.style.background = `${c.color}28`; e.currentTarget.style.transform = 'scale(1.1)'; }}
-                                      onMouseLeave={e => { e.currentTarget.style.background = isNcCol && val >= 5 ? 'rgba(239,68,68,0.12)' : `${c.color}12`; e.currentTarget.style.transform = 'scale(1)'; }}>
+                                      onMouseLeave={e => { e.currentTarget.style.background = isNcCol && val >= 5 ? 'rgba(220,38,38,0.12)' : `${c.color}12`; e.currentTarget.style.transform = 'scale(1)'; }}>
                                       {val}
                                     </button>
                                   ) : (
@@ -501,7 +501,7 @@ export default function HRTCallPerformance({ user, defaultDate }) {
               {loading ? (
                 <div className="flex items-center justify-center py-12">
                   <div className="w-6 h-6 border-2 rounded-full animate-spin"
-                    style={{ borderColor: bright ? '#DBEAFE' : '#1E3A5F', borderTopColor: bright ? '#2563EB' : '#42A5F5' }} />
+                    style={{ borderColor: bright ? '#DBEAFE' : '#233754', borderTopColor: bright ? '#2563EB' : '#3B82F6' }} />
                 </div>
               ) : weekly.hrts.length === 0 ? (
                 <div className="text-center py-10 text-xs" style={{ color: bright ? '#94A3B8' : '#475569' }}>
@@ -511,12 +511,12 @@ export default function HRTCallPerformance({ user, defaultDate }) {
                 <>
                   {/* Legend */}
                   <div className="flex items-center gap-4 mb-4 text-[10px]" style={{ color: bright ? '#64748B' : '#475569' }}>
-                    <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ background: '#22C55E' }} /> Connected</span>
-                    <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ background: '#EF4444' }} /> Not Connected</span>
+                    <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ background: '#16A34A' }} /> Connected</span>
+                    <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ background: '#DC2626' }} /> Not Connected</span>
                     <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ background: '#60A5FA' }} /> Other</span>
                     <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ background: '#06B6D4' }} /> DEO-sourced (no system log)</span>
                     <span className="flex items-center gap-1.5 ml-2">
-                      <AlertTriangle className="w-3 h-3" style={{ color: '#EF4444' }} />
+                      <AlertTriangle className="w-3 h-3" style={{ color: '#DC2626' }} />
                       Red border = ≥5 missed calls today
                     </span>
                   </div>
@@ -543,8 +543,8 @@ export default function HRTCallPerformance({ user, defaultDate }) {
                       ['Connected', weekly.hrts.reduce((s, h) => {
                         const deo = h.daily.reduce((d2, d) => d2 + (d.attempted === 0 && d.deo_calls > 0 ? d.deo_calls : 0), 0);
                         return s + h.week_connected + deo;
-                      }, 0), '#22C55E'],
-                      ['Not Connected', weekly.hrts.reduce((s, h) => s + h.week_not_connected, 0), '#EF4444'],
+                      }, 0), '#16A34A'],
+                      ['Not Connected', weekly.hrts.reduce((s, h) => s + h.week_not_connected, 0), '#DC2626'],
                     ].map(([label, val, color]) => (
                       <span key={label} className="text-[11px]" style={{ color: bright ? '#475569' : '#94A3B8' }}>
                         {label}: <strong style={{ color }}>{val}</strong>
@@ -563,6 +563,7 @@ export default function HRTCallPerformance({ user, defaultDate }) {
           hrtCode={drill.hrtCode} hrtName={drill.hrtName}
           status={drill.status}  date={tab === 'daily' ? date : ''}
           role={user.role}       onClose={() => setDrill(null)}
+          bright={bright}
         />
       )}
     </div>

@@ -33,16 +33,22 @@ export default function LoginPage({ onLogin }) {
     } finally { setLoading(false); }
   };
 
-  const bg       = dark ? '#060D1B' : '#EDF2F9';
-  const bannerBg = dark ? 'rgba(10,20,42,0.92)' : 'rgba(255,255,255,0.95)';
-  const bannerBd = dark ? 'rgba(30,70,130,0.6)'  : 'rgba(148,163,184,0.35)';
-  const textMain = dark ? '#F0F6FF' : '#0F1C2E';
-  const textSec  = dark ? '#8BACC8' : '#3D5A7A';
-  const textHint = dark ? '#445E7A' : '#7A9BB5';
-  const inputBg  = dark ? 'rgba(16,32,56,0.9)'  : 'rgba(248,251,255,0.98)';
-  const inputBd  = dark ? 'rgba(26,53,88,0.9)'  : 'rgba(148,163,184,0.55)';
-  const cardBg   = dark ? 'rgba(11,22,40,0.97)' : 'rgba(255,255,255,0.98)';
-  const cardBd   = dark ? 'rgba(26,53,88,0.9)'  : 'rgba(148,163,184,0.4)';
+  const bg       = dark
+    ? 'linear-gradient(165deg, #060911 0%, #0A0F1A 45%, #0D1420 100%)'
+    : '#EDF2F9';
+  const bannerBg = dark ? 'rgba(13,20,33,0.68)' : 'rgba(255,255,255,0.95)';
+  const bannerBd = dark ? 'rgba(255,255,255,0.09)' : 'rgba(148,163,184,0.35)';
+  const textMain = dark ? '#F8FAFC' : '#0F1C2E';
+  const textSec  = dark ? '#CBD5E1' : '#3D5A7A';
+  const textHint = dark ? '#94A3B8' : '#7A9BB5';
+  const inputBg  = dark ? 'rgba(9,14,24,0.55)' : 'rgba(248,251,255,0.98)';
+  const inputBd  = dark ? 'rgba(255,255,255,0.10)' : 'rgba(148,163,184,0.55)';
+  const cardBg   = dark ? 'rgba(13,19,32,0.6)' : 'rgba(255,255,255,0.98)';
+  const cardBd   = dark ? 'rgba(255,255,255,0.09)' : 'rgba(148,163,184,0.4)';
+
+  // Role-accent colours — shared with the sidebar's role chips, so the
+  // login page's credential list reads as part of the same system.
+  const ROLE_ACCENT = { CHO: '#34D399', DMCHO: '#3B82F6', HRT1: '#F472B6', HRT2: '#A78BFA' };
 
   return (
     <div
@@ -51,17 +57,27 @@ export default function LoginPage({ onLogin }) {
     >
       {/* ── Background glows ─────────────────────────────────────────────── */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        {/* Ambient glow seated behind the hero banner */}
         <div style={{
-          position: 'absolute', top: '-20%', left: '50%', transform: 'translateX(-50%)',
-          width: '80vw', height: '60vw', borderRadius: '50%',
+          position: 'absolute', top: '-24%', left: '50%', transform: 'translateX(-50%)',
+          width: '82vw', height: '58vw', borderRadius: '50%',
           background: dark
-            ? 'radial-gradient(circle, rgba(27,107,212,0.12) 0%, transparent 65%)'
+            ? 'radial-gradient(circle, rgba(37,99,235,0.22) 0%, rgba(37,99,235,0.08) 45%, transparent 70%)'
             : 'radial-gradient(circle, rgba(59,159,255,0.1) 0%, transparent 65%)',
+          filter: dark ? 'blur(10px)' : 'none',
         }} />
+        {/* Secondary teal-tinted glow, lower-right, for depth */}
+        {dark && (
+          <div style={{
+            position: 'absolute', bottom: '-10%', right: '-6%',
+            width: '46vw', height: '46vw', borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(20,184,166,0.10) 0%, transparent 70%)',
+          }} />
+        )}
         <div style={{
           position: 'absolute',
-          backgroundImage: `linear-gradient(${dark ? 'rgba(59,159,255,0.03)' : 'rgba(27,107,212,0.04)'} 1px, transparent 1px),
-                            linear-gradient(90deg, ${dark ? 'rgba(59,159,255,0.03)' : 'rgba(27,107,212,0.04)'} 1px, transparent 1px)`,
+          backgroundImage: `linear-gradient(${dark ? 'rgba(37,99,235,0.035)' : 'rgba(27,107,212,0.04)'} 1px, transparent 1px),
+                            linear-gradient(90deg, ${dark ? 'rgba(37,99,235,0.035)' : 'rgba(27,107,212,0.04)'} 1px, transparent 1px)`,
           backgroundSize: '48px 48px',
           inset: 0,
         }} />
@@ -78,10 +94,10 @@ export default function LoginPage({ onLogin }) {
             background: bannerBg,
             border: `1px solid ${bannerBd}`,
             boxShadow: dark
-              ? '0 20px 60px rgba(0,0,0,0.55), 0 0 0 1px rgba(59,159,255,0.05) inset'
+              ? '0 20px 60px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.06)'
               : '0 20px 60px rgba(0,0,0,0.1)',
-            backdropFilter: 'blur(24px)',
-            WebkitBackdropFilter: 'blur(24px)',
+            backdropFilter: 'blur(28px) saturate(160%)',
+            WebkitBackdropFilter: 'blur(28px) saturate(160%)',
           }}
         >
           {/* Indian tricolor top bar */}
@@ -96,9 +112,9 @@ export default function LoginPage({ onLogin }) {
             <div
               className="px-5 py-1.5 rounded-full text-[10px] font-bold tracking-[0.22em] uppercase"
               style={{
-                border: `1px solid ${dark ? 'rgba(59,159,255,0.45)' : 'rgba(27,107,212,0.35)'}`,
-                color: dark ? '#3B9FFF' : '#1B6BD4',
-                background: dark ? 'rgba(59,159,255,0.07)' : 'rgba(27,107,212,0.06)',
+                border: `1px solid ${dark ? 'rgba(59,130,246,0.45)' : 'rgba(27,107,212,0.35)'}`,
+                color: dark ? '#60A5FA' : '#1B6BD4',
+                background: dark ? 'rgba(37,99,235,0.09)' : 'rgba(27,107,212,0.06)',
               }}
             >
               National Health Mission
@@ -121,7 +137,7 @@ export default function LoginPage({ onLogin }) {
                 {/* Inner mask */}
                 <div style={{
                   position: 'absolute', inset: 3, borderRadius: '50%',
-                  background: dark ? '#0A1830' : '#EDF2F9',
+                  background: dark ? '#0F1B2E' : '#EDF2F9',
                 }} />
                 {/* Logo container */}
                 <div style={{
@@ -165,11 +181,11 @@ export default function LoginPage({ onLogin }) {
                   width: 'clamp(104px, 28vw, 180px)', height: 'clamp(104px, 28vw, 180px)',
                   borderRadius: 16,
                   overflow: 'hidden',
-                  border: `2px solid ${dark ? 'rgba(59,159,255,0.35)' : 'rgba(27,107,212,0.25)'}`,
+                  border: `2px solid ${dark ? 'rgba(37,99,235,0.35)' : 'rgba(27,107,212,0.25)'}`,
                   boxShadow: dark
-                    ? '0 12px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(59,159,255,0.15) inset'
+                    ? '0 12px 40px rgba(0,0,0,0.45), 0 0 0 1px rgba(37,99,235,0.16) inset'
                     : '0 12px 40px rgba(0,0,0,0.15)',
-                  background: dark ? 'rgba(59,159,255,0.05)' : '#E8EFF8',
+                  background: dark ? 'rgba(37,99,235,0.06)' : '#E8EFF8',
                   flexShrink: 0,
                 }}
               >
@@ -183,7 +199,7 @@ export default function LoginPage({ onLogin }) {
                     e.target.parentElement.style.alignItems = 'center';
                     e.target.parentElement.style.justifyContent = 'center';
                     e.target.parentElement.innerHTML =
-                      '<svg viewBox="0 0 24 24" fill="none" style="width:72px;height:72px;stroke:rgba(59,159,255,0.5);stroke-width:1.2"><path d="M12 21C12 21 4 16 4 9.5C4 7 6 5 8.5 5C10 5 11.5 5.8 12 7C12.5 5.8 14 5 15.5 5C18 5 20 7 20 9.5C20 16 12 21 12 21Z" stroke-linejoin="round"/><path d="M9 11.5H15M12 8.5V14.5" stroke-linecap="round"/></svg>';
+                      '<svg viewBox="0 0 24 24" fill="none" style="width:72px;height:72px;stroke:rgba(37,99,235,0.5);stroke-width:1.2"><path d="M12 21C12 21 4 16 4 9.5C4 7 6 5 8.5 5C10 5 11.5 5.8 12 7C12.5 5.8 14 5 15.5 5C18 5 20 7 20 9.5C20 16 12 21 12 21Z" stroke-linejoin="round"/><path d="M9 11.5H15M12 8.5V14.5" stroke-linecap="round"/></svg>';
                   }}
                 />
               </div>
@@ -192,7 +208,7 @@ export default function LoginPage({ onLogin }) {
                 <div
                   className="text-[15px] font-extrabold tracking-wide"
                   style={{
-                    background: 'linear-gradient(135deg, #3B9FFF, #1B6BD4)',
+                    background: 'linear-gradient(135deg, #60A5FA, #2563EB)',
                     WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
                   }}
                 >
@@ -214,13 +230,13 @@ export default function LoginPage({ onLogin }) {
                 {/* Outer blue conic ring */}
                 <div style={{
                   position: 'absolute', inset: 0, borderRadius: '50%',
-                  background: 'conic-gradient(from 0deg, #0F4C81 0deg, #1B6BD4 90deg, #3B9FFF 180deg, #1B6BD4 270deg, #0F4C81 360deg)',
+                  background: 'conic-gradient(from 0deg, #1E40AF 0deg, #2563EB 90deg, #60A5FA 180deg, #2563EB 270deg, #1E40AF 360deg)',
                   opacity: 0.8,
                 }} />
                 {/* Inner mask */}
                 <div style={{
                   position: 'absolute', inset: 3, borderRadius: '50%',
-                  background: dark ? '#0A1830' : '#EDF2F9',
+                  background: dark ? '#0F1B2E' : '#EDF2F9',
                 }} />
                 {/* Logo container */}
                 <div style={{
@@ -237,14 +253,14 @@ export default function LoginPage({ onLogin }) {
                     onError={(e) => {
                       e.target.style.display = 'none';
                       e.target.parentElement.innerHTML =
-                        '<div style="font-size:11px;font-weight:800;color:#1B6BD4;text-align:center;line-height:1.3;padding:4px">CCMC</div>';
+                        '<div style="font-size:11px;font-weight:800;color:#2563EB;text-align:center;line-height:1.3;padding:4px">CCMC</div>';
                     }}
                   />
                 </div>
               </div>
               {/* Text */}
               <div className="text-center">
-                <div className="text-[14px] font-extrabold tracking-wider" style={{ color: '#3B9FFF' }}>
+                <div className="text-[14px] font-extrabold tracking-wider" style={{ color: '#3B82F6' }}>
                   CCMC
                 </div>
                 <div className="text-[12px] font-bold tracking-wider" style={{ color: textMain }}>
@@ -258,7 +274,7 @@ export default function LoginPage({ onLogin }) {
           </div>
 
           {/* Blue gradient accent bottom bar */}
-          <div className="h-1" style={{ background: 'linear-gradient(90deg, #0F4C81, #1B6BD4, #3B9FFF, #1B6BD4, #0F4C81)' }} />
+          <div className="h-1" style={{ background: 'linear-gradient(90deg, #1E40AF, #2563EB, #60A5FA, #2563EB, #1E40AF)' }} />
         </div>
 
         {/* ══════════════════════════════════════════════════════════════
@@ -270,51 +286,55 @@ export default function LoginPage({ onLogin }) {
             background: cardBg,
             border: `1px solid ${cardBd}`,
             boxShadow: dark
-              ? '0 20px 60px rgba(0,0,0,0.5)'
+              ? '0 30px 80px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.07), inset 0 0 0 1px rgba(255,255,255,0.02)'
               : '0 20px 60px rgba(0,0,0,0.1)',
-            backdropFilter: 'blur(24px)',
-            WebkitBackdropFilter: 'blur(24px)',
+            backdropFilter: 'blur(32px) saturate(180%)',
+            WebkitBackdropFilter: 'blur(32px) saturate(180%)',
           }}
         >
           {/* Top accent line */}
-          <div className="h-0.5" style={{ background: 'linear-gradient(90deg, transparent, #1B6BD4 40%, #3B9FFF 60%, transparent)' }} />
+          <div className="h-[3px]" style={{ background: 'linear-gradient(90deg, transparent, #2563EB 35%, #60A5FA 50%, #2563EB 65%, transparent)' }} />
 
-          <div className="px-5 sm:px-10 py-8">
+          <div className="px-6 sm:px-11 py-9">
             <div className="flex items-start gap-10">
 
               {/* Form section */}
               <div className="flex-1">
-                <div className="mb-6">
-                  <h2 className="text-[20px] font-bold mb-1"
-                    style={{ color: textMain, fontFamily: 'Poppins, sans-serif', letterSpacing: '-0.2px' }}>
+                <div className="mb-8">
+                  <h2 className="text-[34px] font-extrabold mb-2 leading-none"
+                    style={{ color: textMain, fontFamily: 'Poppins, sans-serif', letterSpacing: '-0.9px' }}>
                     Secure Sign In
                   </h2>
-                  <p className="text-[12px]" style={{ color: textHint }}>
+                  <p className="text-[12px] font-normal" style={{ color: textHint, opacity: dark ? 0.75 : 0.9 }}>
                     Authorized personnel only · All access is logged
                   </p>
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={handleSubmit} className="space-y-5">
                   {/* User dropdown */}
                   <div>
-                    <label className="block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: textSec }}>
+                    <label className="block text-[13px] font-semibold uppercase tracking-wider mb-2" style={{ color: textSec }}>
                       User ID
                     </label>
                     <div className="relative">
                       <select
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
-                        className="w-full pl-4 pr-10 py-3 rounded-xl text-[13px] font-medium outline-none transition-all"
-                        style={{ background: inputBg, border: `1px solid ${inputBd}`, color: textMain, appearance: 'none', cursor: 'pointer' }}
-                        onFocus={(e) => { e.target.style.borderColor = '#1B6BD4'; e.target.style.boxShadow = '0 0 0 3px rgba(27,107,212,0.15)'; }}
+                        className="premium-input w-full text-[14px] font-medium outline-none"
+                        style={{
+                          background: inputBg, border: `1px solid ${inputBd}`, color: textMain,
+                          appearance: 'none', cursor: 'pointer',
+                          padding: '15px 40px 15px 18px', borderRadius: 16,
+                        }}
+                        onFocus={(e) => { e.target.style.borderColor = '#3B82F6'; e.target.style.boxShadow = '0 0 0 4px rgba(37,99,235,0.22), 0 0 22px rgba(37,99,235,0.25)'; }}
                         onBlur={(e)  => { e.target.style.borderColor = inputBd;   e.target.style.boxShadow = 'none'; }}
                       >
                         <option value="">— Select User —</option>
-                        <optgroup label="Administration" style={{ background: dark ? '#0B1628' : '#F8FAFC' }}>
+                        <optgroup label="Administration" style={{ background: dark ? '#0F1B2E' : '#F8FAFC' }}>
                           <option value="CHO">CHO — City Health Officer</option>
                           <option value="DMCHO">DMCHO — District MCH Officer</option>
                         </optgroup>
-                        <optgroup label="Tracking Team" style={{ background: dark ? '#0B1628' : '#F8FAFC' }}>
+                        <optgroup label="Tracking Team" style={{ background: dark ? '#0F1B2E' : '#F8FAFC' }}>
                           <option value="HRT1">HRT1 — Abarna D</option>
                           <option value="HRT2">HRT2 — Girija</option>
                           <option value="HRT3">HRT3 — Nivetha</option>
@@ -331,7 +351,7 @@ export default function LoginPage({ onLogin }) {
 
                   {/* Password */}
                   <div>
-                    <label className="block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: textSec }}>
+                    <label className="block text-[13px] font-semibold uppercase tracking-wider mb-2" style={{ color: textSec }}>
                       Password
                     </label>
                     <div className="relative">
@@ -340,9 +360,12 @@ export default function LoginPage({ onLogin }) {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="Enter your password"
-                        className="w-full pl-4 pr-11 py-3 rounded-xl text-[13px] outline-none transition-all"
-                        style={{ background: inputBg, border: `1px solid ${inputBd}`, color: textMain }}
-                        onFocus={(e) => { e.target.style.borderColor = '#1B6BD4'; e.target.style.boxShadow = '0 0 0 3px rgba(27,107,212,0.15)'; }}
+                        className="premium-input w-full text-[14px] outline-none"
+                        style={{
+                          background: inputBg, border: `1px solid ${inputBd}`, color: textMain,
+                          padding: '15px 44px 15px 18px', borderRadius: 16,
+                        }}
+                        onFocus={(e) => { e.target.style.borderColor = '#3B82F6'; e.target.style.boxShadow = '0 0 0 4px rgba(37,99,235,0.22), 0 0 22px rgba(37,99,235,0.25)'; }}
                         onBlur={(e)  => { e.target.style.borderColor = inputBd;   e.target.style.boxShadow = 'none'; }}
                       />
                       <button
@@ -360,8 +383,8 @@ export default function LoginPage({ onLogin }) {
 
                   {/* Error */}
                   {error && (
-                    <div className="flex items-start gap-2.5 p-3 rounded-xl text-[12px]"
-                      style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.22)', color: '#FCA5A5' }}>
+                    <div className="flex items-start gap-2.5 p-3.5 rounded-xl text-[13px]"
+                      style={{ background: 'rgba(220,38,38,0.09)', border: '1px solid rgba(220,38,38,0.25)', color: '#FCA5A5' }}>
                       <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
                       <span>{error}</span>
                     </div>
@@ -371,17 +394,15 @@ export default function LoginPage({ onLogin }) {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full py-3 rounded-xl text-[13px] font-bold tracking-wider uppercase transition-all mt-1"
+                    className="login-submit-btn w-full py-4 rounded-2xl text-[14px] font-bold tracking-wider uppercase mt-1"
                     style={{
-                      background: loading ? 'rgba(15,76,129,0.45)' : 'linear-gradient(135deg, #0F4C81, #1B6BD4)',
+                      background: loading ? 'rgba(30,64,175,0.45)' : 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 55%, #3B82F6 100%)',
                       color: 'white',
                       border: 'none',
-                      boxShadow: loading ? 'none' : '0 4px 20px rgba(27,107,212,0.4)',
+                      boxShadow: loading ? 'none' : '0 8px 28px rgba(37,99,235,0.45), inset 0 1px 0 rgba(255,255,255,0.15)',
                       cursor: loading ? 'not-allowed' : 'pointer',
                       opacity: loading ? 0.7 : 1,
                     }}
-                    onMouseEnter={(e) => { if (!loading) { e.currentTarget.style.boxShadow = '0 6px 28px rgba(27,107,212,0.55)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}}
-                    onMouseLeave={(e) => { e.currentTarget.style.boxShadow = '0 4px 20px rgba(27,107,212,0.4)'; e.currentTarget.style.transform = 'translateY(0)'; }}
                   >
                     {loading ? (
                       <span className="flex items-center justify-center gap-2">
@@ -397,65 +418,59 @@ export default function LoginPage({ onLogin }) {
               </div>
 
               {/* Divider */}
-              <div className="hidden md:block w-px self-stretch" style={{ background: dark ? 'rgba(26,53,88,0.8)' : 'rgba(148,163,184,0.3)' }} />
+              <div className="hidden md:block w-px self-stretch" style={{ background: dark ? 'rgba(35,55,84,0.8)' : 'rgba(148,163,184,0.3)' }} />
 
               {/* Credentials hint */}
-              <div className="hidden md:flex flex-col gap-3 w-52 flex-shrink-0 pt-1">
-                <div className="text-[11px] font-bold uppercase tracking-wider" style={{ color: textHint }}>
+              <div className="hidden md:flex flex-col gap-3.5 w-56 flex-shrink-0 pt-1">
+                <div className="text-[12px] font-bold uppercase tracking-wider" style={{ color: textHint }}>
                   Default Credentials
                 </div>
 
                 {/* CHO — highlighted first */}
                 <div>
-                  <div className="text-[9px] font-bold uppercase tracking-widest mb-1.5" style={{ color: '#34D399' }}>
+                  <div className="text-[10px] font-bold uppercase tracking-widest mb-1.5" style={{ color: dark ? '#4ADE80' : '#059669' }}>
                     City Health Officer
                   </div>
-                  <div className="rounded-xl overflow-hidden"
-                    style={{ border: '1px solid rgba(52,211,153,0.4)', background: dark ? 'rgba(52,211,153,0.08)' : 'rgba(209,250,229,0.5)' }}>
-                    <div className="flex items-center justify-between px-3 py-2.5">
-                      <div className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full" style={{ background: '#34D399' }} />
-                        <span className="text-[12px] font-bold" style={{ color: dark ? '#34D399' : '#059669' }}>CHO</span>
-                      </div>
-                      <code className="text-[11px] font-mono font-semibold" style={{ color: dark ? '#34D399' : '#047857' }}>cho@2026</code>
+                  <div className="cred-pill flex items-center justify-between px-3.5 py-3 rounded-lg"
+                    style={{ '--pill-accent': ROLE_ACCENT.CHO, background: dark ? 'rgba(52,211,153,0.08)' : 'rgba(209,250,229,0.5)' }}>
+                    <div className="flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full" style={{ background: '#16A34A' }} />
+                      <span className="text-[13px] font-bold" style={{ color: dark ? '#4ADE80' : '#059669' }}>CHO</span>
                     </div>
+                    <code className="text-[12px] font-mono font-semibold" style={{ color: dark ? '#4ADE80' : '#047857' }}>cho@2026</code>
                   </div>
                 </div>
 
                 {/* Administration */}
                 <div>
-                  <div className="text-[9px] font-bold uppercase tracking-widest mb-1.5" style={{ color: textHint }}>
+                  <div className="text-[10px] font-bold uppercase tracking-widest mb-1.5" style={{ color: textHint }}>
                     Administration
                   </div>
-                  <div className="rounded-xl overflow-hidden"
-                    style={{ border: `1px solid ${dark ? 'rgba(26,53,88,0.5)' : 'rgba(147,197,253,0.35)'}`, background: dark ? 'rgba(26,53,88,0.3)' : 'rgba(219,234,254,0.4)' }}>
-                    <div className="flex items-center justify-between px-3 py-2.5"
-                      style={{ borderBottom: `1px solid ${dark ? 'rgba(26,53,88,0.5)' : 'rgba(147,197,253,0.25)'}` }}>
-                      <span className="text-[11px] font-semibold" style={{ color: textSec }}>DMCHO</span>
-                      <code className="text-[10px] font-mono" style={{ color: dark ? '#3B9FFF' : '#1B6BD4' }}>dmcho@2026</code>
-                    </div>
+                  <div className="cred-pill flex items-center justify-between px-3.5 py-3 rounded-lg"
+                    style={{ '--pill-accent': ROLE_ACCENT.DMCHO, background: dark ? 'rgba(59,130,246,0.06)' : 'rgba(219,234,254,0.4)' }}>
+                    <span className="text-[12px] font-semibold" style={{ color: textSec }}>DMCHO</span>
+                    <code className="text-[11px] font-mono" style={{ color: dark ? '#60A5FA' : '#1B6BD4' }}>dmcho@2026</code>
                   </div>
                 </div>
 
                 {/* HRT Officers */}
                 <div>
-                  <div className="text-[9px] font-bold uppercase tracking-widest mb-1.5" style={{ color: textHint }}>
+                  <div className="text-[10px] font-bold uppercase tracking-widest mb-1.5" style={{ color: textHint }}>
                     HRT Officers
                   </div>
-                  <div className="rounded-xl overflow-hidden"
-                    style={{ border: `1px solid ${dark ? 'rgba(26,53,88,0.5)' : 'rgba(147,197,253,0.35)'}`, background: dark ? 'rgba(26,53,88,0.3)' : 'rgba(219,234,254,0.4)' }}>
+                  <div className="flex flex-col gap-1.5">
                     {[
-                      { user: 'HRT1', pass: 'hrt1@2026' },
-                      { user: 'HRT2', pass: 'hrt2@2026' },
-                    ].map(({ user, pass }, i, arr) => (
-                      <div key={user} className="flex items-center justify-between px-3 py-2"
-                        style={{ borderBottom: i < arr.length - 1 ? `1px solid ${dark ? 'rgba(26,53,88,0.5)' : 'rgba(147,197,253,0.25)'}` : 'none' }}>
-                        <span className="text-[11px] font-semibold" style={{ color: textSec }}>{user}</span>
-                        <code className="text-[10px] font-mono" style={{ color: dark ? '#3B9FFF' : '#1B6BD4' }}>{pass}</code>
+                      { user: 'HRT1', pass: 'hrt1@2026', accent: ROLE_ACCENT.HRT1 },
+                      { user: 'HRT2', pass: 'hrt2@2026', accent: ROLE_ACCENT.HRT2 },
+                    ].map(({ user, pass, accent }) => (
+                      <div key={user} className="cred-pill flex items-center justify-between px-3.5 py-2.5 rounded-lg"
+                        style={{ '--pill-accent': accent, background: dark ? `${accent}12` : 'rgba(241,245,249,0.6)' }}>
+                        <span className="text-[12px] font-semibold" style={{ color: textSec }}>{user}</span>
+                        <code className="text-[11px] font-mono" style={{ color: dark ? accent : '#1B6BD4' }}>{pass}</code>
                       </div>
                     ))}
                   </div>
-                  <div className="text-[9px] mt-1.5 leading-relaxed" style={{ color: textHint }}>
+                  <div className="text-[10px] mt-2 leading-relaxed" style={{ color: textHint }}>
                     HRT3–8 follow the same pattern
                   </div>
                 </div>
@@ -465,15 +480,15 @@ export default function LoginPage({ onLogin }) {
           </div>
 
           {/* Footer */}
-          <div className="px-5 sm:px-10 py-3 flex items-center justify-between flex-wrap gap-1"
-            style={{ borderTop: `1px solid ${cardBd}`, background: dark ? 'rgba(6,13,27,0.4)' : 'rgba(237,242,249,0.6)' }}>
-            <span className="text-[10px]" style={{ color: textHint }}>Secure Government Healthcare System</span>
-            <span className="text-[10px]" style={{ color: textHint }}>CCMC · Maternal Health · 2026</span>
+          <div className="px-6 sm:px-11 py-3.5 flex items-center justify-between flex-wrap gap-1"
+            style={{ borderTop: `1px solid ${cardBd}`, background: dark ? 'rgba(7,17,31,0.4)' : 'rgba(237,242,249,0.6)' }}>
+            <span className="text-[11px]" style={{ color: textHint }}>Secure Government Healthcare System</span>
+            <span className="text-[11px]" style={{ color: textHint }}>CCMC · Maternal Health · 2026</span>
           </div>
         </div>
 
         {/* Bottom note */}
-        <p className="text-center text-[10px] mt-4" style={{ color: dark ? '#1E3A5A' : '#94A3B8' }}>
+        <p className="text-center text-[11px] mt-4" style={{ color: dark ? '#3B5578' : '#94A3B8' }}>
           Coimbatore City Municipal Corporation — Maternal Healthcare Division · Authorized Personnel Only
         </p>
       </div>

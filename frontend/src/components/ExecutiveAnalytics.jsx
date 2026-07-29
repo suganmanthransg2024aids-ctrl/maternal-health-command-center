@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { BarChart2, TrendingUp, Users, AlertTriangle, RefreshCw, Activity, ShieldAlert } from 'lucide-react';
+import { useTheme } from '../ThemeContext';
 
 const API = '/api';
 
@@ -9,6 +10,19 @@ const HRT_COLORS = {
   HRT7: '#C084FC', HRT8: '#FB923C',
 };
 
+// These accent/status colors are pastel shades tuned for the dark background
+// — darken them for the bright theme so they stay legible as text on white.
+const BRIGHT_SHADE = {
+  '#3B82F6': '#1D4ED8', '#D97706': '#EA580C', '#CA8A04': '#B45309',
+  '#DC2626': '#DC2626', '#A78BFA': '#7C3AED', '#16A34A': '#16A34A',
+  '#86EFAC': '#15803D', '#FDBA74': '#C2410C', '#FCA5A5': '#DC2626',
+  '#F472B6': '#DB2777', '#60A5FA': '#2563EB', '#FBBF24': '#B45309',
+  '#34D399': '#16A34A', '#F87171': '#DC2626', '#C084FC': '#9333EA',
+  '#FB923C': '#EA580C',
+};
+function shade(hex, dark) { return dark ? hex : (BRIGHT_SHADE[hex] || hex); }
+function hrtColor(code, dark) { return shade(HRT_COLORS[code] || '#3B82F6', dark); }
+
 /* ── Reusable chart primitives ──────────────────────────────── */
 function HBar({ label, value, max, color }) {
   const pct = max > 0 ? Math.min(100, Math.round((value / max) * 100)) : 0;
@@ -17,7 +31,7 @@ function HBar({ label, value, max, color }) {
       <span className="text-[10px] truncate flex-shrink-0" style={{ width: 130, color: 'var(--ccmc-text-sec)' }}>
         {label}
       </span>
-      <div className="flex-1 h-3.5 rounded-full overflow-hidden" style={{ background: 'rgba(30,58,95,0.4)' }}>
+      <div className="flex-1 h-3.5 rounded-full overflow-hidden" style={{ background: 'var(--ccmc-border-s)' }}>
         <div className="h-full rounded-full transition-all duration-700"
           style={{ width: `${pct}%`, background: color, minWidth: value > 0 ? 4 : 0 }} />
       </div>
@@ -38,7 +52,7 @@ function VBars({ data, height = 100 }) {
               <span className="text-[8px]" style={{ color: 'var(--ccmc-text-hint)' }}>{d.value}</span>
             )}
             <div className="w-full rounded-t transition-all duration-700"
-              style={{ height: h, background: d.color || '#42A5F5', minHeight: d.value > 0 ? 4 : 0 }} />
+              style={{ height: h, background: d.color || '#3B82F6', minHeight: d.value > 0 ? 4 : 0 }} />
             <span className="text-[8px] text-center leading-tight break-all"
               style={{ color: 'var(--ccmc-text-hint)', maxWidth: '100%', wordBreak: 'break-all' }}>
               {d.label}
@@ -75,7 +89,7 @@ function SectionBox({ title, icon: Icon, iconColor, children }) {
     <div className="rounded-xl overflow-hidden"
       style={{ background: 'var(--ccmc-panel)', border: '1px solid var(--ccmc-border)' }}>
       <div className="flex items-center gap-2 px-5 py-3 border-b" style={{ borderColor: 'var(--ccmc-border)' }}>
-        <Icon className="w-4 h-4" style={{ color: iconColor || '#42A5F5' }} />
+        <Icon className="w-4 h-4" style={{ color: iconColor || '#3B82F6' }} />
         <h3 className="text-sm font-bold" style={{ color: 'var(--ccmc-text)', fontFamily: 'Poppins,sans-serif' }}>
           {title}
         </h3>
@@ -86,6 +100,8 @@ function SectionBox({ title, icon: Icon, iconColor, children }) {
 }
 
 export default function ExecutiveAnalytics({ user }) {
+  const { theme } = useTheme();
+  const dark = theme !== 'bright';
   const [data,    setData]    = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -103,7 +119,7 @@ export default function ExecutiveAnalytics({ user }) {
     return (
       <div className="flex items-center justify-center py-32">
         <div className="w-10 h-10 border-2 rounded-full animate-spin"
-          style={{ borderColor: 'var(--ccmc-border-s)', borderTopColor: '#42A5F5' }} />
+          style={{ borderColor: 'var(--ccmc-border-s)', borderTopColor: '#3B82F6' }} />
       </div>
     );
   }
@@ -130,12 +146,12 @@ export default function ExecutiveAnalytics({ user }) {
   const trendDeliveries = trend.map(t => ({
     label: t.month.slice(5),
     value: t.deliveries,
-    color: '#42A5F5',
+    color: shade('#3B82F6', dark),
   }));
   const trendHighRisk = trend.map(t => ({
     label: t.month.slice(5),
     value: t.high_risk,
-    color: '#F97316',
+    color: shade('#D97706', dark),
   }));
 
   // Month labels with year
@@ -150,16 +166,16 @@ export default function ExecutiveAnalytics({ user }) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-bold" style={{ fontFamily: 'Poppins,sans-serif', color: 'var(--ccmc-text)' }}>
+          <h1 className="page-title" style={{ fontFamily: 'Poppins,sans-serif' }}>
             Executive Analytics Dashboard
           </h1>
-          <p className="text-xs mt-0.5" style={{ color: 'var(--ccmc-text-hint)' }}>
+          <p className="page-subtitle mt-1" style={{ color: 'var(--ccmc-text-hint)' }}>
             {user.role} · Live intelligence from {data.total?.toLocaleString()} maternal records across {data.total_phcs} PHCs
           </p>
         </div>
         <button onClick={load}
           className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold"
-          style={{ background: 'rgba(25,118,210,0.2)', border: '1px solid rgba(25,118,210,0.4)', color: '#42A5F5' }}>
+          style={{ background: 'var(--ccmc-pill-info-bg)', border: '1px solid rgba(37,99,235,0.4)', color: 'var(--ccmc-pill-info-text)' }}>
           <RefreshCw className="w-3.5 h-3.5" />
           Refresh
         </button>
@@ -167,20 +183,20 @@ export default function ExecutiveAnalytics({ user }) {
 
       {/* KPI Strip */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        <StatCard icon={Users}       label="Total Mothers"   value={data.total}           color="#42A5F5" />
-        <StatCard icon={ShieldAlert} label="High Risk Mothers" value={data.total_high_risk} color="#F97316" />
-        <StatCard icon={Activity}    label="Due ≤7 Days"    value={data.due_7_days}      color="#EAB308" />
-        <StatCard icon={TrendingUp}  label="Overdue EDD"    value={data.overdue_edd}     color="#EF4444" />
-        <StatCard icon={BarChart2}   label="Active PHCs"    value={data.total_phcs}      color="#A78BFA" />
+        <StatCard icon={Users}       label="Total Mothers"   value={data.total}           color={shade('#3B82F6', dark)} />
+        <StatCard icon={ShieldAlert} label="High Risk Mothers" value={data.total_high_risk} color={shade('#D97706', dark)} />
+        <StatCard icon={Activity}    label="Due ≤7 Days"    value={data.due_7_days}      color={shade('#CA8A04', dark)} />
+        <StatCard icon={TrendingUp}  label="Overdue EDD"    value={data.overdue_edd}     color={shade('#DC2626', dark)} />
+        <StatCard icon={BarChart2}   label="Active PHCs"    value={data.total_phcs}      color={shade('#A78BFA', dark)} />
       </div>
 
       {/* PHC Charts — two columns */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <SectionBox title="High Risk Mothers by PHC" icon={ShieldAlert} iconColor="#F97316">
+        <SectionBox title="High Risk Mothers by PHC" icon={ShieldAlert} iconColor={shade('#D97706', dark)}>
           <div className="space-y-1">
             {phcData.slice(0, 15).map(d => (
               <HBar key={d.phc} label={d.phc} value={d.high_risk} max={maxPhcHR}
-                color="#F97316" badge={d.critical} />
+                color={shade('#D97706', dark)} badge={d.critical} />
             ))}
             {phcData.length === 0 && (
               <p className="text-xs text-center py-4" style={{ color: 'var(--ccmc-text-hint)' }}>No data</p>
@@ -188,11 +204,11 @@ export default function ExecutiveAnalytics({ user }) {
           </div>
         </SectionBox>
 
-        <SectionBox title="Due Soon by PHC (≤7 Days)" icon={AlertTriangle} iconColor="#EAB308">
+        <SectionBox title="Due Soon by PHC (≤7 Days)" icon={AlertTriangle} iconColor={shade('#CA8A04', dark)}>
           <div className="space-y-1">
             {upcomingPhc.filter(d => (d.due_7 || 0) > 0).slice(0, 15).map(d => (
               <HBar key={d.phc} label={d.phc} value={d.due_7 || 0}
-                max={Math.max(...upcomingPhc.map(x => x.due_7 || 0), 1)} color="#EAB308" />
+                max={Math.max(...upcomingPhc.map(x => x.due_7 || 0), 1)} color={shade('#CA8A04', dark)} />
             ))}
             {upcomingPhc.filter(d => (d.due_7 || 0) > 0).length === 0 && (
               <p className="text-xs text-center py-4" style={{ color: 'var(--ccmc-text-hint)' }}>No upcoming deliveries</p>
@@ -203,10 +219,10 @@ export default function ExecutiveAnalytics({ user }) {
 
       {/* HRT Performance */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <SectionBox title="High Risk Distribution by HRT" icon={Activity} iconColor="#A78BFA">
+        <SectionBox title="High Risk Distribution by HRT" icon={Activity} iconColor={shade('#A78BFA', dark)}>
           <div className="space-y-3">
             {hrtData.map(d => {
-              const color = HRT_COLORS[d.hrt] || '#42A5F5';
+              const color = hrtColor(d.hrt, dark);
               const pct = d.total > 0 ? Math.round((d.high_risk / d.total) * 100) : 0;
               return (
                 <div key={d.hrt}>
@@ -221,7 +237,7 @@ export default function ExecutiveAnalytics({ user }) {
                       <span style={{ color: 'var(--ccmc-text-hint)' }}>{pct}%</span>
                     </div>
                   </div>
-                  <div className="h-2 rounded-full overflow-hidden" style={{ background: 'rgba(30,58,95,0.4)' }}>
+                  <div className="h-2 rounded-full overflow-hidden" style={{ background: 'var(--ccmc-border-s)' }}>
                     <div className="h-full rounded-full"
                       style={{ width: `${Math.round((d.high_risk / Math.max(maxHrtHR, 1)) * 100)}%`, background: color }} />
                   </div>
@@ -231,10 +247,10 @@ export default function ExecutiveAnalytics({ user }) {
           </div>
         </SectionBox>
 
-        <SectionBox title="Delivered by HRT" icon={Activity} iconColor="#22C55E">
+        <SectionBox title="Delivered by HRT" icon={Activity} iconColor={shade('#16A34A', dark)}>
           <div className="space-y-3">
             {hrtData.map(d => {
-              const color = HRT_COLORS[d.hrt] || '#42A5F5';
+              const color = hrtColor(d.hrt, dark);
               return (
                 <div key={d.hrt}>
                   <div className="flex items-center justify-between mb-1">
@@ -246,13 +262,13 @@ export default function ExecutiveAnalytics({ user }) {
                         {d.phcs.length} PHC{d.phcs.length !== 1 ? 's' : ''}
                       </span>
                     </div>
-                    <span className="text-xs font-bold" style={{ color: '#86EFAC' }}>{d.delivered ?? 0}</span>
+                    <span className="text-xs font-bold" style={{ color: 'var(--ccmc-pill-success-text)' }}>{d.delivered ?? 0}</span>
                   </div>
-                  <div className="h-2 rounded-full overflow-hidden" style={{ background: 'rgba(30,58,95,0.4)' }}>
+                  <div className="h-2 rounded-full overflow-hidden" style={{ background: 'var(--ccmc-border-s)' }}>
                     <div className="h-full rounded-full"
                       style={{
                         width: `${Math.round(((d.delivered ?? 0) / Math.max(...hrtData.map(x => x.delivered ?? 0), 1)) * 100)}%`,
-                        background: '#22C55E',
+                        background: shade('#16A34A', dark),
                       }} />
                   </div>
                 </div>
@@ -264,23 +280,23 @@ export default function ExecutiveAnalytics({ user }) {
 
       {/* Monthly Trends */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <SectionBox title="Monthly Delivery Timeline (EDD-based)" icon={TrendingUp} iconColor="#42A5F5">
+        <SectionBox title="Monthly Delivery Timeline (EDD-based)" icon={TrendingUp} iconColor={shade('#3B82F6', dark)}>
           <VBars data={trendDeliveries} height={100} />
           <div className="flex flex-wrap gap-2 mt-2">
             {trend.map((t, i) => (
               <div key={i} className="text-[9px]" style={{ color: 'var(--ccmc-text-hint)' }}>
-                {monthLabel(t.month)}: <b style={{ color: '#42A5F5' }}>{t.deliveries}</b>
+                {monthLabel(t.month)}: <b style={{ color: shade('#3B82F6', dark) }}>{t.deliveries}</b>
               </div>
             ))}
           </div>
         </SectionBox>
 
-        <SectionBox title="Monthly High Risk Trend (Active AN Mothers)" icon={TrendingUp} iconColor="#F97316">
+        <SectionBox title="Monthly High Risk Trend (Active AN Mothers)" icon={TrendingUp} iconColor={shade('#D97706', dark)}>
           <VBars data={trendHighRisk} height={100} />
           <div className="flex flex-wrap gap-2 mt-2">
             {trend.map((t, i) => (
               <div key={i} className="text-[9px]" style={{ color: 'var(--ccmc-text-hint)' }}>
-                {monthLabel(t.month)}: <b style={{ color: '#F97316' }}>{t.high_risk}</b>
+                {monthLabel(t.month)}: <b style={{ color: shade('#D97706', dark) }}>{t.high_risk}</b>
               </div>
             ))}
           </div>
@@ -289,11 +305,11 @@ export default function ExecutiveAnalytics({ user }) {
 
       {/* Upcoming by PHC */}
       <div className="grid grid-cols-1 gap-4">
-        <SectionBox title="Upcoming Deliveries by PHC (Next 30 Days)" icon={BarChart2} iconColor="#A78BFA">
+        <SectionBox title="Upcoming Deliveries by PHC (Next 30 Days)" icon={BarChart2} iconColor={shade('#A78BFA', dark)}>
           <div className="space-y-1">
             {upcomingPhc.map(d => (
               <HBar key={d.phc} label={d.phc} value={d.count} max={maxUpcoming}
-                color="#A78BFA" badge={d.critical} />
+                color={shade('#A78BFA', dark)} badge={d.critical} />
             ))}
             {upcomingPhc.length === 0 && (
               <p className="text-xs text-center py-4" style={{ color: 'var(--ccmc-text-hint)' }}>
@@ -305,13 +321,13 @@ export default function ExecutiveAnalytics({ user }) {
             <div className="mt-3 pt-3 border-t" style={{ borderColor: 'var(--ccmc-border)' }}>
               <div className="grid grid-cols-2 gap-2 text-center">
                 <div>
-                  <div className="text-lg font-bold" style={{ color: '#F97316' }}>
+                  <div className="text-lg font-bold" style={{ color: shade('#D97706', dark) }}>
                     {upcomingPhc.reduce((s, d) => s + d.due_7, 0)}
                   </div>
                   <div className="text-[9px]" style={{ color: 'var(--ccmc-text-hint)' }}>Due ≤7 Days</div>
                 </div>
                 <div>
-                  <div className="text-lg font-bold" style={{ color: '#A78BFA' }}>
+                  <div className="text-lg font-bold" style={{ color: shade('#A78BFA', dark) }}>
                     {upcomingPhc.reduce((s, d) => s + d.count, 0)}
                   </div>
                   <div className="text-[9px]" style={{ color: 'var(--ccmc-text-hint)' }}>Total Upcoming</div>
@@ -326,7 +342,7 @@ export default function ExecutiveAnalytics({ user }) {
       <div className="rounded-xl overflow-hidden"
         style={{ background: 'var(--ccmc-panel)', border: '1px solid var(--ccmc-border)' }}>
         <div className="flex items-center gap-2 px-5 py-3 border-b" style={{ borderColor: 'var(--ccmc-border)' }}>
-          <BarChart2 className="w-4 h-4" style={{ color: '#42A5F5' }} />
+          <BarChart2 className="w-4 h-4" style={{ color: shade('#3B82F6', dark) }} />
           <h3 className="text-sm font-bold" style={{ color: 'var(--ccmc-text)', fontFamily: 'Poppins,sans-serif' }}>
             PHC Performance Analytics
           </h3>
@@ -344,22 +360,23 @@ export default function ExecutiveAnalytics({ user }) {
             <tbody>
               {phcData.map(p => {
                 const riskPct = p.total > 0 ? Math.round((p.high_risk / p.total) * 100) : 0;
+                const hc = hrtColor(p.hrt, dark);
                 return (
                   <tr key={p.phc}>
                     <td className="font-semibold" style={{ color: 'var(--ccmc-text)' }}>{p.phc}</td>
                     <td>
                       <span className="text-[10px] font-bold px-1.5 py-0.5 rounded"
-                        style={{ background: `${HRT_COLORS[p.hrt] || '#42A5F5'}15`, color: HRT_COLORS[p.hrt] || '#42A5F5' }}>
+                        style={{ background: `${hc}15`, color: hc }}>
                         {p.hrt}
                       </span>
                     </td>
                     <td className="text-right font-bold" style={{ color: 'var(--ccmc-text)' }}>{p.total}</td>
-                    <td className="text-right font-bold" style={{ color: '#FDBA74' }}>{p.high_risk}</td>
+                    <td className="text-right font-bold" style={{ color: 'var(--ccmc-pill-warning-text)' }}>{p.high_risk}</td>
                     <td className="text-right">
                       <span className="text-[10px] font-bold px-1.5 py-0.5 rounded"
                         style={{
-                          background: riskPct > 50 ? 'rgba(239,68,68,0.15)' : riskPct > 25 ? 'rgba(249,115,22,0.15)' : 'rgba(34,197,94,0.15)',
-                          color:      riskPct > 50 ? '#FCA5A5'              : riskPct > 25 ? '#FDBA74'              : '#86EFAC',
+                          background: riskPct > 50 ? 'var(--ccmc-pill-critical-bg)' : riskPct > 25 ? 'var(--ccmc-pill-warning-bg)' : 'var(--ccmc-pill-success-bg)',
+                          color:      riskPct > 50 ? 'var(--ccmc-pill-critical-text)' : riskPct > 25 ? 'var(--ccmc-pill-warning-text)' : 'var(--ccmc-pill-success-text)',
                         }}>
                         {riskPct}%
                       </span>
@@ -376,7 +393,7 @@ export default function ExecutiveAnalytics({ user }) {
       <div className="rounded-xl overflow-hidden"
         style={{ background: 'var(--ccmc-panel)', border: '1px solid var(--ccmc-border)' }}>
         <div className="flex items-center gap-2 px-5 py-3 border-b" style={{ borderColor: 'var(--ccmc-border)' }}>
-          <Users className="w-4 h-4" style={{ color: '#A78BFA' }} />
+          <Users className="w-4 h-4" style={{ color: shade('#A78BFA', dark) }} />
           <h3 className="text-sm font-bold" style={{ color: 'var(--ccmc-text)', fontFamily: 'Poppins,sans-serif' }}>
             HRT Performance Analytics
           </h3>
@@ -393,7 +410,7 @@ export default function ExecutiveAnalytics({ user }) {
             </thead>
             <tbody>
               {hrtData.map(h => {
-                const color   = HRT_COLORS[h.hrt] || '#42A5F5';
+                const color   = hrtColor(h.hrt, dark);
                 const riskPct = h.total > 0 ? Math.round((h.high_risk / h.total) * 100) : 0;
                 return (
                   <tr key={h.hrt}>
@@ -408,12 +425,12 @@ export default function ExecutiveAnalytics({ user }) {
                       {h.phcs.join(', ')}
                     </td>
                     <td className="text-right font-bold" style={{ color: 'var(--ccmc-text)' }}>{h.total}</td>
-                    <td className="text-right font-bold" style={{ color: '#FDBA74' }}>{h.high_risk}</td>
+                    <td className="text-right font-bold" style={{ color: 'var(--ccmc-pill-warning-text)' }}>{h.high_risk}</td>
                     <td className="text-right">
                       <span className="text-[10px] font-bold px-1.5 py-0.5 rounded"
                         style={{
-                          background: riskPct > 50 ? 'rgba(239,68,68,0.15)' : riskPct > 25 ? 'rgba(249,115,22,0.15)' : 'rgba(34,197,94,0.15)',
-                          color:      riskPct > 50 ? '#FCA5A5'              : riskPct > 25 ? '#FDBA74'              : '#86EFAC',
+                          background: riskPct > 50 ? 'var(--ccmc-pill-critical-bg)' : riskPct > 25 ? 'var(--ccmc-pill-warning-bg)' : 'var(--ccmc-pill-success-bg)',
+                          color:      riskPct > 50 ? 'var(--ccmc-pill-critical-text)' : riskPct > 25 ? 'var(--ccmc-pill-warning-text)' : 'var(--ccmc-pill-success-text)',
                         }}>
                         {riskPct}%
                       </span>

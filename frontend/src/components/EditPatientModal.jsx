@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
 import { X, Pencil, RotateCcw } from 'lucide-react';
+import { useTheme } from '../ThemeContext';
 
 const API = '/api';
+
+const BRIGHT_SHADE = { '#3B82F6': '#1D4ED8', '#FBBF24': '#B45309', '#FCA5A5': '#DC2626' };
+function shade(hex, dark) { return dark ? hex : (BRIGHT_SHADE[hex] || hex); }
 
 /* Editable fields, grouped for the form layout. */
 const SECTIONS = [
@@ -60,6 +64,8 @@ const cleanVal = (v) => (v === null || v === undefined || v === 'nan' ? '' : Str
  * override; days-to-EDD and risk category are recomputed server-side.
  */
 export default function EditPatientModal({ patient, user, onClose, onSaved }) {
+  const { theme } = useTheme();
+  const dark = theme !== 'bright';
   const initial = {};
   for (const s of SECTIONS) for (const f of s.fields) initial[f.key] = cleanVal(patient?.[f.key]);
 
@@ -119,18 +125,18 @@ export default function EditPatientModal({ patient, user, onClose, onSaved }) {
 
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4"
-      style={{ background: 'rgba(2,6,23,0.85)', backdropFilter: 'blur(8px)' }}
+      style={{ background: 'var(--ccmc-modal-backdrop)', backdropFilter: 'blur(8px)' }}
       onClick={onClose}>
       <div className="w-full max-w-2xl rounded-2xl flex flex-col"
-        style={{ background: 'var(--ccmc-panel)', border: '1px solid rgba(66,165,245,0.35)', maxHeight: '90vh' }}
+        style={{ background: 'var(--ccmc-panel)', border: '1px solid rgba(59,130,246,0.35)', maxHeight: '90vh' }}
         onClick={e => e.stopPropagation()}>
 
         {/* Header */}
         <div className="flex items-center justify-between px-6 pt-5 pb-3 flex-shrink-0">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center"
-              style={{ background: 'rgba(66,165,245,0.15)' }}>
-              <Pencil className="w-4 h-4" style={{ color: '#42A5F5' }} />
+              style={{ background: 'rgba(59,130,246,0.15)' }}>
+              <Pencil className="w-4 h-4" style={{ color: shade('#3B82F6', dark) }} />
             </div>
             <div>
               <h3 className="text-sm font-bold" style={{ color: 'var(--ccmc-text)' }}>Edit Patient Details</h3>
@@ -155,7 +161,7 @@ export default function EditPatientModal({ patient, user, onClose, onSaved }) {
                 {section.fields.map(f => (
                   <label key={f.key} className={`block ${f.wide ? 'col-span-2 sm:col-span-3' : ''}`}>
                     <span className="text-[9px] font-bold uppercase tracking-wider"
-                      style={{ color: form[f.key] !== initial[f.key] ? '#FBBF24' : 'var(--ccmc-text-hint)' }}>
+                      style={{ color: form[f.key] !== initial[f.key] ? shade('#FBBF24', dark) : 'var(--ccmc-text-hint)' }}>
                       {f.label}{form[f.key] !== initial[f.key] ? ' •' : ''}
                     </span>
                     {f.textarea ? (
@@ -181,11 +187,11 @@ export default function EditPatientModal({ patient, user, onClose, onSaved }) {
         {/* Footer */}
         <div className="px-6 py-4 flex-shrink-0 space-y-2"
           style={{ borderTop: '1px solid var(--ccmc-border)' }}>
-          {error && <p className="text-xs font-semibold" style={{ color: '#FCA5A5' }}>{error}</p>}
+          {error && <p className="text-xs font-semibold" style={{ color: shade('#FCA5A5', dark) }}>{error}</p>}
           <div className="flex items-center gap-2">
             <button onClick={save} disabled={saving}
               className="flex-1 py-2.5 rounded-lg text-sm font-bold text-white"
-              style={{ background: 'linear-gradient(135deg, #0F4C81, #1976D2)', opacity: saving ? 0.7 : 1 }}>
+              style={{ background: 'linear-gradient(135deg, #1E40AF, #2563EB)', opacity: saving ? 0.7 : 1 }}>
               {saving ? 'Saving…' : changedKeys.length > 0
                 ? `Save ${changedKeys.length} Change${changedKeys.length > 1 ? 's' : ''}`
                 : 'Nothing Changed'}
@@ -194,7 +200,7 @@ export default function EditPatientModal({ patient, user, onClose, onSaved }) {
               <button onClick={resetOverrides} disabled={saving}
                 title="Remove all app edits and revert to spreadsheet values"
                 className="px-3 py-2.5 rounded-lg text-xs font-bold flex items-center gap-1.5"
-                style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#FCA5A5' }}>
+                style={{ background: 'var(--ccmc-pill-critical-bg)', border: '1px solid rgba(220,38,38,0.3)', color: 'var(--ccmc-pill-critical-text)' }}>
                 <RotateCcw className="w-3 h-3" />
                 Reset to Sheet
               </button>

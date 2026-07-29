@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import MarkDeliveryModal from './MarkDeliveryModal';
 import EditPatientModal  from './EditPatientModal';
+import { useTheme } from '../ThemeContext';
 
 const API = '/api';
 
@@ -24,6 +25,8 @@ function InfoRow({ label, value, highlight }) {
 }
 
 function PatientProfile({ uid, onBack, user }) {
+  const { theme } = useTheme();
+  const dark = theme !== 'bright';
   const [p,       setP]       = useState(null);
   const [loading, setLoading] = useState(true);
   const [callForm, setCallForm] = useState(null);
@@ -72,7 +75,7 @@ function PatientProfile({ uid, onBack, user }) {
   if (loading) return (
     <div className="flex items-center justify-center py-20">
       <div className="w-8 h-8 border-2 rounded-full animate-spin"
-        style={{ borderColor: '#1E3A5F', borderTopColor: '#42A5F5' }} />
+        style={{ borderColor: 'var(--ccmc-border-s)', borderTopColor: '#3B82F6' }} />
     </div>
   );
   if (!p) return <div className="text-center py-20 text-slate-500">Patient not found</div>;
@@ -86,24 +89,24 @@ function PatientProfile({ uid, onBack, user }) {
 
       {/* Profile card */}
       <div className="rounded-xl p-5"
-        style={{ background: '#0F172A', border: '1px solid rgba(30,58,95,0.8)' }}>
+        style={{ background: 'var(--ccmc-panel)', border: '1px solid var(--ccmc-border)' }}>
         <div className="flex items-start gap-4">
           <div className="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{ background: 'rgba(66,165,245,0.12)' }}>
-            <User className="w-7 h-7" style={{ color: '#42A5F5' }} />
+            style={{ background: 'var(--ccmc-pill-info-bg)' }}>
+            <User className="w-7 h-7" style={{ color: 'var(--ccmc-pill-info-text)' }} />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3 flex-wrap">
               <h2 className="text-lg font-bold text-white">{p.mother_name || 'Unknown'}</h2>
               {p.is_delivered && (
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                  style={{ background: 'rgba(34,197,94,0.15)', color: '#86EFAC', border: '1px solid rgba(34,197,94,0.3)' }}>
+                  style={{ background: 'var(--ccmc-pill-success-bg)', color: 'var(--ccmc-pill-success-text)', border: '1px solid rgba(22,163,74,0.3)' }}>
                   DELIVERED
                 </span>
               )}
               {p.is_aborted && (
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                  style={{ background: 'rgba(248,113,113,0.15)', color: '#FCA5A5', border: '1px solid rgba(248,113,113,0.3)' }}>
+                  style={{ background: 'var(--ccmc-pill-critical-bg)', color: 'var(--ccmc-pill-critical-text)', border: '1px solid rgba(248,113,113,0.3)' }}>
                   ABORTION
                 </span>
               )}
@@ -124,8 +127,8 @@ function PatientProfile({ uid, onBack, user }) {
                    : 'Assign outcome: Delivery or Abortion'}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold"
               style={p.is_aborted
-                ? { background: 'rgba(248,113,113,0.15)', border: '1px solid rgba(248,113,113,0.35)', color: '#FCA5A5' }
-                : { background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.35)', color: '#4ADE80' }}>
+                ? { background: 'var(--ccmc-pill-critical-bg)', border: '1px solid rgba(248,113,113,0.35)', color: 'var(--ccmc-pill-critical-text)' }
+                : { background: 'var(--ccmc-pill-success-bg)', border: '1px solid rgba(22,163,74,0.35)', color: 'var(--ccmc-pill-success-text)' }}>
               <Baby className="w-3.5 h-3.5" />
               {p.is_delivered ? 'Delivered ✓' : p.is_aborted ? 'Abortion ✓' : 'Delivery / Abortion'}
             </button>
@@ -133,7 +136,7 @@ function PatientProfile({ uid, onBack, user }) {
               onClick={() => setShowEdit(true)}
               title="Edit EDD, Hb and other details"
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold"
-              style={{ background: 'rgba(251,191,36,0.12)', border: '1px solid rgba(251,191,36,0.35)', color: '#FBBF24' }}>
+              style={{ background: 'var(--ccmc-pill-caution-bg)', border: '1px solid rgba(251,191,36,0.35)', color: 'var(--ccmc-pill-caution-text)' }}>
               <Pencil className="w-3.5 h-3.5" />
               Edit Details
             </button>
@@ -169,7 +172,7 @@ function PatientProfile({ uid, onBack, user }) {
             <div className="space-y-1.5">
               {p.high_risk_raw.split(',').map((f, i) => f.trim() && (
                 <div key={i} className="flex items-start gap-2">
-                  <AlertTriangle className="w-3 h-3 mt-0.5 flex-shrink-0" style={{ color: '#F97316' }} />
+                  <AlertTriangle className="w-3 h-3 mt-0.5 flex-shrink-0" style={{ color: '#D97706' }} />
                   <span className="text-xs text-slate-300">{f.trim()}</span>
                 </div>
               ))}
@@ -178,7 +181,7 @@ function PatientProfile({ uid, onBack, user }) {
             <p className="text-xs text-slate-500 italic">No high-risk factors recorded</p>
           )}
 
-          <div className="mt-4 border-t pt-3" style={{ borderColor: 'rgba(30,58,95,0.5)' }}>
+          <div className="mt-4 border-t pt-3" style={{ borderColor: 'var(--ccmc-border)' }}>
             <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Investigations</div>
             <InfoRow label="USG"        value={p.usg}          />
             <InfoRow label="Echo/ECG"   value={p.echo_ecg}     />
@@ -208,22 +211,22 @@ function PatientProfile({ uid, onBack, user }) {
         <div className="rounded-xl overflow-hidden"
           style={{ background: 'var(--ccmc-panel)', border: '1px solid var(--ccmc-border)' }}>
           <div className="flex items-center justify-between px-4 py-3 border-b"
-            style={{ borderColor: 'rgba(30,58,95,0.5)' }}>
+            style={{ borderColor: 'var(--ccmc-border)' }}>
             <span className="text-xs font-bold text-white">Call History ({p.call_history?.length || 0})</span>
             <button onClick={() => setCallForm({ status: 'Connected', remarks: '', outcome: '', next_followup_date: '' })}
               className="text-[10px] font-bold px-2 py-0.5 rounded"
-              style={{ background: 'rgba(66,165,245,0.2)', color: '#42A5F5' }}>
+              style={{ background: 'var(--ccmc-pill-info-bg)', color: 'var(--ccmc-pill-info-text)' }}>
               + Log Call
             </button>
           </div>
-          <div className="divide-y max-h-48 overflow-y-auto" style={{ borderColor: 'rgba(30,58,95,0.3)' }}>
+          <div className="divide-y max-h-48 overflow-y-auto" style={{ borderColor: 'var(--ccmc-border)' }}>
             {(p.call_history || []).length === 0 ? (
               <div className="px-4 py-6 text-center text-xs text-slate-500">No call records yet</div>
             ) : [...(p.call_history || [])].reverse().map((c, i) => (
               <div key={i} className="px-4 py-2.5">
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-[10px] font-bold" style={{
-                    color: c.status === 'Connected' ? '#86EFAC' : c.status === 'No Response' ? '#FCA5A5' : '#FDBA74'
+                    color: c.status === 'Connected' ? 'var(--ccmc-pill-success-text)' : c.status === 'No Response' ? 'var(--ccmc-pill-critical-text)' : 'var(--ccmc-pill-warning-text)'
                   }}>{c.status}</span>
                   <span className="text-[9px] text-slate-500">{c.date} {c.time}</span>
                 </div>
@@ -238,21 +241,21 @@ function PatientProfile({ uid, onBack, user }) {
         <div className="rounded-xl overflow-hidden"
           style={{ background: 'var(--ccmc-panel)', border: '1px solid var(--ccmc-border)' }}>
           <div className="flex items-center justify-between px-4 py-3 border-b"
-            style={{ borderColor: 'rgba(30,58,95,0.5)' }}>
+            style={{ borderColor: 'var(--ccmc-border)' }}>
             <span className="text-xs font-bold text-white">Follow-Up History ({p.followup_history?.length || 0})</span>
             <button onClick={() => setFuForm({ status: 'Completed', visit_date: new Date().toISOString().slice(0,10), remarks: '', next_visit_date: '' })}
               className="text-[10px] font-bold px-2 py-0.5 rounded"
-              style={{ background: 'rgba(34,197,94,0.2)', color: '#86EFAC' }}>
+              style={{ background: 'var(--ccmc-pill-success-bg)', color: 'var(--ccmc-pill-success-text)' }}>
               + Log Visit
             </button>
           </div>
-          <div className="divide-y max-h-48 overflow-y-auto" style={{ borderColor: 'rgba(30,58,95,0.3)' }}>
+          <div className="divide-y max-h-48 overflow-y-auto" style={{ borderColor: 'var(--ccmc-border)' }}>
             {(p.followup_history || []).length === 0 ? (
               <div className="px-4 py-6 text-center text-xs text-slate-500">No follow-up records yet</div>
             ) : [...(p.followup_history || [])].reverse().map((f, i) => (
               <div key={i} className="px-4 py-2.5">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-[10px] font-bold" style={{ color: '#86EFAC' }}>{f.status}</span>
+                  <span className="text-[10px] font-bold" style={{ color: 'var(--ccmc-pill-success-text)' }}>{f.status}</span>
                   <span className="text-[9px] text-slate-500">{f.visit_date}</span>
                 </div>
                 {f.remarks && <p className="text-[10px] text-slate-400">{f.remarks}</p>}
@@ -265,7 +268,7 @@ function PatientProfile({ uid, onBack, user }) {
       {/* Call form modal */}
       {callForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ background: 'rgba(2,6,23,0.85)', backdropFilter: 'blur(8px)' }}>
+          style={{ background: 'var(--ccmc-modal-backdrop)', backdropFilter: 'blur(8px)' }}>
           <div className="w-full max-w-md rounded-2xl p-6"
             style={{ background: 'var(--ccmc-panel)', border: '1px solid var(--ccmc-border)' }}>
             <div className="flex items-center justify-between mb-4">
@@ -298,11 +301,11 @@ function PatientProfile({ uid, onBack, user }) {
                 <input type="date" value={callForm.next_followup_date}
                   onChange={e => setCallForm(f => ({ ...f, next_followup_date: e.target.value }))}
                   className="w-full mt-1 px-3 py-2 rounded-lg text-sm text-white outline-none"
-                  style={{ background: 'var(--ccmc-surface)', border: '1px solid var(--ccmc-border)', colorScheme: 'dark' }} />
+                  style={{ background: 'var(--ccmc-surface)', border: '1px solid var(--ccmc-border)', colorScheme: dark ? 'dark' : 'light' }} />
               </label>
               <button onClick={saveCall} disabled={saving}
                 className="w-full py-2.5 rounded-lg text-sm font-bold text-white mt-2"
-                style={{ background: 'linear-gradient(135deg, #0F4C81, #1976D2)' }}>
+                style={{ background: 'linear-gradient(135deg, #1E40AF, #2563EB)' }}>
                 {saving ? 'Saving…' : 'Save Call Record'}
               </button>
             </div>
@@ -313,7 +316,7 @@ function PatientProfile({ uid, onBack, user }) {
       {/* Follow-up form modal */}
       {fuForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ background: 'rgba(2,6,23,0.85)', backdropFilter: 'blur(8px)' }}>
+          style={{ background: 'var(--ccmc-modal-backdrop)', backdropFilter: 'blur(8px)' }}>
           <div className="w-full max-w-md rounded-2xl p-6"
             style={{ background: 'var(--ccmc-panel)', border: '1px solid var(--ccmc-border)' }}>
             <div className="flex items-center justify-between mb-4">
@@ -337,7 +340,7 @@ function PatientProfile({ uid, onBack, user }) {
                 <input type="date" value={fuForm.visit_date}
                   onChange={e => setFuForm(f => ({ ...f, visit_date: e.target.value }))}
                   className="w-full mt-1 px-3 py-2 rounded-lg text-sm text-white outline-none"
-                  style={{ background: 'var(--ccmc-surface)', border: '1px solid var(--ccmc-border)', colorScheme: 'dark' }} />
+                  style={{ background: 'var(--ccmc-surface)', border: '1px solid var(--ccmc-border)', colorScheme: dark ? 'dark' : 'light' }} />
               </label>
               <label className="block">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Remarks</span>
@@ -419,10 +422,10 @@ export default function PatientExplorer({ user, openPatient, defaultUid, onBack 
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-bold text-white" style={{ fontFamily: 'Poppins, sans-serif' }}>
+          <h1 className="page-title" style={{ fontFamily: 'Poppins, sans-serif' }}>
             Patient Explorer
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5">{total.toLocaleString()} patients · Page {page}/{totalPages}</p>
+          <p className="page-subtitle mt-1" style={{ color: 'var(--ccmc-text-hint)' }}>{total.toLocaleString()} patients · Page {page}/{totalPages}</p>
         </div>
       </div>
 
@@ -433,9 +436,9 @@ export default function PatientExplorer({ user, openPatient, defaultUid, onBack 
             onClick={() => { setFilterPHC(''); setPage(1); }}
             className="px-2.5 py-1 rounded-full text-[10px] font-bold transition-all"
             style={{
-              background: !filterPHC ? 'rgba(66,165,245,0.25)' : 'rgba(30,58,95,0.3)',
-              color: !filterPHC ? '#42A5F5' : '#64748B',
-              border: `1px solid ${!filterPHC ? 'rgba(66,165,245,0.5)' : 'rgba(30,58,95,0.5)'}`,
+              background: !filterPHC ? 'var(--ccmc-pill-info-bg)' : 'var(--ccmc-input-bg)',
+              color: !filterPHC ? 'var(--ccmc-pill-info-text)' : 'var(--ccmc-text-hint)',
+              border: `1px solid ${!filterPHC ? 'rgba(59,130,246,0.5)' : 'var(--ccmc-input-border)'}`,
             }}>
             All PHCs
           </button>
@@ -445,9 +448,9 @@ export default function PatientExplorer({ user, openPatient, defaultUid, onBack 
               onClick={() => { setFilterPHC(p.phc_key); setPage(1); }}
               className="px-2.5 py-1 rounded-full text-[10px] font-semibold transition-all"
               style={{
-                background: filterPHC === p.phc_key ? 'rgba(66,165,245,0.2)' : 'rgba(15,23,42,0.5)',
-                color: filterPHC === p.phc_key ? '#93C5FD' : '#64748B',
-                border: `1px solid ${filterPHC === p.phc_key ? 'rgba(66,165,245,0.4)' : 'rgba(30,58,95,0.4)'}`,
+                background: filterPHC === p.phc_key ? 'var(--ccmc-pill-info-bg)' : 'var(--ccmc-input-bg)',
+                color: filterPHC === p.phc_key ? 'var(--ccmc-pill-info-text)' : 'var(--ccmc-text-hint)',
+                border: `1px solid ${filterPHC === p.phc_key ? 'rgba(59,130,246,0.4)' : 'var(--ccmc-input-border)'}`,
               }}>
               {p.phc_display}
               <span className="ml-1 opacity-60">{p.count}</span>
@@ -463,8 +466,8 @@ export default function PatientExplorer({ user, openPatient, defaultUid, onBack 
           <input value={search} onChange={handleSearch} placeholder="Search name, phone, RCH ID…"
             className="w-full pl-9 pr-4 py-2 rounded-lg text-xs text-white outline-none"
             style={{ background: 'var(--ccmc-panel)', border: '1px solid var(--ccmc-border)' }}
-            onFocus={e => e.target.style.borderColor = '#1976D2'}
-            onBlur={e => e.target.style.borderColor = 'rgba(30,58,95,0.7)'} />
+            onFocus={e => e.target.style.borderColor = '#2563EB'}
+            onBlur={e => e.target.style.borderColor = 'var(--ccmc-border)'} />
         </div>
         <select value={filterPHC} onChange={e => { setFilterPHC(e.target.value); setPage(1); }}
           className="px-3 py-2 rounded-lg text-xs text-white outline-none"
@@ -486,7 +489,7 @@ export default function PatientExplorer({ user, openPatient, defaultUid, onBack 
         )}
         <button onClick={load}
           className="px-3 py-2 rounded-lg text-xs font-semibold"
-          style={{ background: 'rgba(25,118,210,0.2)', border: '1px solid rgba(25,118,210,0.4)', color: '#42A5F5' }}>
+          style={{ background: 'var(--ccmc-pill-info-bg)', border: '1px solid rgba(37,99,235,0.4)', color: 'var(--ccmc-pill-info-text)' }}>
           Apply
         </button>
       </div>
@@ -506,7 +509,7 @@ export default function PatientExplorer({ user, openPatient, defaultUid, onBack 
               {loading ? (
                 <tr><td colSpan={8} className="text-center py-8">
                   <div className="w-5 h-5 border-2 rounded-full animate-spin mx-auto"
-                    style={{ borderColor: '#1E3A5F', borderTopColor: '#42A5F5' }} />
+                    style={{ borderColor: 'var(--ccmc-border-s)', borderTopColor: '#3B82F6' }} />
                 </td></tr>
               ) : patients.length === 0 ? (
                 <tr><td colSpan={8} className="text-center py-8 text-slate-500 text-xs">
@@ -524,7 +527,7 @@ export default function PatientExplorer({ user, openPatient, defaultUid, onBack 
                     <td className="text-slate-300 text-xs">{p.phc_display}</td>
                     <td>
                       <span className="text-[10px] font-bold px-1.5 py-0.5 rounded"
-                        style={{ background: 'rgba(66,165,245,0.15)', color: '#93C5FD' }}>
+                        style={{ background: 'var(--ccmc-pill-info-bg)', color: 'var(--ccmc-pill-info-text)' }}>
                         {p.hrt_code}
                       </span>
                     </td>
@@ -533,17 +536,17 @@ export default function PatientExplorer({ user, openPatient, defaultUid, onBack 
                     <td>
                       {p.is_delivered ? (
                         <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
-                          style={{ background: 'rgba(34,197,94,0.15)', color: '#86EFAC', border: '1px solid rgba(34,197,94,0.3)' }}>
+                          style={{ background: 'var(--ccmc-pill-success-bg)', color: 'var(--ccmc-pill-success-text)', border: '1px solid rgba(22,163,74,0.3)' }}>
                           DELIVERED
                         </span>
                       ) : p.is_aborted ? (
                         <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
-                          style={{ background: 'rgba(248,113,113,0.15)', color: '#FCA5A5', border: '1px solid rgba(248,113,113,0.3)' }}>
+                          style={{ background: 'var(--ccmc-pill-critical-bg)', color: 'var(--ccmc-pill-critical-text)', border: '1px solid rgba(248,113,113,0.3)' }}>
                           ABORTION
                         </span>
                       ) : daysLeft !== null && daysLeft !== undefined ? (
                         <span className="text-xs font-bold"
-                          style={{ color: daysLeft < 0 ? '#EF4444' : daysLeft < 7 ? '#F97316' : '#94A3B8' }}>
+                          style={{ color: daysLeft < 0 ? '#DC2626' : daysLeft < 7 ? '#D97706' : 'var(--ccmc-text-hint)' }}>
                           {daysLeft < 0 ? `${Math.abs(daysLeft)}d overdue` : `${daysLeft}d`}
                         </span>
                       ) : '—'}
@@ -553,7 +556,7 @@ export default function PatientExplorer({ user, openPatient, defaultUid, onBack 
                         <button
                           onClick={(e) => { e.stopPropagation(); setProfileUid(p.uid); }}
                           className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-semibold"
-                          style={{ background: 'rgba(66,165,245,0.1)', color: '#42A5F5' }}>
+                          style={{ background: 'var(--ccmc-pill-info-bg)', color: 'var(--ccmc-pill-info-text)' }}>
                           <Eye className="w-3 h-3" /> View
                         </button>
                         <button
@@ -563,8 +566,8 @@ export default function PatientExplorer({ user, openPatient, defaultUid, onBack 
                                : 'Assign outcome: Delivery or Abortion'}
                           className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-semibold"
                           style={p.is_aborted
-                            ? { background: 'rgba(248,113,113,0.1)', color: '#FCA5A5' }
-                            : { background: 'rgba(34,197,94,0.1)', color: '#4ADE80' }}>
+                            ? { background: 'var(--ccmc-pill-critical-bg)', color: 'var(--ccmc-pill-critical-text)' }
+                            : { background: 'var(--ccmc-pill-success-bg)', color: 'var(--ccmc-pill-success-text)' }}>
                           <Baby className="w-3 h-3" /> {p.is_delivered || p.is_aborted ? 'Done ✓' : 'Outcome'}
                         </button>
                       </div>
@@ -578,18 +581,18 @@ export default function PatientExplorer({ user, openPatient, defaultUid, onBack 
         {/* Pagination */}
         {totalPages > 1 && (
           <div className="flex items-center justify-between px-4 py-3 border-t"
-            style={{ borderColor: 'rgba(30,58,95,0.5)' }}>
+            style={{ borderColor: 'var(--ccmc-border)' }}>
             <span className="text-xs text-slate-500">
               Showing {((page-1)*PER_PAGE)+1}–{Math.min(page*PER_PAGE, total)} of {total.toLocaleString()}
             </span>
             <div className="flex items-center gap-2">
               <button onClick={() => setPage(p => Math.max(1, p-1))} disabled={page === 1}
-                className="p-1 rounded" style={{ color: page === 1 ? '#334155' : '#42A5F5' }}>
+                className="p-1 rounded" style={{ color: page === 1 ? 'var(--ccmc-text-hint)' : 'var(--ccmc-pill-info-text)' }}>
                 <ChevronLeft className="w-4 h-4" />
               </button>
               <span className="text-xs text-white font-semibold">{page} / {totalPages}</span>
               <button onClick={() => setPage(p => Math.min(totalPages, p+1))} disabled={page === totalPages}
-                className="p-1 rounded" style={{ color: page === totalPages ? '#334155' : '#42A5F5' }}>
+                className="p-1 rounded" style={{ color: page === totalPages ? 'var(--ccmc-text-hint)' : 'var(--ccmc-pill-info-text)' }}>
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>

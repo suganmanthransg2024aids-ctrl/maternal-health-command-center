@@ -1,9 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import { FileText, Download, Printer, RefreshCw, BarChart2, Phone, AlertTriangle } from 'lucide-react';
+import { useTheme } from '../ThemeContext';
 
 const API = '/api';
 
+// Note: exportHRTCallPDF/exportRiskFactorsPDF below build standalone print
+// documents in a new window — those keep their own fixed light print
+// styling regardless of app theme, which is intentional (printed paper).
+const BRIGHT_SHADE = {
+  '#3B82F6': '#1D4ED8', '#D97706': '#EA580C', '#A78BFA': '#7C3AED',
+  '#DC2626': '#DC2626', '#16A34A': '#16A34A', '#CA8A04': '#B45309',
+  '#60A5FA': '#2563EB', '#86EFAC': '#15803D',
+};
+function shade(hex, dark) { return dark ? hex : (BRIGHT_SHADE[hex] || hex); }
+
 export default function Reports({ user }) {
+  const { theme } = useTheme();
+  const dark = theme !== 'bright';
   const [stats,     setStats]     = useState(null);
   const [validation,setValidation]= useState(null);
   const [phcData,   setPHCData]   = useState([]);
@@ -201,7 +214,7 @@ export default function Reports({ user }) {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-bold text-white" style={{ fontFamily: 'Poppins, sans-serif' }}>
+          <h1 className="page-title" style={{ fontFamily: 'Poppins, sans-serif' }}>
             Reports & Exports
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
@@ -210,7 +223,7 @@ export default function Reports({ user }) {
         </div>
         <button onClick={load} disabled={loading}
           className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold"
-          style={{ background: 'rgba(25,118,210,0.2)', border: '1px solid rgba(25,118,210,0.4)', color: '#42A5F5' }}>
+          style={{ background: 'var(--ccmc-pill-info-bg)', border: '1px solid rgba(37,99,235,0.4)', color: 'var(--ccmc-pill-info-text)' }}>
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
           Refresh
         </button>
@@ -222,19 +235,19 @@ export default function Reports({ user }) {
           {
             title: 'All Patients Export',
             desc: 'Complete patient roster with clinical data, risk scores, and assignments',
-            color: '#42A5F5', icon: Download,
+            color: shade('#3B82F6', dark), icon: Download,
             actions: [{ label: 'Download CSV', fn: exportPatientsCSV }],
           },
           {
             title: 'Due Soon Report',
             desc: 'Mothers with EDD within 7 days — for immediate follow-up',
-            color: '#F97316', icon: Download,
+            color: shade('#D97706', dark), icon: Download,
             actions: [{ label: 'Download CSV', fn: exportDueSoonCSV }],
           },
           {
             title: 'HRT Call Performance Report',
             desc: 'Per-HRT call statistics: connected, no-response, pending, DEO records — today\'s date',
-            color: '#A78BFA', icon: Phone,
+            color: shade('#A78BFA', dark), icon: Phone,
             actions: [
               { label: 'Download CSV', fn: exportHRTCallCSV },
               { label: 'Print / PDF',  fn: exportHRTCallPDF },
@@ -243,7 +256,7 @@ export default function Reports({ user }) {
           {
             title: 'Risk Factors Patient Report',
             desc: 'All mothers with active risk factors — factor-wise detail with clinical parameters',
-            color: '#EF4444', icon: AlertTriangle,
+            color: shade('#DC2626', dark), icon: AlertTriangle,
             actions: [
               { label: 'Download CSV', fn: exportRiskFactorsCSV },
               { label: 'Print / PDF',  fn: exportRiskFactorsPDF },
@@ -252,19 +265,19 @@ export default function Reports({ user }) {
           {
             title: 'PHC Performance Report',
             desc: 'PHC-wise summary: total, deliveries, due soon, HRT coverage, risk %',
-            color: '#22C55E', icon: BarChart2,
+            color: shade('#16A34A', dark), icon: BarChart2,
             actions: [{ label: 'Download CSV', fn: exportPHCReport }],
           },
           {
             title: 'Data Quality Report',
             desc: 'All validation errors: missing data, invalid phones, duplicates',
-            color: '#EAB308', icon: FileText,
+            color: shade('#CA8A04', dark), icon: FileText,
             actions: [{ label: 'Download Issues CSV', fn: exportValidationCSV }],
           },
           {
             title: 'Print Dashboard',
             desc: 'Print the current summary report with statistics and PHC breakdown',
-            color: '#60A5FA', icon: Printer,
+            color: shade('#60A5FA', dark), icon: Printer,
             actions: [{ label: 'Print Report', fn: handlePrint }],
           },
         ].map(({ title, desc, color, icon: Icon, actions }) => (
@@ -296,7 +309,7 @@ export default function Reports({ user }) {
       {/* Summary report — print-friendly */}
       {stats && (
         <div className="rounded-xl p-6 space-y-4 print-full"
-          style={{ background: 'var(--ccmc-panel)', border: '1px solid rgba(30,58,95,0.7)' }}>
+          style={{ background: 'var(--ccmc-panel)', border: '1px solid var(--ccmc-border)' }}>
           <div className="print-page-break">
             <h2 className="text-sm font-bold text-white mb-1">
               CCMC Maternal Health Summary Report
@@ -309,14 +322,14 @@ export default function Reports({ user }) {
           {/* Stats grid */}
           <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
             {[
-              { label: 'Total Mothers',   value: stats.total_mothers,  color: '#42A5F5' },
-              { label: 'Due ≤7 Days',     value: stats.due_7_days,      color: '#A78BFA' },
-              { label: 'Delivered',       value: stats.delivered,       color: '#22C55E' },
-              { label: 'Overdue EDD',     value: stats.overdue_edd,     color: '#EF4444' },
-              { label: 'High Risk Mothers', value: stats.high_risk,     color: '#F97316' },
-              { label: 'Missing Phone',   value: stats.missing_phone,   color: '#EAB308' },
-              { label: 'Due ≤30 Days',    value: stats.due_30_days,     color: '#60A5FA' },
-              { label: 'Missing Name',    value: stats.missing_name,    color: '#EAB308' },
+              { label: 'Total Mothers',   value: stats.total_mothers,  color: shade('#3B82F6', dark) },
+              { label: 'Due ≤7 Days',     value: stats.due_7_days,      color: shade('#A78BFA', dark) },
+              { label: 'Delivered',       value: stats.delivered,       color: shade('#16A34A', dark) },
+              { label: 'Overdue EDD',     value: stats.overdue_edd,     color: shade('#DC2626', dark) },
+              { label: 'High Risk Mothers', value: stats.high_risk,     color: shade('#D97706', dark) },
+              { label: 'Missing Phone',   value: stats.missing_phone,   color: shade('#CA8A04', dark) },
+              { label: 'Due ≤30 Days',    value: stats.due_30_days,     color: shade('#60A5FA', dark) },
+              { label: 'Missing Name',    value: stats.missing_name,    color: shade('#CA8A04', dark) },
             ].map(({ label, value, color }) => (
               <div key={label} className="rounded-xl p-3 text-center"
                 style={{ background: 'var(--ccmc-surface)', border: `1px solid ${color}15` }}>
@@ -332,11 +345,11 @@ export default function Reports({ user }) {
             <div>
               <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Data Quality</h3>
               <div className="flex gap-4 flex-wrap text-xs">
-                <span>Quality Score: <b style={{ color: '#22C55E' }}>{validation.quality_score}%</b></span>
-                <span>Missing Names: <b style={{ color: '#EF4444' }}>{validation.missing_name}</b></span>
-                <span>Missing Phone: <b style={{ color: '#EF4444' }}>{validation.missing_phone}</b></span>
-                <span>Invalid Phone: <b style={{ color: '#F97316' }}>{validation.invalid_phone}</b></span>
-                <span>Duplicate Phone: <b style={{ color: '#EAB308' }}>{validation.duplicate_phone}</b></span>
+                <span>Quality Score: <b style={{ color: shade('#16A34A', dark) }}>{validation.quality_score}%</b></span>
+                <span>Missing Names: <b style={{ color: shade('#DC2626', dark) }}>{validation.missing_name}</b></span>
+                <span>Missing Phone: <b style={{ color: shade('#DC2626', dark) }}>{validation.missing_phone}</b></span>
+                <span>Invalid Phone: <b style={{ color: shade('#D97706', dark) }}>{validation.invalid_phone}</b></span>
+                <span>Duplicate Phone: <b style={{ color: shade('#CA8A04', dark) }}>{validation.duplicate_phone}</b></span>
               </div>
             </div>
           )}
@@ -359,8 +372,8 @@ export default function Reports({ user }) {
                         <td>{p.phc_display}</td>
                         <td>{p.hrt_code} · {p.hrt_name}</td>
                         <td className="text-right font-bold">{p.total}</td>
-                        <td className="text-right" style={{ color: '#86EFAC' }}>{p.delivered}</td>
-                        <td className="text-right" style={{ color: '#A78BFA' }}>{p.due_soon}</td>
+                        <td className="text-right" style={{ color: shade('#86EFAC', dark) }}>{p.delivered}</td>
+                        <td className="text-right" style={{ color: shade('#A78BFA', dark) }}>{p.due_soon}</td>
                         <td className="text-right">{p.risk_pct}%</td>
                       </tr>
                     ))}

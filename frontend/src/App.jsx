@@ -23,6 +23,9 @@ import ApprovalQueue        from './components/ApprovalQueue';
 const API = '/api';
 
 function LoginAlertToast({ toast, onClose }) {
+  const { theme } = useTheme();
+  const dark = theme !== 'bright';
+
   useEffect(() => {
     const t = setTimeout(onClose, 12000);
     return () => clearTimeout(t);
@@ -39,17 +42,24 @@ function LoginAlertToast({ toast, onClose }) {
 
   return (
     <div className="fixed bottom-5 right-5 z-[9999] w-80 max-w-[calc(100vw-2.5rem)] rounded-xl shadow-2xl overflow-hidden"
-      style={{ background: '#0F1729', border: '1px solid rgba(239,68,68,0.4)', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
+      style={{
+        background: dark ? '#0F1729' : '#FFFFFF',
+        border: `1px solid ${dark ? 'rgba(239,68,68,0.4)' : 'rgba(220,38,38,0.25)'}`,
+        boxShadow: dark ? '0 8px 32px rgba(0,0,0,0.5)' : '0 8px 32px rgba(0,0,0,0.12)',
+      }}>
       <div className="flex items-center justify-between px-4 py-2.5"
-        style={{ background: 'rgba(239,68,68,0.12)', borderBottom: '1px solid rgba(239,68,68,0.2)' }}>
+        style={{
+          background: dark ? 'rgba(239,68,68,0.12)' : '#FEF2F2',
+          borderBottom: `1px solid ${dark ? 'rgba(239,68,68,0.2)' : '#FEE2E2'}`,
+        }}>
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: '#DC2626' }} />
-          <span className="text-xs font-bold" style={{ color: '#FCA5A5', fontFamily: 'Poppins,sans-serif' }}>
+          <span className="text-xs font-bold" style={{ color: dark ? '#FCA5A5' : '#B91C1C', fontFamily: 'Poppins,sans-serif' }}>
             DASHBOARD ALERTS
           </span>
         </div>
         <button onClick={onClose} className="w-5 h-5 flex items-center justify-center rounded"
-          style={{ color: '#94A3B8' }}>
+          style={{ color: dark ? '#94A3B8' : '#94A3B8' }}>
           <X className="w-3.5 h-3.5" />
         </button>
       </div>
@@ -60,12 +70,12 @@ function LoginAlertToast({ toast, onClose }) {
               style={{ background: `${color}18` }}>
               <Icon className="w-3.5 h-3.5" style={{ color }} />
             </div>
-            <span className="text-xs font-semibold" style={{ color: '#E2E8F0' }}>{label}</span>
+            <span className="text-xs font-semibold" style={{ color: dark ? '#E2E8F0' : '#334155' }}>{label}</span>
           </div>
         ))}
       </div>
       <div className="px-4 pb-3">
-        <p className="text-[10px]" style={{ color: '#475569' }}>
+        <p className="text-[10px]" style={{ color: dark ? '#475569' : '#94A3B8' }}>
           Go to Alerts Center for full details
         </p>
       </div>

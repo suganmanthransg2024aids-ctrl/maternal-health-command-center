@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
 import { X, Baby, HeartCrack, CheckCircle2, RotateCcw } from 'lucide-react';
+import { useTheme } from '../ThemeContext';
 
 const API = '/api';
+
+const BRIGHT_SHADE = { '#16A34A': '#16A34A', '#F87171': '#DC2626', '#4ADE80': '#16A34A', '#FCA5A5': '#DC2626' };
+function shade(hex, dark) { return dark ? hex : (BRIGHT_SHADE[hex] || hex); }
 
 const DELIVERY_MODES = ['NVD', 'LSCS', 'Assisted', 'Other'];
 const ABORTION_TYPES = ['Spontaneous', 'MTP', 'Missed', 'Incomplete', 'Other'];
@@ -14,6 +18,8 @@ const ABORTION_TYPES = ['Spontaneous', 'MTP', 'Missed', 'Incomplete', 'Other'];
  * due/AN lists.
  */
 export default function MarkDeliveryModal({ patient, user, onClose, onSaved }) {
+  const { theme } = useTheme();
+  const dark = theme !== 'bright';
   const today = new Date().toISOString().slice(0, 10);
   const [tab,     setTab]     = useState(patient?.is_aborted ? 'abortion' : 'delivery');
   const [date,    setDate]    = useState(today);
@@ -26,7 +32,7 @@ export default function MarkDeliveryModal({ patient, user, onClose, onSaved }) {
 
   if (!patient) return null;
 
-  const accent = tab === 'delivery' ? '#22C55E' : '#F87171';
+  const accent = shade(tab === 'delivery' ? '#16A34A' : '#F87171', dark);
 
   const post = async (path, body) => {
     setSaving(true);
@@ -68,7 +74,7 @@ export default function MarkDeliveryModal({ patient, user, onClose, onSaved }) {
     background: 'var(--ccmc-surface)',
     border: '1px solid var(--ccmc-border)',
     color: 'var(--ccmc-text)',
-    colorScheme: 'dark',
+    colorScheme: dark ? 'dark' : 'light',
   };
 
   const typeOptions = tab === 'delivery' ? DELIVERY_MODES : ABORTION_TYPES;
@@ -77,7 +83,7 @@ export default function MarkDeliveryModal({ patient, user, onClose, onSaved }) {
 
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4"
-      style={{ background: 'rgba(2,6,23,0.85)', backdropFilter: 'blur(8px)' }}
+      style={{ background: 'var(--ccmc-modal-backdrop)', backdropFilter: 'blur(8px)' }}
       onClick={onClose}>
       <div className="w-full max-w-md rounded-2xl p-6"
         style={{ background: 'var(--ccmc-panel)', border: `1px solid ${accent}55` }}
@@ -106,18 +112,18 @@ export default function MarkDeliveryModal({ patient, user, onClose, onSaved }) {
           <button onClick={() => setTab('delivery')}
             className="flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-xs font-bold transition-all"
             style={{
-              background: tab === 'delivery' ? 'rgba(34,197,94,0.18)' : 'var(--ccmc-surface)',
-              border: `1.5px solid ${tab === 'delivery' ? '#22C55E' : 'var(--ccmc-border)'}`,
-              color: tab === 'delivery' ? '#4ADE80' : 'var(--ccmc-text-hint)',
+              background: tab === 'delivery' ? 'var(--ccmc-pill-success-bg)' : 'var(--ccmc-surface)',
+              border: `1.5px solid ${tab === 'delivery' ? shade('#16A34A', dark) : 'var(--ccmc-border)'}`,
+              color: tab === 'delivery' ? 'var(--ccmc-pill-success-text)' : 'var(--ccmc-text-hint)',
             }}>
             <Baby className="w-3.5 h-3.5" /> Delivery
           </button>
           <button onClick={() => setTab('abortion')}
             className="flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-xs font-bold transition-all"
             style={{
-              background: tab === 'abortion' ? 'rgba(248,113,113,0.15)' : 'var(--ccmc-surface)',
-              border: `1.5px solid ${tab === 'abortion' ? '#F87171' : 'var(--ccmc-border)'}`,
-              color: tab === 'abortion' ? '#FCA5A5' : 'var(--ccmc-text-hint)',
+              background: tab === 'abortion' ? 'var(--ccmc-pill-critical-bg)' : 'var(--ccmc-surface)',
+              border: `1.5px solid ${tab === 'abortion' ? shade('#F87171', dark) : 'var(--ccmc-border)'}`,
+              color: tab === 'abortion' ? 'var(--ccmc-pill-critical-text)' : 'var(--ccmc-text-hint)',
             }}>
             <HeartCrack className="w-3.5 h-3.5" /> Abortion
           </button>
@@ -125,7 +131,7 @@ export default function MarkDeliveryModal({ patient, user, onClose, onSaved }) {
 
         {patient.is_delivered && (
           <div className="mb-3 px-3 py-2 rounded-lg text-[11px] flex items-center gap-2"
-            style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.25)', color: '#86EFAC' }}>
+            style={{ background: 'var(--ccmc-pill-success-bg)', border: '1px solid rgba(22,163,74,0.25)', color: 'var(--ccmc-pill-success-text)' }}>
             <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
             Marked as delivered{patient.delivery_date ? ` on ${patient.delivery_date}` : ''}.
             Saving again updates the details.
@@ -133,7 +139,7 @@ export default function MarkDeliveryModal({ patient, user, onClose, onSaved }) {
         )}
         {patient.is_aborted && (
           <div className="mb-3 px-3 py-2 rounded-lg text-[11px] flex items-center gap-2"
-            style={{ background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.25)', color: '#FCA5A5' }}>
+            style={{ background: 'var(--ccmc-pill-critical-bg)', border: '1px solid rgba(248,113,113,0.25)', color: 'var(--ccmc-pill-critical-text)' }}>
             <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
             Marked as abortion{patient.abortion_date ? ` on ${patient.abortion_date}` : ''}.
             Saving again updates the details.
@@ -191,7 +197,7 @@ export default function MarkDeliveryModal({ patient, user, onClose, onSaved }) {
           </label>
 
           {error && (
-            <p className="text-xs font-semibold" style={{ color: '#FCA5A5' }}>{error}</p>
+            <p className="text-xs font-semibold" style={{ color: 'var(--ccmc-pill-critical-text)' }}>{error}</p>
           )}
 
           <button onClick={save} disabled={saving}
@@ -208,7 +214,7 @@ export default function MarkDeliveryModal({ patient, user, onClose, onSaved }) {
           {patient.is_delivered && (
             <button onClick={undoDelivery} disabled={saving}
               className="w-full py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5"
-              style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#FCA5A5' }}>
+              style={{ background: 'var(--ccmc-pill-critical-bg)', border: '1px solid rgba(220,38,38,0.3)', color: 'var(--ccmc-pill-critical-text)' }}>
               <RotateCcw className="w-3 h-3" />
               Undo — mark as NOT delivered
             </button>
@@ -216,7 +222,7 @@ export default function MarkDeliveryModal({ patient, user, onClose, onSaved }) {
           {patient.is_aborted && (
             <button onClick={undoAbortion} disabled={saving}
               className="w-full py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5"
-              style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#FCA5A5' }}>
+              style={{ background: 'var(--ccmc-pill-critical-bg)', border: '1px solid rgba(220,38,38,0.3)', color: 'var(--ccmc-pill-critical-text)' }}>
               <RotateCcw className="w-3 h-3" />
               Undo — remove abortion status
             </button>

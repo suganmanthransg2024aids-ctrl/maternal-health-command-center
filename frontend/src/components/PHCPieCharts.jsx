@@ -1,10 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { PieChart, RefreshCw } from 'lucide-react';
+import { useTheme } from '../ThemeContext';
 
 const API = '/api';
 
+const BRIGHT_SHADE = { '#3B82F6': '#1D4ED8', '#DC2626': '#DC2626' };
+function shade(hex, dark) { return dark ? hex : (BRIGHT_SHADE[hex] || hex); }
+
 const SLICE_COLORS = [
-  '#3B9FFF', '#EF4444', '#22C55E', '#F97316', '#A78BFA',
+  '#3B82F6', '#DC2626', '#16A34A', '#D97706', '#A78BFA',
   '#FBBF24', '#EC4899', '#14B8A6', '#8B5CF6', '#FB923C',
   '#06B6D4', '#84CC16', '#F43F5E', '#60A5FA', '#D97706',
 ];
@@ -60,9 +64,8 @@ function DonutChart({ slices, total, centerLabel }) {
                 d={d}
                 fill={s.color}
                 opacity={hovered === null ? 0.85 : isH ? 1 : 0.45}
-                stroke="#0B1628"
                 strokeWidth={1.5}
-                style={{ cursor: 'pointer', transition: 'opacity 0.15s' }}
+                style={{ cursor: 'pointer', transition: 'opacity 0.15s', stroke: 'var(--ccmc-panel)' }}
                 onMouseEnter={() => setHovered(i)}
                 onMouseLeave={() => setHovered(null)}
               />
@@ -130,6 +133,8 @@ function DonutChart({ slices, total, centerLabel }) {
 }
 
 export default function PHCPieCharts({ user }) {
+  const { theme } = useTheme();
+  const dark = theme !== 'bright';
   const [data,    setData]    = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -161,12 +166,12 @@ export default function PHCPieCharts({ user }) {
       <div className="flex items-center justify-between px-6 py-4"
         style={{ borderBottom: '1px solid var(--ccmc-border)' }}>
         <div className="flex items-center gap-2">
-          <PieChart className="w-4 h-4" style={{ color: '#3B9FFF' }} />
+          <PieChart className="w-4 h-4" style={{ color: shade('#3B82F6', dark) }} />
           <h2 className="text-[14px] font-bold" style={{ color: 'var(--ccmc-text)' }}>
             PHC Distribution
           </h2>
           <span className="chip ml-1"
-            style={{ background: 'rgba(59,159,255,0.1)', color: '#3B9FFF', border: '1px solid rgba(59,159,255,0.2)', fontSize: 11 }}>
+            style={{ background: 'rgba(59,130,246,0.1)', color: shade('#3B82F6', dark), border: '1px solid rgba(59,130,246,0.2)', fontSize: 11 }}>
             {data.length} PHCs
           </span>
         </div>
@@ -186,7 +191,7 @@ export default function PHCPieCharts({ user }) {
           {/* Left: Overall distribution */}
           <div className="p-6">
             <div className="text-[11px] font-bold uppercase tracking-wider mb-4 flex items-center gap-2">
-              <span style={{ color: '#3B9FFF' }}>Overall PHC Distribution</span>
+              <span style={{ color: shade('#3B82F6', dark) }}>Overall PHC Distribution</span>
               <span className="font-normal normal-case tracking-normal text-[10px]"
                 style={{ color: 'var(--ccmc-text-hint)' }}>
                 {totalAll.toLocaleString()} total mothers
@@ -198,7 +203,7 @@ export default function PHCPieCharts({ user }) {
           {/* Right: High-risk distribution */}
           <div className="p-6">
             <div className="text-[11px] font-bold uppercase tracking-wider mb-4 flex items-center gap-2">
-              <span style={{ color: '#EF4444' }}>High-Risk Mothers by PHC</span>
+              <span style={{ color: shade('#DC2626', dark) }}>High-Risk Mothers by PHC</span>
               <span className="font-normal normal-case tracking-normal text-[10px]"
                 style={{ color: 'var(--ccmc-text-hint)' }}>
                 Mothers with High Risk Factors

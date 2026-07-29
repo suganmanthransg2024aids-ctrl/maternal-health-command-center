@@ -4,19 +4,19 @@ import { X, Search, Download, FileText } from 'lucide-react';
 const API = '/api';
 
 const CALL_BADGE = {
-  'No Call':      { bg: 'rgba(100,116,139,0.18)', color: '#94A3B8' },
-  'Answered':     { bg: 'rgba(34,197,94,0.18)',   color: '#86EFAC' },
-  'Not Answered': { bg: 'rgba(239,68,68,0.15)',   color: '#FCA5A5' },
-  'Busy':         { bg: 'rgba(249,115,22,0.15)',  color: '#FDBA74' },
-  'Scheduled':    { bg: 'rgba(59,130,246,0.15)',  color: '#93C5FD' },
+  'No Call':      { bg: 'var(--ccmc-pill-neutral-bg)', color: 'var(--ccmc-pill-neutral-text)' },
+  'Answered':     { bg: 'var(--ccmc-pill-success-bg)',  color: 'var(--ccmc-pill-success-text)' },
+  'Not Answered': { bg: 'var(--ccmc-pill-critical-bg)', color: 'var(--ccmc-pill-critical-text)' },
+  'Busy':         { bg: 'var(--ccmc-pill-warning-bg)',  color: 'var(--ccmc-pill-warning-text)' },
+  'Scheduled':    { bg: 'var(--ccmc-pill-info-bg)',     color: 'var(--ccmc-pill-info-text)' },
 };
 
 const FU_BADGE = {
-  'No Follow-Up': { bg: 'rgba(100,116,139,0.18)', color: '#94A3B8' },
-  'Completed':    { bg: 'rgba(34,197,94,0.18)',   color: '#86EFAC' },
-  'Pending':      { bg: 'rgba(249,115,22,0.15)',  color: '#FDBA74' },
-  'Missed':       { bg: 'rgba(239,68,68,0.15)',   color: '#FCA5A5' },
-  'Scheduled':    { bg: 'rgba(59,130,246,0.15)',  color: '#93C5FD' },
+  'No Follow-Up': { bg: 'var(--ccmc-pill-neutral-bg)', color: 'var(--ccmc-pill-neutral-text)' },
+  'Completed':    { bg: 'var(--ccmc-pill-success-bg)',  color: 'var(--ccmc-pill-success-text)' },
+  'Pending':      { bg: 'var(--ccmc-pill-warning-bg)',  color: 'var(--ccmc-pill-warning-text)' },
+  'Missed':       { bg: 'var(--ccmc-pill-critical-bg)', color: 'var(--ccmc-pill-critical-text)' },
+  'Scheduled':    { bg: 'var(--ccmc-pill-info-bg)',     color: 'var(--ccmc-pill-info-text)' },
 };
 
 const SORT_COLS = [
@@ -32,7 +32,7 @@ function Th({ children, col, sortCol, sortDir, onSort, className = '' }) {
     <th
       onClick={() => onSort(col)}
       className={`px-3 py-2.5 text-left text-[10px] font-bold uppercase tracking-wider cursor-pointer select-none whitespace-nowrap ${className}`}
-      style={{ color: active ? '#42A5F5' : '#475569', background: 'var(--ccmc-panel)' }}
+      style={{ color: active ? '#3B82F6' : '#475569', background: 'var(--ccmc-panel)' }}
     >
       {children}
       <span className="ml-1" style={{ opacity: active ? 1 : 0.35 }}>
@@ -42,16 +42,16 @@ function Th({ children, col, sortCol, sortDir, onSort, className = '' }) {
   );
 }
 
-function callStyle(s)    { return CALL_BADGE[s]    || { bg: 'rgba(100,116,139,0.15)', color: '#94A3B8' }; }
-function fuStyle(s)      { return FU_BADGE[s]      || { bg: 'rgba(100,116,139,0.15)', color: '#94A3B8' }; }
+function callStyle(s)    { return CALL_BADGE[s]    || { bg: 'var(--ccmc-pill-neutral-bg)', color: 'var(--ccmc-pill-neutral-text)' }; }
+function fuStyle(s)      { return FU_BADGE[s]      || { bg: 'var(--ccmc-pill-neutral-bg)', color: 'var(--ccmc-pill-neutral-text)' }; }
 
 function dayLabel(m) {
-  if (m.is_delivered) return { text: 'Delivered', color: '#22C55E' };
+  if (m.is_delivered) return { text: 'Delivered', color: '#16A34A' };
   if (m.days_to_edd === null || m.days_to_edd === undefined) return { text: '—', color: '#475569' };
   if (m.days_to_edd === 0)  return { text: 'TODAY',                    color: '#DC2626' };
-  if (m.days_to_edd < 0)   return { text: `${Math.abs(m.days_to_edd)}d past`, color: '#EF4444' };
-  if (m.days_to_edd <= 7)  return { text: `${m.days_to_edd}d`,        color: '#F97316' };
-  if (m.days_to_edd <= 30) return { text: `${m.days_to_edd}d`,        color: '#EAB308' };
+  if (m.days_to_edd < 0)   return { text: `${Math.abs(m.days_to_edd)}d past`, color: '#DC2626' };
+  if (m.days_to_edd <= 7)  return { text: `${m.days_to_edd}d`,        color: '#D97706' };
+  if (m.days_to_edd <= 30) return { text: `${m.days_to_edd}d`,        color: '#CA8A04' };
   return                           { text: `${m.days_to_edd}d`,        color: '#94A3B8' };
 }
 
@@ -186,16 +186,16 @@ export default function DrillDownModal({ metric, title, user, onClose, openPatie
   /* ── Render ───────────────────────────────────────────────────────────────── */
   return (
     <div className="fixed inset-0 z-50 flex flex-col"
-      style={{ background: 'rgba(2,6,23,0.94)', backdropFilter: 'blur(8px)' }}>
+      style={{ background: 'var(--ccmc-modal-backdrop)', backdropFilter: 'blur(8px)' }}>
 
       {/* ── Header ── */}
       <div className="flex items-center justify-between px-6 py-4 flex-shrink-0"
-        style={{ background: 'var(--ccmc-panel)', borderBottom: '1px solid rgba(30,58,95,0.8)' }}>
+        style={{ background: 'var(--ccmc-panel)', borderBottom: '1px solid var(--ccmc-border)' }}>
         <div className="flex items-center gap-3">
           <div className="w-1.5 h-8 rounded-full flex-shrink-0"
-            style={{ background: 'linear-gradient(180deg,#1976D2,#42A5F5)' }} />
+            style={{ background: 'linear-gradient(180deg,#2563EB,#3B82F6)' }} />
           <div>
-            <h2 className="text-sm font-bold text-white">{title}</h2>
+            <h2 className="text-sm font-bold" style={{ color: 'var(--ccmc-text)' }}>{title}</h2>
             <p className="text-[10px] mt-0.5" style={{ color: 'var(--ccmc-text-hint)' }}>
               {loading ? 'Loading records…'
                 : error ? 'Error loading data'
@@ -210,25 +210,25 @@ export default function DrillDownModal({ metric, title, user, onClose, openPatie
             <>
               <button onClick={exportCSV}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all"
-                style={{ background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.3)', color: '#86EFAC' }}
-                onMouseEnter={e => e.currentTarget.style.background = 'rgba(34,197,94,0.2)'}
-                onMouseLeave={e => e.currentTarget.style.background = 'rgba(34,197,94,0.12)'}>
+                style={{ background: 'var(--ccmc-pill-success-bg)', border: '1px solid rgba(22,163,74,0.3)', color: 'var(--ccmc-pill-success-text)' }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(22,163,74,0.2)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'var(--ccmc-pill-success-bg)'}>
                 <Download className="w-3.5 h-3.5" /> Excel/CSV
               </button>
               <button onClick={exportPDF}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all"
-                style={{ background: 'rgba(66,165,245,0.12)', border: '1px solid rgba(66,165,245,0.3)', color: '#93C5FD' }}
-                onMouseEnter={e => e.currentTarget.style.background = 'rgba(66,165,245,0.2)'}
-                onMouseLeave={e => e.currentTarget.style.background = 'rgba(66,165,245,0.12)'}>
+                style={{ background: 'var(--ccmc-pill-info-bg)', border: '1px solid rgba(59,130,246,0.3)', color: 'var(--ccmc-pill-info-text)' }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(59,130,246,0.2)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'var(--ccmc-pill-info-bg)'}>
                 <FileText className="w-3.5 h-3.5" /> PDF/Print
               </button>
             </>
           )}
           <button onClick={onClose}
             className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
-            style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', color: '#FCA5A5' }}
-            onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.2)'}
-            onMouseLeave={e => e.currentTarget.style.background = 'rgba(239,68,68,0.1)'}>
+            style={{ background: 'var(--ccmc-pill-critical-bg)', border: '1px solid rgba(220,38,38,0.25)', color: 'var(--ccmc-pill-critical-text)' }}
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(220,38,38,0.2)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'var(--ccmc-pill-critical-bg)'}>
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -236,24 +236,24 @@ export default function DrillDownModal({ metric, title, user, onClose, openPatie
 
       {/* ── Filter bar ── */}
       <div className="flex flex-wrap items-center gap-2.5 px-6 py-3 flex-shrink-0"
-        style={{ background: 'rgba(7,18,32,0.9)', borderBottom: '1px solid rgba(30,58,95,0.5)' }}>
+        style={{ background: 'var(--ccmc-bar)', borderBottom: '1px solid var(--ccmc-bar-border)' }}>
         {/* Search */}
         <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-600" />
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5" style={{ color: 'var(--ccmc-text-hint)' }} />
           <input
             value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Search name, mobile, RCH ID…"
             className="pl-8 pr-3 py-2 rounded-lg text-xs outline-none w-64"
-            style={{ background: 'rgba(30,41,59,0.9)', border: '1px solid rgba(30,58,95,0.9)', color: '#F1F5F9' }}
-            onFocus={e => e.target.style.borderColor = '#1976D2'}
-            onBlur={e => e.target.style.borderColor = 'rgba(30,58,95,0.9)'}
+            style={{ background: 'var(--ccmc-input-bg)', border: '1px solid var(--ccmc-input-border)', color: 'var(--ccmc-text)' }}
+            onFocus={e => e.target.style.borderColor = '#2563EB'}
+            onBlur={e => e.target.style.borderColor = 'var(--ccmc-input-border)'}
           />
         </div>
 
         {/* PHC filter */}
         <select value={phcFilter} onChange={e => setPhcFilter(e.target.value)}
           className="py-2 pl-3 pr-7 rounded-lg text-xs outline-none appearance-none"
-          style={{ background: 'rgba(30,41,59,0.9)', border: '1px solid rgba(30,58,95,0.9)', color: phcFilter ? '#F1F5F9' : '#64748B' }}>
+          style={{ background: 'var(--ccmc-input-bg)', border: '1px solid var(--ccmc-input-border)', color: phcFilter ? 'var(--ccmc-text)' : 'var(--ccmc-text-hint)' }}>
           <option value="">All PHCs</option>
           {phcOptions.map(p => <option key={p} value={p}>{p}</option>)}
         </select>
@@ -261,7 +261,7 @@ export default function DrillDownModal({ metric, title, user, onClose, openPatie
         {/* HRT filter */}
         <select value={hrtFilter} onChange={e => setHrtFilter(e.target.value)}
           className="py-2 pl-3 pr-7 rounded-lg text-xs outline-none appearance-none"
-          style={{ background: 'rgba(30,41,59,0.9)', border: '1px solid rgba(30,58,95,0.9)', color: hrtFilter ? '#F1F5F9' : '#64748B' }}>
+          style={{ background: 'var(--ccmc-input-bg)', border: '1px solid var(--ccmc-input-border)', color: hrtFilter ? 'var(--ccmc-text)' : 'var(--ccmc-text-hint)' }}>
           <option value="">All HRTs</option>
           {hrtOptions.map(h => <option key={h} value={h}>{h}</option>)}
         </select>
@@ -269,22 +269,22 @@ export default function DrillDownModal({ metric, title, user, onClose, openPatie
         {/* Sort quick-select */}
         <select value={sortCol} onChange={e => setSortCol(e.target.value)}
           className="py-2 pl-3 pr-7 rounded-lg text-xs outline-none appearance-none"
-          style={{ background: 'rgba(30,41,59,0.9)', border: '1px solid rgba(25,118,210,0.4)', color: '#93C5FD' }}>
+          style={{ background: 'var(--ccmc-input-bg)', border: '1px solid rgba(37,99,235,0.4)', color: 'var(--ccmc-pill-info-text)' }}>
           {SORT_COLS.map(c => <option key={c.key} value={c.key}>Sort: {c.label}</option>)}
         </select>
 
         <button onClick={() => setSortDir(d => d === 'asc' ? 'desc' : 'asc')}
           className="px-2.5 py-2 rounded-lg text-[10px] font-bold"
-          style={{ background: 'rgba(25,118,210,0.12)', border: '1px solid rgba(25,118,210,0.3)', color: '#93C5FD' }}>
+          style={{ background: 'var(--ccmc-pill-info-bg)', border: '1px solid rgba(37,99,235,0.3)', color: 'var(--ccmc-pill-info-text)' }}>
           {sortDir === 'asc' ? '↑ ASC' : '↓ DESC'}
         </button>
 
         {hasFilters && (
           <button onClick={clearFilters}
             className="px-2.5 py-2 rounded-lg text-[10px] font-bold transition-all"
-            style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', color: '#FCA5A5' }}
-            onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.2)'}
-            onMouseLeave={e => e.currentTarget.style.background = 'rgba(239,68,68,0.1)'}>
+            style={{ background: 'var(--ccmc-pill-critical-bg)', border: '1px solid rgba(220,38,38,0.25)', color: 'var(--ccmc-pill-critical-text)' }}
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(220,38,38,0.2)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'var(--ccmc-pill-critical-bg)'}>
             ✕ Clear
           </button>
         )}
@@ -298,7 +298,7 @@ export default function DrillDownModal({ metric, title, user, onClose, openPatie
             <p className="text-xs text-slate-500">Loading {metric} mothers…</p>
           </div>
         ) : error ? (
-          <div className="flex items-center justify-center h-full text-sm" style={{ color: '#FCA5A5' }}>{error}</div>
+          <div className="flex items-center justify-center h-full text-sm" style={{ color: 'var(--ccmc-pill-critical-text)' }}>{error}</div>
         ) : filtered.length === 0 ? (
           <div className="flex items-center justify-center h-full text-sm text-slate-500">
             No mothers match the current filters
@@ -331,22 +331,22 @@ export default function DrillDownModal({ metric, title, user, onClose, openPatie
                   <tr key={m.uid}
                     onClick={() => openPatient(m.uid)}
                     className="border-b cursor-pointer transition-colors"
-                    style={{ borderColor: 'rgba(30,58,95,0.35)' }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(25,118,210,0.09)'}
+                    style={{ borderColor: 'var(--ccmc-border)' }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'var(--ccmc-hover)'}
                     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                   >
                     <td className="px-3 py-2.5 font-mono text-[10px] text-slate-600">{i + 1}</td>
                     <td className="px-3 py-2.5 font-mono text-[10px] text-slate-500">{m.rch_id || '—'}</td>
                     <td className="px-3 py-2.5 max-w-[160px]">
-                      <div className="font-semibold text-white truncate">{m.mother_name || '—'}</div>
+                      <div className="font-semibold truncate" style={{ color: 'var(--ccmc-text)' }}>{m.mother_name || '—'}</div>
                     </td>
-                    <td className="px-3 py-2.5 font-mono" style={{ color: m.cell_no ? '#93C5FD' : '#334155' }}>
+                    <td className="px-3 py-2.5 font-mono" style={{ color: m.cell_no ? 'var(--ccmc-pill-info-text)' : 'var(--ccmc-text-hint)' }}>
                       {m.cell_no || '—'}
                     </td>
                     <td className="px-3 py-2.5 text-slate-300 max-w-[120px] truncate">{m.phc_display}</td>
                     <td className="px-3 py-2.5">
                       <span className="text-[10px] font-bold px-1.5 py-0.5 rounded"
-                        style={{ background: 'rgba(66,165,245,0.15)', color: '#93C5FD' }}>
+                        style={{ background: 'var(--ccmc-pill-info-bg)', color: 'var(--ccmc-pill-info-text)' }}>
                         {m.hrt_code}
                       </span>
                     </td>
@@ -380,9 +380,9 @@ export default function DrillDownModal({ metric, title, user, onClose, openPatie
 
       {/* ── Footer ── */}
       <div className="px-6 py-2.5 flex items-center justify-between flex-shrink-0"
-        style={{ background: 'var(--ccmc-panel)', borderTop: '1px solid rgba(30,58,95,0.7)' }}>
+        style={{ background: 'var(--ccmc-panel)', borderTop: '1px solid var(--ccmc-border)' }}>
         <div className="text-[10px] text-slate-500">
-          {filtered.length.toLocaleString()} mothers shown · {total.toLocaleString()} total · sorted by <span style={{ color: '#42A5F5' }}>{sortCol}</span> ({sortDir})
+          {filtered.length.toLocaleString()} mothers shown · {total.toLocaleString()} total · sorted by <span style={{ color: '#3B82F6' }}>{sortCol}</span> ({sortDir})
         </div>
         <div className="text-[10px] text-slate-600">Click any row to open Patient Details →</div>
       </div>

@@ -1,9 +1,23 @@
 import React, { useEffect, useState } from 'react';
 import { Baby, RefreshCw, ChevronRight } from 'lucide-react';
+import { useTheme } from '../ThemeContext';
 
 const API = '/api';
 
+// Several accent colors here are pastel shades tuned for the dark background
+// — darken them for the bright theme so counts/labels stay legible on white.
+const BRIGHT_SHADE = {
+  '#DC2626': '#DC2626',
+  '#D97706': '#EA580C',
+  '#A78BFA': '#7C3AED',
+  '#60A5FA': '#2563EB',
+  '#16A34A': '#16A34A',
+};
+function shade(hex, dark) { return dark ? hex : (BRIGHT_SHADE[hex] || hex); }
+
 export default function DeliveryTimeline({ user, setActivePage }) {
+  const { theme } = useTheme();
+  const dark = theme !== 'bright';
   const [timeline, setTimeline] = useState([]);
   const [total,    setTotal]    = useState(0);
   const [loading,  setLoading]  = useState(true);
@@ -40,11 +54,11 @@ export default function DeliveryTimeline({ user, setActivePage }) {
 
   // Group into weeks for the summary strip
   const weeks = [
-    { label: 'Today',    days: timeline.slice(0,  1),  color: '#EF4444' },
-    { label: 'Week 1',   days: timeline.slice(1,  8),  color: '#F97316' },
-    { label: 'Week 2',   days: timeline.slice(8,  15), color: '#A78BFA' },
-    { label: 'Week 3',   days: timeline.slice(15, 22), color: '#60A5FA' },
-    { label: 'Week 4+',  days: timeline.slice(22, 31), color: '#22C55E' },
+    { label: 'Today',    days: timeline.slice(0,  1),  color: shade('#DC2626', dark) },
+    { label: 'Week 1',   days: timeline.slice(1,  8),  color: shade('#D97706', dark) },
+    { label: 'Week 2',   days: timeline.slice(8,  15), color: shade('#A78BFA', dark) },
+    { label: 'Week 3',   days: timeline.slice(15, 22), color: shade('#60A5FA', dark) },
+    { label: 'Week 4+',  days: timeline.slice(22, 31), color: shade('#16A34A', dark) },
   ].map(w => ({ ...w, count: w.days.reduce((s, d) => s + d.count, 0) }));
 
   return (
@@ -55,19 +69,19 @@ export default function DeliveryTimeline({ user, setActivePage }) {
       <div className="flex items-center justify-between px-6 py-4"
         style={{ borderBottom: '1px solid var(--ccmc-border)' }}>
         <div className="flex items-center gap-2">
-          <Baby className="w-4 h-4" style={{ color: '#A78BFA' }} />
+          <Baby className="w-4 h-4" style={{ color: shade('#A78BFA', dark) }} />
           <h2 className="text-[14px] font-bold" style={{ color: 'var(--ccmc-text)' }}>
             Upcoming Deliveries — Next 30 Days
           </h2>
           <span className="chip ml-1"
-            style={{ background: 'rgba(167,139,250,0.12)', color: '#A78BFA', border: '1px solid rgba(167,139,250,0.25)', fontSize: 11 }}>
+            style={{ background: 'rgba(167,139,250,0.12)', color: shade('#A78BFA', dark), border: '1px solid rgba(167,139,250,0.25)', fontSize: 11 }}>
             {total} mothers
           </span>
         </div>
         <button
           onClick={() => setActivePage('delivery')}
           className="flex items-center gap-1 text-[12px] font-semibold"
-          style={{ color: '#60A5FA' }}>
+          style={{ color: shade('#60A5FA', dark) }}>
           Full View <ChevronRight className="w-3.5 h-3.5" />
         </button>
       </div>
@@ -114,11 +128,11 @@ export default function DeliveryTimeline({ user, setActivePage }) {
               const isHovered = hovered === i;
 
               // Color by urgency
-              const barColor = d.day === 0 ? '#EF4444'
-                : d.day <= 7  ? '#F97316'
+              const barColor = shade(d.day === 0 ? '#DC2626'
+                : d.day <= 7  ? '#D97706'
                 : d.day <= 14 ? '#A78BFA'
                 : d.day <= 21 ? '#60A5FA'
-                : '#22C55E';
+                : '#16A34A', dark);
 
               return (
                 <div
@@ -147,7 +161,7 @@ export default function DeliveryTimeline({ user, setActivePage }) {
                         {d.weekday}, {d.date}
                       </div>
                       {d.critical > 0 && (
-                        <div className="text-[9px] mt-0.5" style={{ color: '#EF4444' }}>
+                        <div className="text-[9px] mt-0.5" style={{ color: shade('#DC2626', dark) }}>
                           {d.critical} critical
                         </div>
                       )}
@@ -180,7 +194,7 @@ export default function DeliveryTimeline({ user, setActivePage }) {
               <div key={i} className="flex-1 text-center">
                 {showLabel(i) && (
                   <span className="text-[8px] font-medium leading-tight block"
-                    style={{ color: i === 0 ? '#EF4444' : 'var(--ccmc-text-hint)' }}>
+                    style={{ color: i === 0 ? shade('#DC2626', dark) : 'var(--ccmc-text-hint)' }}>
                     {i === 0 ? 'Today' : d.date.split(' ')[0]}
                     <br />
                     <span style={{ opacity: 0.6 }}>{d.date.split(' ')[1]}</span>
@@ -195,11 +209,11 @@ export default function DeliveryTimeline({ user, setActivePage }) {
         <div className="flex items-center gap-5 mt-4 pt-4"
           style={{ borderTop: '1px solid var(--ccmc-border)' }}>
           {[
-            { label: 'Today',  color: '#EF4444' },
-            { label: '≤7 Days', color: '#F97316' },
-            { label: 'Week 2', color: '#A78BFA' },
-            { label: 'Week 3', color: '#60A5FA' },
-            { label: 'Week 4+',color: '#22C55E' },
+            { label: 'Today',  color: shade('#DC2626', dark) },
+            { label: '≤7 Days', color: shade('#D97706', dark) },
+            { label: 'Week 2', color: shade('#A78BFA', dark) },
+            { label: 'Week 3', color: shade('#60A5FA', dark) },
+            { label: 'Week 4+',color: shade('#16A34A', dark) },
           ].map(({ label, color }) => (
             <div key={label} className="flex items-center gap-1.5">
               <div className="w-2.5 h-2.5 rounded-sm" style={{ background: color, opacity: 0.85 }} />

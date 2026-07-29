@@ -38,27 +38,27 @@ export default function Header({ user, backendOK, lastSync, syncing, onRefresh, 
   const dark   = theme !== 'bright';
 
   const typeIcon = (type) => {
-    if (type === 'SUCCESS') return <CheckCircle className="w-3.5 h-3.5" style={{ color: '#22C55E' }} />;
-    if (type === 'ERROR')   return <AlertTriangle className="w-3.5 h-3.5" style={{ color: '#EF4444' }} />;
-    return <Info className="w-3.5 h-3.5" style={{ color: '#3B9FFF' }} />;
+    if (type === 'SUCCESS') return <CheckCircle className="w-3.5 h-3.5" style={{ color: '#16A34A' }} />;
+    if (type === 'ERROR')   return <AlertTriangle className="w-3.5 h-3.5" style={{ color: '#DC2626' }} />;
+    return <Info className="w-3.5 h-3.5" style={{ color: '#3B82F6' }} />;
   };
 
-  const liveOkBg    = dark ? 'rgba(34,197,94,0.08)'   : 'linear-gradient(135deg, #DCFCE7 0%, #F0FDF4 100%)';
-  const liveOkBd    = dark ? 'rgba(34,197,94,0.2)'    : 'none';
-  const liveOkClr   = dark ? '#22C55E'                : '#15803D';
-  const liveOffBg   = dark ? 'rgba(245,158,11,0.08)'  : '#FEF9C3';
-  const liveOffBd   = dark ? 'rgba(245,158,11,0.2)'   : 'none';
+  const liveOkBg    = dark ? 'rgba(22,163,74,0.09)'   : 'linear-gradient(135deg, #DCFCE7 0%, #F0FDF4 100%)';
+  const liveOkBd    = dark ? 'rgba(22,163,74,0.22)'   : 'none';
+  const liveOkClr   = dark ? '#4ADE80'                : '#15803D';
+  const liveOffBg   = dark ? 'rgba(217,119,6,0.09)'   : '#FEF9C3';
+  const liveOffBd   = dark ? 'rgba(217,119,6,0.22)'   : 'none';
   const liveOffClr  = dark ? '#FBBF24'                : '#92400E';
 
   const statColors = dark
-    ? { total: '#3B9FFF', critical: '#EF4444', due: '#F97316' }
+    ? { total: '#3B82F6', critical: '#DC2626', due: '#D97706' }
     : { total: '#2563EB', critical: '#DC2626', due: '#EA580C' };
 
   return (
     <header
       className="flex items-center justify-between px-3 sm:px-6 flex-shrink-0 print:hidden"
       style={{
-        height: 60,
+        height: 64,
         background: dark
           ? 'var(--ccmc-panel)'
           : 'linear-gradient(90deg, #FFFFFF 0%, #F0F9FF 50%, #ECFDF5 100%)',
@@ -90,14 +90,14 @@ export default function Header({ user, backendOK, lastSync, syncing, onRefresh, 
             : <WifiOff className="w-3 h-3" style={{ color: liveOffClr }} />
           }
           <div className="live-dot" style={{
-            background: backendOK ? (dark ? '#22C55E' : '#10B981') : (dark ? '#FBBF24' : '#F59E0B'),
+            background: backendOK ? (dark ? '#16A34A' : '#10B981') : (dark ? '#D97706' : '#F59E0B'),
             animation: backendOK ? undefined : 'none',
           }} />
-          <span className="text-[11px] font-semibold" style={{ color: backendOK ? liveOkClr : liveOffClr }}>
+          <span className="text-[12px] font-semibold" style={{ color: backendOK ? liveOkClr : liveOffClr }}>
             {backendOK ? 'Live' : 'Offline'}
           </span>
           {lastSync && (
-            <span className="text-[10px] hidden md:block" style={{ color: 'var(--ccmc-text-hint)' }}>
+            <span className="text-[11px] hidden md:block" style={{ color: 'var(--ccmc-text-hint)' }}>
               · {lastSync}
             </span>
           )}
@@ -105,10 +105,10 @@ export default function Header({ user, backendOK, lastSync, syncing, onRefresh, 
 
         {/* Page title — hidden on the smallest screens to make room */}
         <div className="hidden sm:block min-w-0">
-          <div className="text-[13px] font-bold truncate" style={{ color: 'var(--ccmc-text)' }}>
+          <div className="text-[15px] font-bold truncate tracking-tight" style={{ color: 'var(--ccmc-text)' }}>
             {dark ? 'Maternal Health Command Center' : 'CCMC Healthcare Intelligence Center'}
           </div>
-          <div className="text-[10px] hidden md:block truncate" style={{ color: 'var(--ccmc-text-hint)' }}>
+          <div className="text-[11px] hidden md:block truncate" style={{ color: 'var(--ccmc-text-hint)' }}>
             {user?.full_access ? (dark ? 'Full Access' : 'Executive Dashboard · Full Access') : `Restricted: ${user?.phcs?.join(', ')}`}
           </div>
         </div>
@@ -123,10 +123,10 @@ export default function Header({ user, backendOK, lastSync, syncing, onRefresh, 
             { label: 'Overdue EDD',   value: stats.overdue_edd?.toLocaleString(),    color: statColors.critical },
           ].map(({ label, value, color }, i) => (
             <React.Fragment key={label}>
-              {i > 0 && <div className="w-px h-5 mx-3" style={{ background: 'var(--ccmc-border-s)' }} />}
+              {i > 0 && <div className="w-px h-6 mx-3" style={{ background: 'var(--ccmc-border-s)' }} />}
               <div className="text-center px-2">
-                <div className="text-[16px] font-bold leading-none" style={{ color, fontFamily: 'Poppins, sans-serif' }}>{value || '—'}</div>
-                <div className="text-[9px] font-semibold mt-0.5 uppercase tracking-wider" style={{ color: 'var(--ccmc-text-hint)' }}>{label}</div>
+                <div className="text-[18px] font-bold leading-none" style={{ color, fontFamily: 'Poppins, sans-serif', fontVariantNumeric: 'tabular-nums' }}>{value || '—'}</div>
+                <div className="text-[10px] font-semibold mt-1 uppercase tracking-wider" style={{ color: 'var(--ccmc-text-hint)' }}>{label}</div>
               </div>
             </React.Fragment>
           ))}
@@ -145,7 +145,7 @@ export default function Header({ user, backendOK, lastSync, syncing, onRefresh, 
         >
           {dark
             ? <Sun className="w-4 h-4" style={{ color: '#FBBF24' }} />
-            : <Moon className="w-4 h-4" style={{ color: '#1B6BD4' }} />
+            : <Moon className="w-4 h-4" style={{ color: '#2563EB' }} />
           }
         </button>
 
@@ -164,12 +164,12 @@ export default function Header({ user, backendOK, lastSync, syncing, onRefresh, 
               disabled={uploading}
               title="Upload updated Excel file"
               className="btn-ghost p-2 rounded-lg flex items-center gap-1.5"
-              style={{ padding: '6px 10px', background: uploading ? 'rgba(34,197,94,0.1)' : 'rgba(25,118,210,0.12)', border: '1px solid rgba(25,118,210,0.25)', borderRadius: 8 }}
+              style={{ padding: '7px 12px', background: uploading ? 'rgba(22,163,74,0.1)' : 'rgba(37,99,235,0.1)', border: '1px solid rgba(37,99,235,0.25)', borderRadius: 8 }}
             >
               <Upload className={`w-3.5 h-3.5 ${uploading ? 'animate-bounce' : ''}`}
-                style={{ color: uploading ? '#22C55E' : '#60A5FA' }} />
-              <span className="text-[11px] font-bold hidden sm:inline"
-                style={{ color: uploading ? '#22C55E' : '#60A5FA' }}>
+                style={{ color: uploading ? '#4ADE80' : '#60A5FA' }} />
+              <span className="text-[12px] font-bold hidden sm:inline"
+                style={{ color: uploading ? '#4ADE80' : '#60A5FA' }}>
                 {uploading ? 'Uploading…' : 'Upload Data'}
               </span>
             </button>
@@ -185,23 +185,25 @@ export default function Header({ user, backendOK, lastSync, syncing, onRefresh, 
           style={{ padding: '7px' }}
         >
           <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`}
-            style={{ color: syncing ? '#3B9FFF' : 'var(--ccmc-text-sec)' }} />
+            style={{ color: syncing ? '#3B82F6' : 'var(--ccmc-text-sec)' }} />
         </button>
 
         {/* Upload result toast */}
         {uploadMsg && (
           <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-[9999] px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3"
             style={{
-              background: uploadMsg.type === 'ok' ? 'rgba(15,40,20,0.97)' : 'rgba(40,10,10,0.97)',
-              border: `1px solid ${uploadMsg.type === 'ok' ? 'rgba(34,197,94,0.4)' : 'rgba(239,68,68,0.4)'}`,
+              background: dark
+                ? (uploadMsg.type === 'ok' ? 'rgba(9,25,15,0.97)'  : 'rgba(35,10,10,0.97)')
+                : (uploadMsg.type === 'ok' ? '#F0FDF4'             : '#FEF2F2'),
+              border: `1px solid ${uploadMsg.type === 'ok' ? 'rgba(22,163,74,0.4)' : 'rgba(220,38,38,0.4)'}`,
             }}>
             {uploadMsg.type === 'ok'
-              ? <CheckCircle className="w-4 h-4 flex-shrink-0" style={{ color: '#22C55E' }} />
-              : <AlertTriangle className="w-4 h-4 flex-shrink-0" style={{ color: '#EF4444' }} />}
-            <span className="text-sm font-semibold" style={{ color: uploadMsg.type === 'ok' ? '#86EFAC' : '#FCA5A5' }}>
+              ? <CheckCircle className="w-4 h-4 flex-shrink-0" style={{ color: '#16A34A' }} />
+              : <AlertTriangle className="w-4 h-4 flex-shrink-0" style={{ color: '#DC2626' }} />}
+            <span className="text-sm font-semibold" style={{ color: dark ? (uploadMsg.type === 'ok' ? '#86EFAC' : '#FCA5A5') : (uploadMsg.type === 'ok' ? '#15803D' : '#B91C1C') }}>
               {uploadMsg.text}
             </span>
-            <button onClick={() => setUploadMsg(null)} style={{ color: '#475569', marginLeft: 8 }}>
+            <button onClick={() => setUploadMsg(null)} style={{ color: dark ? '#475569' : '#94A3B8', marginLeft: 8 }}>
               <X className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -214,10 +216,10 @@ export default function Header({ user, backendOK, lastSync, syncing, onRefresh, 
             className="btn-ghost p-2 rounded-lg relative"
             style={{ padding: '7px' }}
           >
-            <Bell className="w-4 h-4" style={{ color: unread > 0 ? '#3B9FFF' : 'var(--ccmc-text-sec)' }} />
+            <Bell className="w-4 h-4" style={{ color: unread > 0 ? '#3B82F6' : 'var(--ccmc-text-sec)' }} />
             {unread > 0 && (
               <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full text-[9px] font-bold text-white flex items-center justify-center"
-                style={{ background: '#EF4444', lineHeight: 1 }}>
+                style={{ background: '#DC2626', lineHeight: 1 }}>
                 {Math.min(unread, 9)}
               </span>
             )}
@@ -240,7 +242,7 @@ export default function Header({ user, backendOK, lastSync, syncing, onRefresh, 
                     <button
                       onClick={() => { clearNotifications(); setShowBell(false); }}
                       className="text-[11px] font-semibold"
-                      style={{ color: '#3B9FFF' }}
+                      style={{ color: '#3B82F6' }}
                     >
                       Clear all
                     </button>

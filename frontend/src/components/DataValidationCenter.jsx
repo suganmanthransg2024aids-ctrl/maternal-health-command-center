@@ -1,7 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { ShieldCheck, AlertTriangle, AlertCircle, CheckCircle, RefreshCw, Phone, User } from 'lucide-react';
+import { useTheme } from '../ThemeContext';
 
 const API = '/api';
+
+// Bright theme needs darker, more saturated shades of these status colors to
+// stay legible as text on a white background (mirrors Header.jsx's statColors).
+const BRIGHT_SHADE = {
+  '#DC2626': '#DC2626',
+  '#D97706': '#EA580C',
+  '#CA8A04': '#B45309',
+  '#16A34A': '#16A34A',
+};
+function shade(hex, dark) { return dark ? hex : (BRIGHT_SHADE[hex] || hex); }
 
 function StatCard({ label, value, color, icon: Icon }) {
   return (
@@ -19,17 +30,17 @@ function StatCard({ label, value, color, icon: Icon }) {
   );
 }
 
-function QualityGauge({ score }) {
-  const color = score >= 80 ? '#22C55E' : score >= 60 ? '#EAB308' : '#EF4444';
+function QualityGauge({ score, dark }) {
+  const color = shade(score >= 80 ? '#16A34A' : score >= 60 ? '#CA8A04' : '#DC2626', dark);
   const label = score >= 80 ? 'Good' : score >= 60 ? 'Fair' : 'Poor';
   return (
     <div className="rounded-xl p-5 flex flex-col items-center justify-center gap-2"
-      style={{ background: 'var(--ccmc-panel)', border: '1px solid rgba(30,58,95,0.7)' }}>
+      style={{ background: 'var(--ccmc-panel)', border: '1px solid var(--ccmc-border)' }}>
       <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Data Quality Score</div>
       <div className="text-5xl font-bold mt-1" style={{ color, fontFamily: 'Poppins, sans-serif' }}>
         {score ?? '—'}%
       </div>
-      <div className="w-full h-2 rounded-full mt-2" style={{ background: 'rgba(30,58,95,0.5)' }}>
+      <div className="w-full h-2 rounded-full mt-2" style={{ background: 'var(--ccmc-border-s)' }}>
         <div className="h-full rounded-full transition-all duration-1000"
           style={{ width: `${score || 0}%`, background: color }} />
       </div>
@@ -69,7 +80,7 @@ function RecordsTable({ title, records, color, emptyMsg }) {
                 <td className="font-medium text-white">{r.mother_name || <span className="text-red-400 italic">MISSING</span>}</td>
                 <td className="text-slate-400">{r.phc_display}</td>
                 <td><span className="text-[10px] font-bold px-1.5 py-0.5 rounded"
-                  style={{ background: 'rgba(66,165,245,0.15)', color: '#93C5FD' }}>{r.hrt_name}</span></td>
+                  style={{ background: 'var(--ccmc-pill-info-bg)', color: 'var(--ccmc-pill-info-text)' }}>{r.hrt_name}</span></td>
                 <td className={!r.cell_no ? 'text-red-400 italic' : 'text-slate-400'}>{r.cell_no || 'MISSING'}</td>
                 <td className="text-slate-500 text-[10px]">{r.rch_id || '—'}</td>
               </tr>
@@ -89,6 +100,8 @@ function RecordsTable({ title, records, color, emptyMsg }) {
 }
 
 export default function DataValidationCenter({ user }) {
+  const { theme } = useTheme();
+  const dark = theme !== 'bright';
   const [data,    setData]    = useState(null);
   const [loading, setLoading] = useState(true);
   const [tab,     setTab]     = useState('missing');
@@ -103,16 +116,16 @@ export default function DataValidationCenter({ user }) {
   useEffect(() => { load(); }, []);
 
   const tabs = [
-    { id: 'missing',   label: 'Missing Data',    color: '#EF4444' },
-    { id: 'invalid',   label: 'Invalid Data',    color: '#F97316' },
-    { id: 'duplicates',label: 'Duplicates',      color: '#EAB308' },
+    { id: 'missing',   label: 'Missing Data',    color: shade('#DC2626', dark) },
+    { id: 'invalid',   label: 'Invalid Data',    color: shade('#D97706', dark) },
+    { id: 'duplicates',label: 'Duplicates',      color: shade('#CA8A04', dark) },
   ];
 
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-bold text-white" style={{ fontFamily: 'Poppins, sans-serif' }}>
+          <h1 className="page-title" style={{ fontFamily: 'Poppins, sans-serif' }}>
             Data Validation Center
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
@@ -121,7 +134,7 @@ export default function DataValidationCenter({ user }) {
         </div>
         <button onClick={load} disabled={loading}
           className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold"
-          style={{ background: 'rgba(25,118,210,0.2)', border: '1px solid rgba(25,118,210,0.4)', color: '#42A5F5' }}>
+          style={{ background: 'var(--ccmc-pill-info-bg)', border: '1px solid rgba(37,99,235,0.4)', color: 'var(--ccmc-pill-info-text)' }}>
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
           Revalidate
         </button>
@@ -130,7 +143,7 @@ export default function DataValidationCenter({ user }) {
       {loading ? (
         <div className="flex items-center justify-center py-20">
           <div className="text-center">
-            <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-3" style={{ color: '#42A5F5' }} />
+            <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-3" style={{ color: 'var(--ccmc-pill-info-text)' }} />
             <p className="text-sm text-slate-500">Running validation engine…</p>
           </div>
         </div>
@@ -138,26 +151,26 @@ export default function DataValidationCenter({ user }) {
         <>
           {/* Stats + gauge */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <QualityGauge score={data.quality_score} />
-            <StatCard label="Missing Names"   value={data.missing_name}    color="#EF4444" icon={User} />
-            <StatCard label="Missing Phone"   value={data.missing_phone}   color="#EF4444" icon={Phone} />
-            <StatCard label="Invalid Phone"   value={data.invalid_phone}   color="#F97316" icon={AlertTriangle} />
-            <StatCard label="Missing RCH ID"  value={data.missing_rch}     color="#EAB308" icon={AlertCircle} />
-            <StatCard label="Missing EDD"     value={data.missing_edd}     color="#EAB308" icon={AlertCircle} />
-            <StatCard label="Duplicate Phone" value={data.duplicate_phone} color="#EAB308" icon={AlertTriangle} />
-            <StatCard label="Duplicate RCH"   value={data.duplicate_rch}   color="#F97316" icon={AlertTriangle} />
+            <QualityGauge score={data.quality_score} dark={dark} />
+            <StatCard label="Missing Names"   value={data.missing_name}    color={shade('#DC2626', dark)} icon={User} />
+            <StatCard label="Missing Phone"   value={data.missing_phone}   color={shade('#DC2626', dark)} icon={Phone} />
+            <StatCard label="Invalid Phone"   value={data.invalid_phone}   color={shade('#D97706', dark)} icon={AlertTriangle} />
+            <StatCard label="Missing RCH ID"  value={data.missing_rch}     color={shade('#CA8A04', dark)} icon={AlertCircle} />
+            <StatCard label="Missing EDD"     value={data.missing_edd}     color={shade('#CA8A04', dark)} icon={AlertCircle} />
+            <StatCard label="Duplicate Phone" value={data.duplicate_phone} color={shade('#CA8A04', dark)} icon={AlertTriangle} />
+            <StatCard label="Duplicate RCH"   value={data.duplicate_rch}   color={shade('#D97706', dark)} icon={AlertTriangle} />
           </div>
 
           {/* Summary banner */}
           <div className="rounded-xl p-4 flex items-center gap-4"
-            style={{ background: 'rgba(34,197,94,0.05)', border: '1px solid rgba(34,197,94,0.2)' }}>
-            <CheckCircle className="w-8 h-8 flex-shrink-0" style={{ color: '#22C55E' }} />
+            style={{ background: 'var(--ccmc-pill-success-bg)', border: '1px solid rgba(22,163,74,0.2)' }}>
+            <CheckCircle className="w-8 h-8 flex-shrink-0" style={{ color: shade('#16A34A', dark) }} />
             <div>
               <div className="text-sm font-bold text-white">
                 {data.total_records?.toLocaleString()} records analysed across all PHC sheets
               </div>
               <div className="text-xs text-slate-400 mt-0.5">
-                Quality score: <span style={{ color: data.quality_score >= 80 ? '#22C55E' : data.quality_score >= 60 ? '#EAB308' : '#EF4444' }}>
+                Quality score: <span style={{ color: shade(data.quality_score >= 80 ? '#16A34A' : data.quality_score >= 60 ? '#CA8A04' : '#DC2626', dark) }}>
                   {data.quality_score}%
                 </span> &nbsp;·&nbsp;
                 {data.missing_name + data.missing_phone + data.invalid_phone + data.duplicate_phone + data.duplicate_rch} total issues detected
@@ -166,7 +179,7 @@ export default function DataValidationCenter({ user }) {
           </div>
 
           {/* Tab navigation */}
-          <div className="flex gap-1 p-1 rounded-xl" style={{ background: 'var(--ccmc-panel)', border: '1px solid rgba(30,58,95,0.5)' }}>
+          <div className="flex gap-1 p-1 rounded-xl" style={{ background: 'var(--ccmc-panel)', border: '1px solid var(--ccmc-border)' }}>
             {tabs.map(t => (
               <button key={t.id} onClick={() => setTab(t.id)}
                 className="flex-1 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all"
@@ -184,21 +197,21 @@ export default function DataValidationCenter({ user }) {
           {tab === 'missing' && (
             <div className="space-y-4">
               <RecordsTable title="Missing Mother Name" records={data.missing_name_records || []}
-                color="#EF4444" />
+                color={shade('#DC2626', dark)} />
               <RecordsTable title="Missing Phone Number" records={data.missing_phone_records || []}
-                color="#EF4444" />
+                color={shade('#DC2626', dark)} />
             </div>
           )}
           {tab === 'invalid' && (
             <RecordsTable title="Invalid Phone Numbers" records={data.invalid_phone_records || []}
-              color="#F97316" />
+              color={shade('#D97706', dark)} />
           )}
           {tab === 'duplicates' && (
             <div className="space-y-4">
               <RecordsTable title="Duplicate Phone Numbers" records={data.duplicate_phone_records || []}
-                color="#EAB308" />
+                color={shade('#CA8A04', dark)} />
               <RecordsTable title="Duplicate RCH IDs" records={data.duplicate_rch_records || []}
-                color="#EAB308" />
+                color={shade('#CA8A04', dark)} />
             </div>
           )}
         </>

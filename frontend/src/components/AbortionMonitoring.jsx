@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { HeartCrack, RefreshCw, MapPin, Calendar, Phone } from 'lucide-react';
+import { useTheme } from '../ThemeContext';
 
 const API = '/api';
 
@@ -12,13 +13,22 @@ const TYPE_COLORS = {
   Unspecified: '#64748B',
 };
 
+const BRIGHT_SHADE = {
+  '#F87171': '#DC2626', '#FB923C': '#EA580C', '#A78BFA': '#7C3AED',
+  '#FBBF24': '#B45309', '#94A3B8': '#475569', '#64748B': '#334155',
+  '#FCA5A5': '#DC2626',
+};
+function shade(hex, dark) { return dark ? hex : (BRIGHT_SHADE[hex] || hex); }
+
 function AbortionCard({ m, openPatient }) {
+  const { theme } = useTheme();
+  const dark = theme !== 'bright';
   return (
     <div
       onClick={() => openPatient(m.uid)}
       className="rounded-xl p-4 cursor-pointer transition-all"
       style={{ background: 'var(--ccmc-panel)', border: '1px solid var(--ccmc-border)' }}
-      onMouseEnter={e => e.currentTarget.style.borderColor = '#F87171'}
+      onMouseEnter={e => e.currentTarget.style.borderColor = shade('#F87171', dark)}
       onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--ccmc-border)'}
     >
       <div className="flex items-start justify-between gap-2 mb-2">
@@ -35,9 +45,9 @@ function AbortionCard({ m, openPatient }) {
         <div className="text-right flex-shrink-0">
           <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
             style={{
-              background: `${TYPE_COLORS[m.abortion_type || 'Unspecified'] || '#94A3B8'}18`,
-              color: TYPE_COLORS[m.abortion_type || 'Unspecified'] || '#94A3B8',
-              border: `1px solid ${TYPE_COLORS[m.abortion_type || 'Unspecified'] || '#94A3B8'}40`,
+              background: `${shade(TYPE_COLORS[m.abortion_type || 'Unspecified'] || '#94A3B8', dark)}18`,
+              color: shade(TYPE_COLORS[m.abortion_type || 'Unspecified'] || '#94A3B8', dark),
+              border: `1px solid ${shade(TYPE_COLORS[m.abortion_type || 'Unspecified'] || '#94A3B8', dark)}40`,
             }}>
             {m.abortion_type || 'Abortion'}
           </span>
@@ -48,7 +58,7 @@ function AbortionCard({ m, openPatient }) {
         {m.abortion_date && (
           <span className="flex items-center gap-1">
             <Calendar className="w-3 h-3" />{m.abortion_date}
-            {m.days_since_abortion != null && <b style={{ color: '#FCA5A5' }}>({m.days_since_abortion}d ago)</b>}
+            {m.days_since_abortion != null && <b style={{ color: shade('#FCA5A5', dark) }}>({m.days_since_abortion}d ago)</b>}
           </span>
         )}
         {m.cell_no && <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{m.cell_no}</span>}
@@ -60,6 +70,8 @@ function AbortionCard({ m, openPatient }) {
 }
 
 export default function AbortionMonitoring({ user, openPatient }) {
+  const { theme } = useTheme();
+  const dark = theme !== 'bright';
   const [data,    setData]    = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -85,7 +97,7 @@ export default function AbortionMonitoring({ user, openPatient }) {
       {/* Page header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-bold" style={{ fontFamily: 'Poppins,sans-serif', color: 'var(--ccmc-text)' }}>
+          <h1 className="page-title" style={{ fontFamily: 'Poppins,sans-serif' }}>
             Abortion Monitoring
           </h1>
           <p className="text-xs mt-0.5" style={{ color: 'var(--ccmc-text-hint)' }}>
@@ -94,7 +106,7 @@ export default function AbortionMonitoring({ user, openPatient }) {
         </div>
         <button onClick={() => { setLoading(true); load(); }} disabled={loading}
           className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold"
-          style={{ background: 'rgba(248,113,113,0.15)', border: '1px solid rgba(248,113,113,0.35)', color: '#FCA5A5' }}>
+          style={{ background: 'var(--ccmc-pill-critical-bg)', border: '1px solid rgba(248,113,113,0.35)', color: 'var(--ccmc-pill-critical-text)' }}>
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
           Refresh
         </button>
@@ -103,9 +115,9 @@ export default function AbortionMonitoring({ user, openPatient }) {
       {/* KPI strip */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: 'Total Abortions', val: data?.total,         color: '#F87171' },
-          { label: 'This Month',      val: data?.this_month,    color: '#FB923C' },
-          { label: 'PHCs Affected',   val: data?.phcs_affected, color: '#A78BFA' },
+          { label: 'Total Abortions', val: data?.total,         color: shade('#F87171', dark) },
+          { label: 'This Month',      val: data?.this_month,    color: shade('#FB923C', dark) },
+          { label: 'PHCs Affected',   val: data?.phcs_affected, color: shade('#A78BFA', dark) },
         ].map(({ label, val, color }) => (
           <div key={label} className="rounded-xl p-4 flex items-center gap-3"
             style={{ background: 'var(--ccmc-panel)', border: `1px solid ${color}25` }}>
@@ -126,23 +138,26 @@ export default function AbortionMonitoring({ user, openPatient }) {
       {/* Type breakdown */}
       {Object.keys(typeCounts).length > 0 && (
         <div className="flex flex-wrap gap-2">
-          {Object.entries(typeCounts).sort((a, b) => b[1] - a[1]).map(([type, cnt]) => (
+          {Object.entries(typeCounts).sort((a, b) => b[1] - a[1]).map(([type, cnt]) => {
+            const tc = shade(TYPE_COLORS[type] || '#94A3B8', dark);
+            return (
             <span key={type} className="text-[10px] font-bold px-2.5 py-1 rounded-full"
               style={{
-                background: `${TYPE_COLORS[type] || '#94A3B8'}15`,
-                color: TYPE_COLORS[type] || '#94A3B8',
-                border: `1px solid ${TYPE_COLORS[type] || '#94A3B8'}35`,
+                background: `${tc}15`,
+                color: tc,
+                border: `1px solid ${tc}35`,
               }}>
               {type}: {cnt}
             </span>
-          ))}
+            );
+          })}
         </div>
       )}
 
       {loading && !data ? (
         <div className="flex items-center justify-center py-20">
           <div className="w-8 h-8 border-2 rounded-full animate-spin"
-            style={{ borderColor: 'var(--ccmc-border-s)', borderTopColor: '#F87171' }} />
+            style={{ borderColor: 'var(--ccmc-border-s)', borderTopColor: shade('#F87171', dark) }} />
         </div>
       ) : byPhc.length === 0 ? (
         <div className="rounded-2xl py-16 text-center"
@@ -163,7 +178,7 @@ export default function AbortionMonitoring({ user, openPatient }) {
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg flex items-center justify-center"
                 style={{ background: 'rgba(248,113,113,0.15)' }}>
-                <MapPin className="w-4 h-4" style={{ color: '#F87171' }} />
+                <MapPin className="w-4 h-4" style={{ color: shade('#F87171', dark) }} />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-bold" style={{ color: 'var(--ccmc-text)', fontFamily: 'Poppins,sans-serif' }}>
@@ -174,7 +189,7 @@ export default function AbortionMonitoring({ user, openPatient }) {
                 </div>
               </div>
               <span className="text-lg font-bold px-3 py-1 rounded-lg flex-shrink-0"
-                style={{ background: 'rgba(248,113,113,0.12)', color: '#F87171' }}>
+                style={{ background: 'rgba(248,113,113,0.12)', color: shade('#F87171', dark) }}>
                 {phc.count}
               </span>
             </div>
