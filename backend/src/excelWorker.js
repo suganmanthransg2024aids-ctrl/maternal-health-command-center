@@ -25,6 +25,10 @@ parentPort.on('message', (filePath) => {
         rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], {
           header: 1, raw: true, defval: '',
         });
+        // HUGE MEMORY OPTIMIZATION for 512MB Render limit:
+        // Delete the sheet from the workbook immediately after converting to JSON
+        // so V8 can garbage collect it while we parse the next 33 sheets!
+        delete wb.Sheets[sheetName];
       } catch (innerErr) {
         console.error(`[WORKER] Inner sheet conversion error on ${sheetName}:`, innerErr);
         continue;

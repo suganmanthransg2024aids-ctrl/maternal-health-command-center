@@ -344,63 +344,76 @@ export function loadExcel() {
   return records;
 }
 
-export function loadExcelAsync() {
-  return new Promise((resolve, reject) => {
-    if (!fs.existsSync(EXCEL_PATH)) {
-      return resolve(loadFromDbFallback('Spreadsheet file missing'));
+export async function loadExcelAsync() {
+  if (!fs.existsSync(EXCEL_PATH)) {
+    return loadFromDbFallback('Spreadsheet file missing');
+  }
+
+  let wb;
+  try {
+    wb = XLSX.readFile(EXCEL_PATH, { cellDates: true });
+  } catch (e) {
+    return loadFromDbFallback(`Spreadsheet unreadable (${e.message})`);
+  }
+  
+  const records = [];
+
+  for (const sheetName of wb.SheetNames) {
+    // Yield the event loop to allow API requests and Render health checks
+    // to be served in between parsing heavy sheets!
+    await new Promise(r => setTimeout(r, 10));
+    
+    const sheetKey = sheetName.toUpperCase().trim();
+    if (sheetKey.startsWith('SHEET') && !(sheetKey in SHEET_TO_PHC)) {
+      delete wb.Sheets[sheetName];
+      continue;
     }
 
-    const __dirname = path.dirname(fileURLToPath(import.meta.url));
-    const worker = new Worker(path.join(__dirname, 'excelWorker.js'));
+    let rows;
+    try {
+      rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], {
+        header: 1, raw: true, defval: '',
+      });
+      // HUGE MEMORY OPTIMIZATION for 512MB Render limit:
+      // Delete the sheet immediately after converting to JSON so V8 can garbage collect it
+      delete wb.Sheets[sheetName];
+    } catch {
+      continue;
+    }
     
-    worker.postMessage(EXCEL_PATH);
+    if (!rows || rows.length === 0) continue;
     
-    worker.on('message', (result) => {
-      if (result.success) {
-        try {
-          const records = [];
-          for (const sheet of result.sheetsData) {
-            records.push(...buildRecordsFromSheet(sheet.sheetName, sheet.headerRow, sheet.dataRows));
-          }
-          
-          if (records.length === 0) {
-            console.error(`[VALIDATION FAILED] Spreadsheet parsed to 0 records. Aborting update.`);
-            return resolve(loadFromDbFallback('Spreadsheet parsed to 0 records'));
-          }
-          
-          if (cache.records && cache.records.length > 0) {
-            // Guard against the sheet being accidentally wiped or corrupted
-            const dropThreshold = cache.records.length * 0.5;
-            if (records.length < dropThreshold) {
-              console.error(`[VALIDATION FAILED] Row count dropped suspiciously (${cache.records.length} -> ${records.length}). Aborting update.`);
-              return resolve(loadFromDbFallback('Suspicious row count drop'));
-            }
-          }
-          
-          cache.records = records;
-          cache.ts = new Date().toISOString();
-          syncState.lastSyncTime = cache.ts;
-          
-          try {
-            saveSheetSnapshot(records);
-          } catch (e) {
-            console.log(`[DB] Snapshot save failed: ${e.message}`);
-          }
-          resolve(records);
-        } catch (e) {
-          reject(e);
-        }
-      } else {
-        console.error(`[WORKER] Excel parse failed (at ${result.step || 'unknown step'}): ${result.error}`);
-        resolve(loadFromDbFallback(`Spreadsheet unreadable (${result.error})`));
-      }
-    });
+    const headerIdx = rows.findIndex((r) => r.some((v) => trimStr(v) !== ''));
+    if (headerIdx === -1) continue;
+    const headerRow = rows[headerIdx];
+    const dataRows = rows.slice(headerIdx + 1);
+    records.push(...buildRecordsFromSheet(sheetName, headerRow, dataRows));
+  }
 
-    worker.on('error', (error) => {
-      console.error(`[WORKER] Critical thread crash:`, error);
-      resolve(loadFromDbFallback(`Worker error (${error.message})`));
-    });
-  });
+  if (records.length === 0) {
+    console.error(`[VALIDATION FAILED] Spreadsheet parsed to 0 records. Aborting update.`);
+    return loadFromDbFallback('Spreadsheet parsed to 0 records');
+  }
+
+  if (cache.records && cache.records.length > 0) {
+    const dropThreshold = cache.records.length * 0.5;
+    if (records.length < dropThreshold) {
+      console.error(`[VALIDATION FAILED] Row count dropped suspiciously (${cache.records.length} -> ${records.length}). Aborting update.`);
+      return loadFromDbFallback('Suspicious row count drop');
+    }
+  }
+
+  cache.records = records;
+  cache.ts = new Date().toISOString();
+  syncState.lastSyncTime = cache.ts;
+
+  try {
+    saveSheetSnapshot(records);
+  } catch (e) {
+    console.log(`[DB] Snapshot save failed: ${e.message}`);
+  }
+  
+  return records;
 }
 
 // Merged view = Excel base data + app-side patient overrides. Recomputed only
