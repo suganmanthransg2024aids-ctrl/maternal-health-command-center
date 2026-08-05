@@ -572,11 +572,11 @@ export async function ensureFreshest({ forceStore = false } = {}) {
       if (bytes && bytes.length) {
         knownStaleHash = xlsxDataHash(EXCEL_PATH);
         fs.writeFileSync(EXCEL_PATH, bytes);
-        loadExcel();
+        await loadExcelAsync();
         syncState.lastMtime = getFileMtime();
         syncState.usingStoredSheet = true;
         console.log(`[SHEET-GUARD] Source copy had ${cur} records vs ${meta.record_count} best-known `
-          + `(${meta.source}, ${meta.saved_at}) — serving stored workbook (${cache.records.length} records)`);
+          + `(${meta.source}, ${meta.saved_at}) — serving stored workbook (${cache.records ? cache.records.length : 0} records)`);
       }
       return;
     }
