@@ -1,6 +1,4 @@
 import fs from 'fs';
-import { Worker } from 'worker_threads';
-import { fileURLToPath } from 'url';
 import path from 'path';
 import crypto from 'crypto';
 import XLSX from 'xlsx';
