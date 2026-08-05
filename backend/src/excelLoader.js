@@ -289,16 +289,17 @@ function loadFromDbFallback(reason) {
 }
 
 export function loadExcel() {
-  if (!fs.existsSync(EXCEL_PATH)) {
-    return loadFromDbFallback('Spreadsheet file missing');
-  }
+  return loadFromDbFallback('Initial load requested');
+}
 
+export async function executeParseAndStore() {
   let wb;
   try {
     wb = XLSX.readFile(EXCEL_PATH, { cellDates: true, dense: true });
   } catch (e) {
-    return loadFromDbFallback(`Spreadsheet unreadable (${e.message})`);
+    throw new Error(`Spreadsheet unreadable (${e.message})`);
   }
+  
   const records = [];
 
   for (const sheetName of wb.SheetNames) {
@@ -317,10 +318,9 @@ export function loadExcel() {
     } catch {
       continue;
     }
+    
     if (!rows || rows.length === 0) continue;
-    // Some tabs (e.g. SN PALAYAM) have blank rows above the real header row.
-    // Taking row 0 as the header would make every column lookup miss and the
-    // whole tab silently load as zero records.
+    
     const headerIdx = rows.findIndex((r) => r.some((v) => trimStr(v) !== ''));
     if (headerIdx === -1) continue;
     const headerRow = rows[headerIdx];
@@ -328,24 +328,20 @@ export function loadExcel() {
     records.push(...buildRecordsFromSheet(sheetName, headerRow, dataRows));
   }
 
-  // A workbook that parses to zero records is a bad download, not real data —
-  // don't let it replace the last good snapshot.
   if (records.length === 0) {
-    return loadFromDbFallback('Spreadsheet parsed to 0 records');
+    throw new Error('Spreadsheet parsed to 0 records');
   }
 
-  cache.records = records;
-  cache.ts = new Date().toISOString();
-  syncState.lastSyncTime = cache.ts;
-
-  // Mirror every successful sheet load into the DB so the full dataset
-  // survives even if the sheet or its cache file is lost.
-  try {
-    saveSheetSnapshot(records);
-  } catch (e) {
-    console.log(`[DB] Snapshot save failed: ${e.message}`);
+  const oldRecords = loadSheetSnapshot();
+  if (oldRecords && oldRecords.length > 0) {
+    const dropThreshold = oldRecords.length * 0.5;
+    if (records.length < dropThreshold) {
+      throw new Error(`Suspicious row count drop (${oldRecords.length} -> ${records.length})`);
+    }
   }
-  return records;
+
+  saveSheetSnapshot(records);
+  return records.length;
 }
 
 export async function loadExcelAsync() {
@@ -353,69 +349,35 @@ export async function loadExcelAsync() {
     return loadFromDbFallback('Spreadsheet file missing');
   }
 
-  let wb;
-  try {
-    wb = XLSX.readFile(EXCEL_PATH, { cellDates: true, dense: true });
-  } catch (e) {
-    return loadFromDbFallback(`Spreadsheet unreadable (${e.message})`);
-  }
-  
-  const records = [];
-
-  for (const sheetName of wb.SheetNames) {
-    // Yield the event loop to allow incoming requests to process
-    await new Promise(r => setTimeout(r, 10));
+  return new Promise((resolve) => {
+    const workerUrl = fileURLToPath(new URL('./excelWorker.js', import.meta.url));
+    const worker = new Worker(workerUrl);
     
-    const sheetKey = sheetName.toUpperCase().trim();
-    if (sheetKey.startsWith('SHEET') && !(sheetKey in SHEET_TO_PHC)) {
-      delete wb.Sheets[sheetName];
-      continue;
-    }
+    worker.on('message', (msg) => {
+      if (msg.success) {
+        // Read the newly parsed SQLite snapshot back into main thread memory instantly!
+        const records = loadSheetSnapshot();
+        if (records) {
+          cache.records = records;
+          cache.ts = new Date().toISOString();
+          syncState.lastSyncTime = cache.ts;
+          resolve(records);
+        } else {
+          resolve(loadFromDbFallback('Worker parsed but snapshot missing'));
+        }
+      } else {
+        console.error(`[WORKER FAILED] ${msg.error}`);
+        resolve(loadFromDbFallback(`Worker failed: ${msg.error}`));
+      }
+    });
 
-    let rows;
-    try {
-      rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], {
-        header: 1, raw: true, defval: '',
-      });
-      // Free memory immediately
-      delete wb.Sheets[sheetName];
-    } catch {
-      continue;
-    }
-    
-    if (!rows || rows.length === 0) continue;
-    
-    const headerIdx = rows.findIndex((r) => r.some((v) => trimStr(v) !== ''));
-    if (headerIdx === -1) continue;
-    const headerRow = rows[headerIdx];
-    const dataRows = rows.slice(headerIdx + 1);
-    records.push(...buildRecordsFromSheet(sheetName, headerRow, dataRows));
-  }
+    worker.on('error', (err) => {
+      console.error(`[WORKER OOM/CRASH]`, err);
+      resolve(loadFromDbFallback(`Worker crashed: ${err.message}`));
+    });
 
-  if (records.length === 0) {
-    console.error(`[VALIDATION FAILED] Spreadsheet parsed to 0 records. Aborting update.`);
-    return loadFromDbFallback('Spreadsheet parsed to 0 records');
-  }
-
-  if (cache.records && cache.records.length > 0) {
-    const dropThreshold = cache.records.length * 0.5;
-    if (records.length < dropThreshold) {
-      console.error(`[VALIDATION FAILED] Row count dropped suspiciously (${cache.records.length} -> ${records.length}). Aborting update.`);
-      return loadFromDbFallback('Suspicious row count drop');
-    }
-  }
-
-  cache.records = records;
-  cache.ts = new Date().toISOString();
-  syncState.lastSyncTime = cache.ts;
-
-  try {
-    saveSheetSnapshot(records);
-  } catch (e) {
-    console.log(`[DB] Snapshot save failed: ${e.message}`);
-  }
-  
-  return records;
+    worker.postMessage('start');
+  });
 }
 
 // Merged view = Excel base data + app-side patient overrides. Recomputed only

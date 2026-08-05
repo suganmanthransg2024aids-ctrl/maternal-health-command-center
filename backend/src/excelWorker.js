@@ -1,54 +1,13 @@
 import { parentPort } from 'worker_threads';
-import XLSX from 'xlsx';
-import fs from 'fs';
+import { executeParseAndStore } from './excelLoader.js';
 
-XLSX.set_fs(fs);
-
-parentPort.on('message', (filePath) => {
-  let currentStep = 'reading file';
+parentPort.on('message', async (msg) => {
+  if (msg !== 'start') return;
   try {
-    const wb = XLSX.readFile(filePath, { cellDates: true });
-    
-    const sheetsData = [];
-    currentStep = 'parsing sheets';
-    
-    for (const sheetName of wb.SheetNames) {
-      const sheetKey = sheetName.toUpperCase().trim();
-      // Skip obvious non-PHC sheets to save conversion time
-      if (sheetKey.startsWith('SHEET') || sheetKey === 'DASHBOARD' || sheetKey === 'SUMMARY') {
-        continue;
-      }
-      
-      let rows;
-      try {
-        currentStep = `converting sheet ${sheetName}`;
-        rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], {
-          header: 1, raw: true, defval: '',
-        });
-        // HUGE MEMORY OPTIMIZATION for 512MB Render limit:
-        // Delete the sheet from the workbook immediately after converting to JSON
-        // so V8 can garbage collect it while we parse the next 33 sheets!
-        delete wb.Sheets[sheetName];
-      } catch (innerErr) {
-        console.error(`[WORKER] Inner sheet conversion error on ${sheetName}:`, innerErr);
-        continue;
-      }
-      
-      if (!rows || rows.length === 0) continue;
-      
-      const headerIdx = rows.findIndex((r) => r.some((v) => (v === null || v === undefined ? '' : String(v).trim()) !== ''));
-      if (headerIdx === -1) continue;
-      
-      sheetsData.push({
-        sheetName,
-        headerRow: rows[headerIdx],
-        dataRows: rows.slice(headerIdx + 1)
-      });
-    }
-    
-    parentPort.postMessage({ success: true, sheetsData });
+    const count = await executeParseAndStore();
+    parentPort.postMessage({ success: true, count });
   } catch (err) {
-    console.error(`[WORKER] Fatal error at step [${currentStep}]:`, err);
-    parentPort.postMessage({ success: false, error: err.message, step: currentStep });
+    console.error(`[WORKER] Fatal error:`, err);
+    parentPort.postMessage({ success: false, error: err.message });
   }
 });
