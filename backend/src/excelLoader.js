@@ -359,7 +359,11 @@ export async function loadExcelAsync() {
 
   return new Promise((resolve) => {
     const workerUrl = fileURLToPath(new URL('./excelWorker.js', import.meta.url));
-    const worker = new Worker(workerUrl);
+    // CRITICAL: Explicitly limit worker thread to 250MB RAM so it + main thread
+    // don't exceed the 512MB container limit and cause OOM 502s.
+    const worker = new Worker(workerUrl, {
+      execArgv: ['--max-old-space-size=250']
+    });
     
     worker.on('message', (msg) => {
       if (msg.success) {
