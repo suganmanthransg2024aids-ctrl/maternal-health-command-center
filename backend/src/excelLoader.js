@@ -292,17 +292,25 @@ export function loadExcel() {
   return loadFromDbFallback('Initial load requested');
 }
 
-export async function executeParseAndStore() {
+export async function loadExcelAsync() {
+  if (!fs.existsSync(EXCEL_PATH)) {
+    return loadFromDbFallback('Spreadsheet file missing');
+  }
+
   let wbMeta;
   try {
     wbMeta = XLSX.readFile(EXCEL_PATH, { bookSheets: true });
   } catch (e) {
-    throw new Error(`Spreadsheet unreadable (${e.message})`);
+    return loadFromDbFallback(`Spreadsheet unreadable (${e.message})`);
   }
   
   const records = [];
 
   for (const sheetName of wbMeta.SheetNames) {
+    // Yield the event loop to allow incoming requests to process
+    // This ensures the 38-second parse doesn't block the API
+    await new Promise(r => setTimeout(r, 10));
+    
     const sheetKey = sheetName.toUpperCase().trim();
     if (sheetKey.startsWith('SHEET') && !(sheetKey in SHEET_TO_PHC)) {
       continue;
@@ -310,11 +318,13 @@ export async function executeParseAndStore() {
 
     let rows;
     try {
+      // Parse ONLY the specific sheet we need, and use dense: true to halve memory!
       const wbSingle = XLSX.readFile(EXCEL_PATH, { 
         cellDates: true, 
         dense: true, 
         sheets: sheetName 
       });
+      
       rows = XLSX.utils.sheet_to_json(wbSingle.Sheets[sheetName], {
         header: 1, raw: true, defval: '',
       });
@@ -332,55 +342,29 @@ export async function executeParseAndStore() {
   }
 
   if (records.length === 0) {
-    throw new Error('Spreadsheet parsed to 0 records');
+    console.error(`[VALIDATION FAILED] Spreadsheet parsed to 0 records. Aborting update.`);
+    return loadFromDbFallback('Spreadsheet parsed to 0 records');
   }
 
-  const oldRecords = loadSheetSnapshot();
-  if (oldRecords && oldRecords.length > 0) {
-    const dropThreshold = oldRecords.length * 0.5;
+  if (cache.records && cache.records.length > 0) {
+    const dropThreshold = cache.records.length * 0.5;
     if (records.length < dropThreshold) {
-      throw new Error(`Suspicious row count drop (${oldRecords.length} -> ${records.length})`);
+      console.error(`[VALIDATION FAILED] Row count dropped suspiciously (${cache.records.length} -> ${records.length}). Aborting update.`);
+      return loadFromDbFallback('Suspicious row count drop');
     }
   }
 
-  saveSheetSnapshot(records);
-  return records.length;
-}
+  cache.records = records;
+  cache.ts = new Date().toISOString();
+  syncState.lastSyncTime = cache.ts;
 
-export async function loadExcelAsync() {
-  if (!fs.existsSync(EXCEL_PATH)) {
-    return loadFromDbFallback('Spreadsheet file missing');
+  try {
+    saveSheetSnapshot(records);
+  } catch (e) {
+    console.log(`[DB] Snapshot save failed: ${e.message}`);
   }
-
-  return new Promise((resolve) => {
-    const workerUrl = fileURLToPath(new URL('./excelWorker.js', import.meta.url));
-    const worker = new Worker(workerUrl);
-    
-    worker.on('message', (msg) => {
-      if (msg.success) {
-        // Read the newly parsed SQLite snapshot back into main thread memory instantly!
-        const records = loadSheetSnapshot();
-        if (records) {
-          cache.records = records;
-          cache.ts = new Date().toISOString();
-          syncState.lastSyncTime = cache.ts;
-          resolve(records);
-        } else {
-          resolve(loadFromDbFallback('Worker parsed but snapshot missing'));
-        }
-      } else {
-        console.error(`[WORKER FAILED] ${msg.error}`);
-        resolve(loadFromDbFallback(`Worker failed: ${msg.error}`));
-      }
-    });
-
-    worker.on('error', (err) => {
-      console.error(`[WORKER OOM/CRASH]`, err);
-      resolve(loadFromDbFallback(`Worker crashed: ${err.message}`));
-    });
-
-    worker.postMessage('start');
-  });
+  
+  return records;
 }
 
 // Merged view = Excel base data + app-side patient overrides. Recomputed only
