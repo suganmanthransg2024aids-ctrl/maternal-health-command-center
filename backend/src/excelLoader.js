@@ -293,28 +293,27 @@ export function loadExcel() {
     return loadFromDbFallback('Spreadsheet file missing');
   }
 
-  let wbMeta;
+  let wb;
   try {
-    wbMeta = XLSX.readFile(EXCEL_PATH, { bookSheets: true });
+    wb = XLSX.readFile(EXCEL_PATH, { cellDates: true, dense: true });
   } catch (e) {
     return loadFromDbFallback(`Spreadsheet unreadable (${e.message})`);
   }
   const records = [];
 
-  for (const sheetName of wbMeta.SheetNames) {
+  for (const sheetName of wb.SheetNames) {
     const sheetKey = sheetName.toUpperCase().trim();
-    if (sheetKey.startsWith('SHEET') && !(sheetKey in SHEET_TO_PHC)) continue;
+    if (sheetKey.startsWith('SHEET') && !(sheetKey in SHEET_TO_PHC)) {
+      delete wb.Sheets[sheetName];
+      continue;
+    }
 
     let rows;
     try {
-      const wbSingle = XLSX.readFile(EXCEL_PATH, { 
-        cellDates: true, 
-        dense: true, 
-        sheets: sheetName 
-      });
-      rows = XLSX.utils.sheet_to_json(wbSingle.Sheets[sheetName], {
+      rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], {
         header: 1, raw: true, defval: '',
       });
+      delete wb.Sheets[sheetName];
     } catch {
       continue;
     }
@@ -354,38 +353,32 @@ export async function loadExcelAsync() {
     return loadFromDbFallback('Spreadsheet file missing');
   }
 
-  let wbMeta;
+  let wb;
   try {
-    // Only read metadata (sheet names) first — extremely low memory!
-    wbMeta = XLSX.readFile(EXCEL_PATH, { bookSheets: true });
+    wb = XLSX.readFile(EXCEL_PATH, { cellDates: true, dense: true });
   } catch (e) {
     return loadFromDbFallback(`Spreadsheet unreadable (${e.message})`);
   }
   
   const records = [];
 
-  for (const sheetName of wbMeta.SheetNames) {
-    // Yield the event loop to allow API requests and Render health checks
-    // to be served in between parsing sheets!
+  for (const sheetName of wb.SheetNames) {
+    // Yield the event loop to allow incoming requests to process
     await new Promise(r => setTimeout(r, 10));
     
     const sheetKey = sheetName.toUpperCase().trim();
     if (sheetKey.startsWith('SHEET') && !(sheetKey in SHEET_TO_PHC)) {
+      delete wb.Sheets[sheetName];
       continue;
     }
 
     let rows;
     try {
-      // Parse ONLY the specific sheet we need, and use dense: true to halve memory!
-      const wbSingle = XLSX.readFile(EXCEL_PATH, { 
-        cellDates: true, 
-        dense: true, 
-        sheets: sheetName 
-      });
-      
-      rows = XLSX.utils.sheet_to_json(wbSingle.Sheets[sheetName], {
+      rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], {
         header: 1, raw: true, defval: '',
       });
+      // Free memory immediately
+      delete wb.Sheets[sheetName];
     } catch {
       continue;
     }
