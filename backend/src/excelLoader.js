@@ -1,4 +1,6 @@
 import fs from 'fs';
+import { Worker } from 'worker_threads';
+import { fileURLToPath } from 'url';
 import path from 'path';
 import crypto from 'crypto';
 import XLSX from 'xlsx';
@@ -290,23 +292,18 @@ export function loadExcel() {
   return loadFromDbFallback('Initial load requested');
 }
 
-export async function loadExcelAsync() {
-  if (!fs.existsSync(EXCEL_PATH)) {
-    return loadFromDbFallback('Spreadsheet file missing');
-  }
-
+export async function executeParseAndStore() {
   let wbMeta;
   try {
     wbMeta = XLSX.readFile(EXCEL_PATH, { bookSheets: true });
   } catch (e) {
-    return loadFromDbFallback(`Spreadsheet unreadable (${e.message})`);
+    throw new Error(`Spreadsheet unreadable (${e.message})`);
   }
   
   const records = [];
 
   for (const sheetName of wbMeta.SheetNames) {
     // Yield the event loop to allow incoming requests to process
-    // This ensures the 38-second parse doesn't block the API
     await new Promise(r => setTimeout(r, 10));
     
     const sheetKey = sheetName.toUpperCase().trim();
@@ -340,29 +337,55 @@ export async function loadExcelAsync() {
   }
 
   if (records.length === 0) {
-    console.error(`[VALIDATION FAILED] Spreadsheet parsed to 0 records. Aborting update.`);
-    return loadFromDbFallback('Spreadsheet parsed to 0 records');
+    throw new Error('Spreadsheet parsed to 0 records');
   }
 
-  if (cache.records && cache.records.length > 0) {
-    const dropThreshold = cache.records.length * 0.5;
+  const oldRecords = loadSheetSnapshot();
+  if (oldRecords && oldRecords.length > 0) {
+    const dropThreshold = oldRecords.length * 0.5;
     if (records.length < dropThreshold) {
-      console.error(`[VALIDATION FAILED] Row count dropped suspiciously (${cache.records.length} -> ${records.length}). Aborting update.`);
-      return loadFromDbFallback('Suspicious row count drop');
+      throw new Error(`Suspicious row count drop (${oldRecords.length} -> ${records.length})`);
     }
   }
 
-  cache.records = records;
-  cache.ts = new Date().toISOString();
-  syncState.lastSyncTime = cache.ts;
-
-  try {
-    saveSheetSnapshot(records);
-  } catch (e) {
-    console.log(`[DB] Snapshot save failed: ${e.message}`);
-  }
-  
+  saveSheetSnapshot(records);
   return records;
+}
+
+export async function loadExcelAsync() {
+  if (!fs.existsSync(EXCEL_PATH)) {
+    return loadFromDbFallback('Spreadsheet file missing');
+  }
+
+  return new Promise((resolve) => {
+    const workerUrl = fileURLToPath(new URL('./excelWorker.js', import.meta.url));
+    const worker = new Worker(workerUrl);
+    
+    worker.on('message', (msg) => {
+      if (msg.success) {
+        // Read the newly parsed SQLite snapshot back into main thread memory instantly!
+        const records = loadSheetSnapshot();
+        if (records) {
+          cache.records = records;
+          cache.ts = new Date().toISOString();
+          syncState.lastSyncTime = cache.ts;
+          resolve(records);
+        } else {
+          resolve(loadFromDbFallback('Worker parsed but snapshot missing'));
+        }
+      } else {
+        console.error(`[WORKER FAILED] ${msg.error}`);
+        resolve(loadFromDbFallback(`Worker failed: ${msg.error}`));
+      }
+    });
+
+    worker.on('error', (err) => {
+      console.error(`[WORKER OOM/CRASH]`, err);
+      resolve(loadFromDbFallback(`Worker crashed: ${err.message}`));
+    });
+
+    worker.postMessage('start');
+  });
 }
 
 // Merged view = Excel base data + app-side patient overrides. Recomputed only
