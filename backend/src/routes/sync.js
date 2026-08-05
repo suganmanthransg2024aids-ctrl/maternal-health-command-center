@@ -3,7 +3,7 @@ import fs from 'fs';
 import multer from 'multer';
 import XLSX from 'xlsx';
 import { EXCEL_PATH, EXCEL_URL, AUTO_SYNC_INTERVAL, CLOUD_SYNC_INTERVAL } from '../config.js';
-import { cache, syncState, loadExcel, downloadExcel, replaceFile, ensureFreshest } from '../excelLoader.js';
+import { cache, syncState, loadExcel, loadExcelAsync, downloadExcel, replaceFile, ensureFreshest } from '../excelLoader.js';
 import { setSettingValue } from '../store.js';
 import { asyncRoute } from '../helpers.js';
 
@@ -20,7 +20,7 @@ router.post('/refresh', async (req, res) => {
       downloaded = await downloadExcel();
       console.log(`[REFRESH] Download ${downloaded ? 'changed' : 'no change'}`);
     }
-    loadExcel();
+    await loadExcelAsync();
     await ensureFreshest();
     syncState.lastSyncTime = new Date().toISOString();
     syncState.syncCount += 1;

@@ -1,4 +1,7 @@
 import fs from 'fs';
+import { Worker } from 'worker_threads';
+import { fileURLToPath } from 'url';
+import path from 'path';
 import crypto from 'crypto';
 import XLSX from 'xlsx';
 import {
@@ -263,16 +266,22 @@ function buildRecordsFromSheet(sheetName, headerRow, rawDataRows) {
   return out;
 }
 
-/** Spreadsheet file unusable — serve the last good dataset from the DB. */
+/** Spreadsheet file unusable — serve the last good dataset from the DB (or memory). */
 function loadFromDbFallback(reason) {
+  if (cache.records && cache.records.length > 0) {
+    console.error(`[FALLBACK] ${reason} — keeping ${cache.records.length} records currently in memory.`);
+    return cache.records;
+  }
   let records = null;
   try {
     records = loadSheetSnapshot();
   } catch (e) {
-    console.log(`[DB] Snapshot read failed: ${e.message}`);
+    console.error(`[DB] Snapshot read failed:`, e);
   }
   if (records) {
-    console.log(`[DB] ${reason} — serving ${records.length} records from database snapshot`);
+    console.error(`[FALLBACK] ${reason} — serving ${records.length} records from database snapshot.`);
+  } else {
+    console.error(`[CRITICAL] ${reason} — no fallback data available (serving empty array)!`);
   }
   cache.records = records || [];
   cache.ts = new Date().toISOString();
@@ -333,6 +342,65 @@ export function loadExcel() {
     console.log(`[DB] Snapshot save failed: ${e.message}`);
   }
   return records;
+}
+
+export function loadExcelAsync() {
+  return new Promise((resolve, reject) => {
+    if (!fs.existsSync(EXCEL_PATH)) {
+      return resolve(loadFromDbFallback('Spreadsheet file missing'));
+    }
+
+    const __dirname = path.dirname(fileURLToPath(import.meta.url));
+    const worker = new Worker(path.join(__dirname, 'excelWorker.js'));
+    
+    worker.postMessage(EXCEL_PATH);
+    
+    worker.on('message', (result) => {
+      if (result.success) {
+        try {
+          const records = [];
+          for (const sheet of result.sheetsData) {
+            records.push(...buildRecordsFromSheet(sheet.sheetName, sheet.headerRow, sheet.dataRows));
+          }
+          
+          if (records.length === 0) {
+            console.error(`[VALIDATION FAILED] Spreadsheet parsed to 0 records. Aborting update.`);
+            return resolve(loadFromDbFallback('Spreadsheet parsed to 0 records'));
+          }
+          
+          if (cache.records && cache.records.length > 0) {
+            // Guard against the sheet being accidentally wiped or corrupted
+            const dropThreshold = cache.records.length * 0.5;
+            if (records.length < dropThreshold) {
+              console.error(`[VALIDATION FAILED] Row count dropped suspiciously (${cache.records.length} -> ${records.length}). Aborting update.`);
+              return resolve(loadFromDbFallback('Suspicious row count drop'));
+            }
+          }
+          
+          cache.records = records;
+          cache.ts = new Date().toISOString();
+          syncState.lastSyncTime = cache.ts;
+          
+          try {
+            saveSheetSnapshot(records);
+          } catch (e) {
+            console.log(`[DB] Snapshot save failed: ${e.message}`);
+          }
+          resolve(records);
+        } catch (e) {
+          reject(e);
+        }
+      } else {
+        console.error(`[WORKER] Excel parse failed (at ${result.step || 'unknown step'}): ${result.error}`);
+        resolve(loadFromDbFallback(`Spreadsheet unreadable (${result.error})`));
+      }
+    });
+
+    worker.on('error', (error) => {
+      console.error(`[WORKER] Critical thread crash:`, error);
+      resolve(loadFromDbFallback(`Worker error (${error.message})`));
+    });
+  });
 }
 
 // Merged view = Excel base data + app-side patient overrides. Recomputed only
@@ -542,7 +610,11 @@ export function startAutoSync() {
     syncState.lastMtime = getFileMtime();
 
     setInterval(async () => {
-      if (!syncState.autoEnabled || syncState.syncing) return;
+      if (!syncState.autoEnabled) return;
+      if (syncState.syncing) {
+        console.log('[SYNC] Previous sync run is still executing. Skipping this interval.');
+        return;
+      }
 
       let shouldReload = false;
 
@@ -569,7 +641,7 @@ export function startAutoSync() {
       if (shouldReload) {
         syncState.syncing = true;
         try {
-          loadExcel();
+          await loadExcelAsync();
           await ensureFreshest();
           syncState.lastMtime = getFileMtime();
           syncState.lastSyncTime = new Date().toISOString();

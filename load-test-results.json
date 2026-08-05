@@ -1,0 +1,62 @@
+{
+  "targetUrl": "https://ccmc-maternal-tracker.onrender.com",
+  "durationSeconds": 60,
+  "totalRequests": 289,
+  "success": 227,
+  "rateLimited": 0,
+  "errors": 62,
+  "statusCodes": {
+    "200": 227,
+    "502": 62
+  },
+  "overallLatenciesMs": {
+    "min": 68,
+    "max": 51349,
+    "avg": 4654,
+    "p95": 49636
+  },
+  "duringSyncLatenciesMs": {
+    "min": 139,
+    "max": 51349,
+    "avg": 12740,
+    "p95": 50385
+  },
+  "endpointLatenciesMs": {
+    "/api/alerts?role=admin": {
+      "min": 84,
+      "max": 50385,
+      "avg": 1609,
+      "p95": 1156
+    },
+    "/api/calls?role=admin": {
+      "min": 79,
+      "max": 50601,
+      "avg": 7758,
+      "p95": 50260
+    },
+    "/api/patients?role=admin": {
+      "min": 71,
+      "max": 50592,
+      "avg": 3531,
+      "p95": 40939
+    },
+    "/api/stats?role=admin": {
+      "min": 74,
+      "max": 50301,
+      "avg": 3737,
+      "p95": 50135
+    },
+    "/api/sync-status": {
+      "min": 68,
+      "max": 50553,
+      "avg": 4325,
+      "p95": 49516
+    },
+    "/health": {
+      "min": 74,
+      "max": 51349,
+      "avg": 5929,
+      "p95": 50024
+    }
+  }
+}

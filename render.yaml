@@ -4,12 +4,12 @@ services:
     env: docker
     region: ohio
     plan: free
-    healthCheckPath: /api/health
+    healthCheckPath: /health
     envVars:
       - key: EXCEL_URL
         value: https://docs.google.com/spreadsheets/d/1T1sthQZftwJEyve2wuyAwVZ55sr8TvgwhQJFEdEmAmA/export?format=xlsx
       - key: SYNC_INTERVAL_SEC
-        value: "60"
+        value: "900"
       # HRT updates (calls, follow-ups, delivery status, edits) persist in
       # PostgreSQL — they survive restarts, redeploys and crashes. Render's
       # own disk is wiped on every deploy, so never store them on disk.
