@@ -11,7 +11,6 @@ const router = Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
 router.post('/refresh', async (req, res) => {
-  cache.records = null;
   syncState.syncing = true;
   let downloaded = false;
   try {
@@ -75,10 +74,9 @@ router.post('/upload-excel', upload.single('file'), async (req, res) => {
     return res.status(500).json({ error: `Upload failed: ${e.message}` });
   }
 
-  cache.records = null;
   syncState.syncing = true;
   try {
-    loadExcel();
+    await loadExcelAsync();
     await ensureFreshest({ forceStore: true });
     syncState.lastSyncTime = new Date().toISOString();
     syncState.syncCount += 1;
