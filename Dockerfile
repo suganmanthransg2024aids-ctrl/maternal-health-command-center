@@ -21,4 +21,4 @@ ENV PORT=8001
 EXPOSE 8001
 
 WORKDIR /app/backend
-CMD ["node", "server.js"]
+CMD ["node", "--max-old-space-size=400", "server.js"]
