@@ -539,15 +539,26 @@ export async function downloadExcel() {
       console.log(`[CLOUD-SYNC] Download failed: HTTP ${resp.status}`);
       return false;
     }
-    const buf = Buffer.from(await resp.arrayBuffer());
 
     if (EXCEL_URL.includes('docs.google.com')) {
-      if (!(buf[0] === 0x50 && buf[1] === 0x4b)) { // 'PK' ZIP/XLSX magic bytes
-        console.log('[CLOUD-SYNC] Google Sheets returned non-Excel content (possibly blocked)');
+      const type = resp.headers.get('content-type') || '';
+      if (!type.includes('spreadsheet') && !type.includes('excel') && !type.includes('octet-stream')) {
+        console.log(`[CLOUD-SYNC] Google Sheets returned non-Excel content (${type}) - possibly blocked`);
         return false;
       }
     }
-    fs.writeFileSync(tmp, buf);
+
+    // STREAM directly to disk to prevent massive memory spike (OOM crash)
+    const { pipeline } = await import('stream/promises');
+    const { Readable } = await import('stream');
+    const dest = fs.createWriteStream(tmp);
+    if (resp.body.getReader) {
+      // Node 18+ Web ReadableStream
+      await pipeline(Readable.fromWeb(resp.body), dest);
+    } else {
+      // Node-fetch standard Node Readable
+      await pipeline(resp.body, dest);
+    }
 
     let changed = true;
     if (fs.existsSync(EXCEL_PATH)) {

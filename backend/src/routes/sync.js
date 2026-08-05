@@ -24,6 +24,9 @@ router.post('/refresh', async (req, res) => {
     syncState.lastSyncTime = new Date().toISOString();
     syncState.syncCount += 1;
     syncState.lastMtime = fs.existsSync(EXCEL_PATH) ? fs.statSync(EXCEL_PATH).mtimeMs : null;
+  } catch (e) {
+    syncState.syncing = false;
+    return res.status(500).json({ error: `Refresh failed: ${e.message}` });
   } finally {
     syncState.syncing = false;
   }
@@ -81,6 +84,9 @@ router.post('/upload-excel', upload.single('file'), async (req, res) => {
     syncState.lastSyncTime = new Date().toISOString();
     syncState.syncCount += 1;
     syncState.lastMtime = fs.existsSync(EXCEL_PATH) ? fs.statSync(EXCEL_PATH).mtimeMs : null;
+  } catch (e) {
+    syncState.syncing = false;
+    return res.status(500).json({ error: `Sync failed: ${e.message}` });
   } finally {
     syncState.syncing = false;
   }
