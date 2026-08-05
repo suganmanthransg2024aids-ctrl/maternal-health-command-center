@@ -293,9 +293,16 @@ export function loadExcel() {
 }
 
 export async function executeParseAndStore() {
+  let fileBuffer;
+  try {
+    fileBuffer = fs.readFileSync(EXCEL_PATH);
+  } catch (e) {
+    throw new Error(`Failed to read file from disk (${e.message})`);
+  }
+
   let wbMeta;
   try {
-    wbMeta = XLSX.readFile(EXCEL_PATH, { bookSheets: true });
+    wbMeta = XLSX.read(fileBuffer, { type: 'buffer', bookSheets: true });
   } catch (e) {
     throw new Error(`Spreadsheet unreadable (${e.message})`);
   }
@@ -313,8 +320,10 @@ export async function executeParseAndStore() {
 
     let rows;
     try {
-      // Parse ONLY the specific sheet we need, and use dense: true to halve memory!
-      const wbSingle = XLSX.readFile(EXCEL_PATH, { 
+      // Parse ONLY the specific sheet we need from the pre-loaded buffer!
+      // This prevents Native Memory (Buffers) from spiking to 1.7GB!
+      const wbSingle = XLSX.read(fileBuffer, { 
+        type: 'buffer',
         cellDates: true, 
         dense: true, 
         sheets: sheetName 
