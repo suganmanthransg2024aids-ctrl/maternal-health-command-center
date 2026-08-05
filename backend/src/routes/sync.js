@@ -10,32 +10,37 @@ import { asyncRoute } from '../helpers.js';
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
-router.post('/refresh', async (req, res) => {
-  syncState.syncing = true;
-  let downloaded = false;
-  try {
-    if (EXCEL_URL) {
-      console.log('[REFRESH] Force-downloading from Google Sheets…');
-      downloaded = await downloadExcel();
-      console.log(`[REFRESH] Download ${downloaded ? 'changed' : 'no change'}`);
-    }
-    await loadExcelAsync();
-    await ensureFreshest();
-    syncState.lastSyncTime = new Date().toISOString();
-    syncState.syncCount += 1;
-    syncState.lastMtime = fs.existsSync(EXCEL_PATH) ? fs.statSync(EXCEL_PATH).mtimeMs : null;
-  } catch (e) {
-    syncState.syncing = false;
-    return res.status(500).json({ error: `Refresh failed: ${e.message}` });
-  } finally {
-    syncState.syncing = false;
+router.post('/refresh', (req, res) => {
+  if (syncState.syncing) {
+    return res.json({ success: true, message: "Sync already in progress" });
   }
-  const records = cache.records ? cache.records.length : 0;
+  syncState.syncing = true;
+  
+  // Fire and forget the background worker so the HTTP request doesn't timeout after 30s
+  (async () => {
+    try {
+      let downloaded = false;
+      if (EXCEL_URL) {
+        console.log('[REFRESH] Force-downloading from Google Sheets…');
+        downloaded = await downloadExcel();
+        console.log(`[REFRESH] Download ${downloaded ? 'changed' : 'no change'}`);
+      }
+      await loadExcelAsync();
+      await ensureFreshest();
+      syncState.lastSyncTime = new Date().toISOString();
+      syncState.syncCount += 1;
+      syncState.lastMtime = fs.existsSync(EXCEL_PATH) ? fs.statSync(EXCEL_PATH).mtimeMs : null;
+    } catch (e) {
+      console.error(`[REFRESH] Background sync failed: ${e.message}`);
+    } finally {
+      syncState.syncing = false;
+    }
+  })();
+
   res.json({
     success: true,
-    records,
+    message: "Background sync started",
     ts: cache.ts,
-    downloaded,
     source: EXCEL_URL ? 'google_sheets' : 'local_file',
   });
 });
