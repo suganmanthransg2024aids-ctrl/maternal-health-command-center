@@ -5,7 +5,7 @@
   "main": "server.js",
   "type": "module",
   "scripts": {
-    "start": "node --max-old-space-size=250 server.js",
+    "start": "node --max-old-space-size=150 server.js",
     "dev": "nodemon server.js"
   },
   "dependencies": {
