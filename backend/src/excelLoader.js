@@ -293,28 +293,31 @@ export function loadExcel() {
 }
 
 export async function executeParseAndStore() {
-  let wb;
+  let wbMeta;
   try {
-    wb = XLSX.readFile(EXCEL_PATH, { cellDates: true, dense: true });
+    wbMeta = XLSX.readFile(EXCEL_PATH, { bookSheets: true });
   } catch (e) {
     throw new Error(`Spreadsheet unreadable (${e.message})`);
   }
   
   const records = [];
 
-  for (const sheetName of wb.SheetNames) {
+  for (const sheetName of wbMeta.SheetNames) {
     const sheetKey = sheetName.toUpperCase().trim();
     if (sheetKey.startsWith('SHEET') && !(sheetKey in SHEET_TO_PHC)) {
-      delete wb.Sheets[sheetName];
       continue;
     }
 
     let rows;
     try {
-      rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], {
+      const wbSingle = XLSX.readFile(EXCEL_PATH, { 
+        cellDates: true, 
+        dense: true, 
+        sheets: sheetName 
+      });
+      rows = XLSX.utils.sheet_to_json(wbSingle.Sheets[sheetName], {
         header: 1, raw: true, defval: '',
       });
-      delete wb.Sheets[sheetName];
     } catch {
       continue;
     }
