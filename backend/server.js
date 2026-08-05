@@ -4,6 +4,29 @@ import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const logPath = path.join(__dirname, 'crash.log');
+
+// Overwrite console.log and console.error to also write to a file
+const origLog = console.log;
+const origErr = console.error;
+console.log = (...args) => {
+  origLog(...args);
+  try { fs.appendFileSync(logPath, `[LOG] ${args.join(' ')}\n`); } catch(e){}
+};
+console.error = (...args) => {
+  origErr(...args);
+  try { fs.appendFileSync(logPath, `[ERR] ${args.join(' ')}\n`); } catch(e){}
+};
+
+process.on('uncaughtException', (err) => {
+  console.error('UNCAUGHT EXCEPTION:', err.stack || err);
+});
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('UNHANDLED REJECTION:', reason);
+});
 
 import {
   PORT, HOST, EXCEL_URL, EXCEL_PATH, FRONTEND_DIST, DB_PATH, CLOUD_SYNC_INTERVAL,
