@@ -1,62 +1,61 @@
 {
   "targetUrl": "https://ccmc-maternal-tracker.onrender.com",
   "durationSeconds": 60,
-  "totalRequests": 1279,
-  "success": 329,
+  "totalRequests": 909,
+  "success": 909,
   "rateLimited": 0,
-  "errors": 950,
+  "errors": 0,
   "statusCodes": {
-    "200": 329,
-    "502": 950
+    "200": 909
   },
   "overallLatenciesMs": {
-    "min": 59,
-    "max": 5848,
-    "avg": 339,
-    "p95": 1200
+    "min": 60,
+    "max": 31142,
+    "avg": 1084,
+    "p95": 419
   },
   "duringSyncLatenciesMs": {
-    "min": 1151,
-    "max": 2324,
-    "avg": 1797,
-    "p95": 2324
+    "min": 0,
+    "max": 0,
+    "avg": 0,
+    "p95": 0
   },
   "endpointLatenciesMs": {
     "/api/patients?role=admin": {
-      "min": 64,
-      "max": 1724,
-      "avg": 270,
-      "p95": 847
-    },
-    "/api/stats?role=admin": {
-      "min": 63,
-      "max": 2476,
-      "avg": 370,
-      "p95": 1209
-    },
-    "/health": {
-      "min": 61,
-      "max": 5848,
-      "avg": 413,
-      "p95": 1443
+      "min": 60,
+      "max": 31039,
+      "avg": 1238,
+      "p95": 270
     },
     "/api/calls?role=admin": {
-      "min": 62,
-      "max": 2162,
-      "avg": 350,
-      "p95": 1302
-    },
-    "/api/sync-status": {
-      "min": 60,
-      "max": 2187,
-      "avg": 319,
-      "p95": 1029
+      "min": 61,
+      "max": 31035,
+      "avg": 1571,
+      "p95": 560
     },
     "/api/alerts?role=admin": {
-      "min": 59,
-      "max": 2632,
-      "avg": 308,
-      "p95": 886
+      "min": 61,
+      "max": 31037,
+      "avg": 974,
+      "p95": 299
+    },
+    "/health": {
+      "min": 60,
+      "max": 31142,
+      "avg": 1636,
+      "p95": 664
+    },
+    "/api/stats?role=admin": {
+      "min": 61,
+      "max": 30951,
+      "avg": 747,
+      "p95": 159
+    },
+    "/api/sync-status": {
+      "min": 61,
+      "max": 31035,
+      "avg": 559,
+      "p95": 173
     }
   }
 }
