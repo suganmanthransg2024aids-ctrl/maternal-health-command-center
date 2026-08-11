@@ -338,7 +338,17 @@ export async function executeParseAndStore() {
     
     if (!rows || rows.length === 0) continue;
     
-    const headerIdx = rows.findIndex((r) => r.some((v) => trimStr(v) !== ''));
+    const headerIdx = rows.findIndex((r) => {
+      const up = r.map((v) => trimStr(String(v)).toUpperCase().replace(/[^A-Z]/g, ''));
+      return up.some(v => 
+        v === 'RCHID' || 
+        v.includes('MOTHERNAME') || 
+        v === 'SNO' || 
+        v === 'SLNO' || 
+        v === 'EDD' ||
+        v === 'LMP'
+      );
+    });
     if (headerIdx === -1) continue;
     const headerRow = rows[headerIdx];
     const dataRows = rows.slice(headerIdx + 1);
@@ -368,10 +378,10 @@ export async function loadExcelAsync() {
 
   return new Promise((resolve) => {
     const workerUrl = fileURLToPath(new URL('./excelWorker.js', import.meta.url));
-    // CRITICAL: Explicitly limit worker thread to 150MB RAM so it + main thread
-    // don't exceed the 512MB container limit and cause OOM 502s.
+    // CRITICAL: Clear inherited flags to avoid ERR_WORKER_INVALID_EXEC_ARGV if main process
+    // was started with --max-old-space-size, which cannot be applied to worker isolates directly.
     const worker = new Worker(workerUrl, {
-      execArgv: ['--max-old-space-size=150']
+      execArgv: []
     });
     
     worker.on('message', (msg) => {
