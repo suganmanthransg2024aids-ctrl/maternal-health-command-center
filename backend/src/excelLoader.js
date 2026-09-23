@@ -101,7 +101,7 @@ const HEADER_SKIP_NAMES = new Set([
 const DELIVERY_KEYWORDS = ['DELIVERED', 'DOD', 'LSCS', 'NVD', 'FCH', 'MCH'];
 const DELIVERY_KW_RES = DELIVERY_KEYWORDS.map((kw) => new RegExp(`\\b${kw}\\b`));
 
-function buildRecordsFromSheet(sheetName, headerRow, rawDataRows) {
+export function buildRecordsFromSheet(sheetName, headerRow, rawDataRows) {
   // ── Normalize column headers ──────────────────────────────────────
   const headers = headerRow.map((h) => trimStr(h));
 
@@ -686,4 +686,39 @@ export function startAutoSync() {
       }
     }, AUTO_SYNC_INTERVAL * 1000);
   }, 20000);
+}
+
+/**
+ * Directly insert or update a patient row pushed from a Google Sheets Webhook.
+ * This completely bypasses downloading/parsing the 15MB file.
+ */
+export async function processWebhookUpdate(sheetName, headers, rowData) {
+  // 1. Build the single record exactly how the normal parser does
+  const records = buildRecordsFromSheet(sheetName, headers, [rowData]);
+  if (!records || records.length === 0) return null;
+  const newRecord = records[0];
+
+  // 2. Update the in-memory cache instantly
+  if (!cache.records) cache.records = [];
+  const existingIdx = cache.records.findIndex(r => r.uid === newRecord.uid);
+  if (existingIdx !== -1) {
+    cache.records[existingIdx] = newRecord;
+    console.log(`[WEBHOOK] Updated existing record: ${newRecord.uid}`);
+  } else {
+    cache.records.push(newRecord);
+    console.log(`[WEBHOOK] Inserted new record: ${newRecord.uid}`);
+  }
+
+  cache.ts = new Date().toISOString();
+  syncState.lastSyncTime = cache.ts;
+  
+  // 3. Save the new snapshot to Postgres so it survives a reboot
+  if (usingPostgres) {
+    await saveParsedSnapshot(cache.records).catch(e => console.error("[STORE] Failed to save webhook snapshot", e));
+  }
+
+  // 4. Force merged records to recompute next time getData() is called
+  merged.baseTs = null; 
+
+  return newRecord;
 }

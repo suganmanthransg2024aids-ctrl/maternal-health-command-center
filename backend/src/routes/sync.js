@@ -3,7 +3,7 @@ import fs from 'fs';
 import multer from 'multer';
 import XLSX from 'xlsx';
 import { EXCEL_PATH, EXCEL_URL, AUTO_SYNC_INTERVAL, CLOUD_SYNC_INTERVAL } from '../config.js';
-import { cache, syncState, loadExcel, loadExcelAsync, downloadExcel, replaceFile, ensureFreshest } from '../excelLoader.js';
+import { cache, syncState, loadExcel, loadExcelAsync, downloadExcel, replaceFile, ensureFreshest, processWebhookUpdate } from '../excelLoader.js';
 import { setSettingValue } from '../store.js';
 import { asyncRoute } from '../helpers.js';
 
@@ -139,5 +139,31 @@ router.get('/sync-status', (req, res) => {
     using_stored_sheet: Boolean(syncState.usingStoredSheet),
   });
 });
+
+/** Webhook endpoint for Google Sheets Apps Script */
+router.post('/webhook/sheets', asyncRoute(async (req, res) => {
+  const { secret, sheetName, headers, rowData } = req.body;
+  
+  // Use a simple environment variable for the webhook secret, or fallback to a default if not set
+  const expectedSecret = process.env.WEBHOOK_SECRET || 'ccmc-secret-webhook-key-2024';
+  if (secret !== expectedSecret) {
+    return res.status(401).json({ error: 'Unauthorized webhook request' });
+  }
+
+  if (!sheetName || !headers || !rowData || !Array.isArray(headers) || !Array.isArray(rowData)) {
+    return res.status(400).json({ error: 'Invalid payload format' });
+  }
+
+  try {
+    const newRecord = await processWebhookUpdate(sheetName, headers, rowData);
+    if (!newRecord) {
+      return res.status(400).json({ error: 'Failed to build record from payload' });
+    }
+    res.json({ success: true, uid: newRecord.uid, message: 'Record updated successfully via webhook' });
+  } catch (e) {
+    console.error(`[WEBHOOK] Error processing update:`, e);
+    res.status(500).json({ error: 'Internal server error processing webhook' });
+  }
+}));
 
 export default router;
