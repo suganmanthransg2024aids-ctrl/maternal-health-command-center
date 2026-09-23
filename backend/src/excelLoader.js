@@ -381,7 +381,7 @@ export async function loadExcelAsync() {
     // CRITICAL: Clear inherited flags to avoid ERR_WORKER_INVALID_EXEC_ARGV if main process
     // was started with --max-old-space-size, which cannot be applied to worker isolates directly.
     const worker = new Worker(workerUrl, {
-      execArgv: ['--max-old-space-size=400']
+      execArgv: []
     });
     
     worker.on('message', (msg) => {
