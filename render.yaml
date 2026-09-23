@@ -15,11 +15,11 @@ services:
       # own disk is wiped on every deploy, so never store them on disk.
       - key: DATABASE_URL
         fromDatabase:
-          name: ccmc-db
+          name: ccmc-db-v2
           property: connectionString
 
 databases:
-  - name: ccmc-db
+  - name: ccmc-db-v2
     plan: free
     region: ohio
-# redeployed: 2026-07-09 | region: ohio | source: google-sheets | sync: 60s | store: postgres
+# redeployed: 2026-09-23 | region: ohio | source: google-sheets | sync: 60s | store: postgres
