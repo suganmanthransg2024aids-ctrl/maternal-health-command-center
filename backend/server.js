@@ -32,7 +32,7 @@ import {
   PORT, HOST, EXCEL_URL, EXCEL_PATH, FRONTEND_DIST, DB_PATH, CLOUD_SYNC_INTERVAL,
 } from './src/config.js';
 import { loadExcel, loadExcelAsync, downloadExcel, startAutoSync, ensureFreshest, cache, syncState } from './src/excelLoader.js';
-import { initStore, usingPostgres, getSettingValue } from './src/store.js';
+import { initStore, usingPostgres, getSettingValue, loadParsedSnapshot } from './src/store.js';
 import { backupDb } from './src/activityDb.js';
 
 import healthRouter from './src/routes/health.js';
@@ -114,6 +114,16 @@ async function main() {
 
   // Heavy lifting in the background
   const initData = async () => {
+    if (usingPostgres) {
+      const snap = await loadParsedSnapshot();
+      if (snap && snap.length > 0) {
+        cache.records = snap;
+        cache.ts = new Date().toISOString();
+        syncState.lastSyncTime = cache.ts;
+        console.log(`[BOOT] Preloaded ${snap.length} records from Postgres fallback`);
+      }
+    }
+
     if (EXCEL_URL) {
       console.log(`Mode  : CLOUD — Google Sheets sync every ${CLOUD_SYNC_INTERVAL}s`);
       console.log(`URL   : ${EXCEL_URL}`);

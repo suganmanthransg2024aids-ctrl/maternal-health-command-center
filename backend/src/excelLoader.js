@@ -13,7 +13,7 @@ import {
 XLSX.set_fs(fs);
 import { SHEET_TO_PHC, PHC_MAP } from './constants.js';
 import { saveSheetSnapshot, loadSheetSnapshot } from './activityDb.js';
-import { usingPostgres, getWorkbookMeta, getWorkbookBytes, saveWorkbookBytes } from './store.js';
+import { usingPostgres, getWorkbookMeta, getWorkbookBytes, saveWorkbookBytes, saveParsedSnapshot } from './store.js';
 import { parseRisk } from './riskEngine.js';
 import { parseDate, daysToEdd, parseDeliveryDate, splitNameAddress, formatDDMMYYYY } from './parseUtils.js';
 import { applyOverrides, overridesVersion } from './overrides.js';
@@ -392,6 +392,11 @@ export async function loadExcelAsync() {
           cache.records = records;
           cache.ts = new Date().toISOString();
           syncState.lastSyncTime = cache.ts;
+          
+          if (usingPostgres) {
+            saveParsedSnapshot(records).catch(e => console.error(`[STORE] Failed to save postgres snapshot: ${e.message}`));
+          }
+
           resolve(records);
         } else {
           resolve(loadFromDbFallback('Worker parsed but snapshot missing'));

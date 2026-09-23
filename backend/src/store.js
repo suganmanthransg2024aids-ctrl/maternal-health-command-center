@@ -182,6 +182,32 @@ export async function saveWorkbookBytes(buf, recordCount, source) {
   );
 }
 
+export async function saveParsedSnapshot(records) {
+  if (!usingPostgres || !pool) return;
+  try {
+    await pool.query(
+      `INSERT INTO sheet_snapshot (id, records) VALUES (1, $1)
+       ON CONFLICT (id) DO UPDATE SET records = EXCLUDED.records, saved_at = now()`,
+      [JSON.stringify(records)]
+    );
+  } catch (e) {
+    console.error(`[STORE] Error saving parsed snapshot to postgres:`, e);
+  }
+}
+
+export async function loadParsedSnapshot() {
+  if (!usingPostgres || !pool) return null;
+  try {
+    const q = await pool.query(`SELECT records FROM sheet_snapshot WHERE id = 1`);
+    if (q.rows.length) {
+      return q.rows[0].records;
+    }
+  } catch (e) {
+    console.error(`[STORE] Error loading parsed snapshot from postgres:`, e);
+  }
+  return null;
+}
+
 // ── Auth ───────────────────────────────────────────────────────────────────
 function pgRowToUser(r) {
   let phcs = [];
@@ -384,6 +410,12 @@ CREATE TABLE IF NOT EXISTS sheet_workbook (
   bytes        BYTEA NOT NULL,
   record_count INTEGER NOT NULL,
   source       TEXT,
+  saved_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS sheet_snapshot (
+  id           INTEGER PRIMARY KEY CHECK (id = 1),
+  records      JSONB NOT NULL,
   saved_at     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
