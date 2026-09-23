@@ -407,6 +407,13 @@ export async function loadExcelAsync() {
       resolve(loadFromDbFallback(`Worker crashed: ${err.message}`));
     });
 
+    worker.on('exit', (code) => {
+      if (code !== 0) {
+        console.error(`[WORKER EXIT] code ${code}`);
+        resolve(loadFromDbFallback(`Worker exited with code ${code}`));
+      }
+    });
+
     worker.postMessage('start');
   });
 }
