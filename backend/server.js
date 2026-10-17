@@ -54,12 +54,20 @@ app.get('/health', (req, res) => res.status(200).send('OK'));
 
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 3000, // Increased to 3000 to accommodate frontend 10s/15s/30s polling loops
+  max: 3000, // accommodate polling and multi-client activity
   message: 'Too many requests, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
 });
 app.use('/api', apiLimiter);
+
+// Enable ETag conditional revalidation on all GET API endpoints
+app.use('/api', (req, res, next) => {
+  if (req.method === 'GET') {
+    res.setHeader('Cache-Control', 'no-cache');
+  }
+  next();
+});
 
 app.use('/api', healthRouter);
 app.use('/api', authRouter);

@@ -180,12 +180,19 @@ export default function Header({ user, backendOK, lastSync, syncing, onRefresh, 
         <button
           onClick={onRefresh}
           disabled={syncing}
-          title="Reload Excel database"
-          className="btn-ghost p-2 rounded-lg"
-          style={{ padding: '7px' }}
+          title="Refresh Data from Server"
+          className="btn-ghost p-2 rounded-lg flex items-center gap-1.5"
+          style={{
+            padding: '7px 11px',
+            background: syncing ? 'rgba(59,130,246,0.1)' : 'transparent',
+            border: '1px solid var(--ccmc-border-s)',
+          }}
         >
-          <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`}
+          <RefreshCw className={`w-3.5 h-3.5 ${syncing ? 'animate-spin' : ''}`}
             style={{ color: syncing ? '#3B82F6' : 'var(--ccmc-text-sec)' }} />
+          <span className="text-[12px] font-semibold hidden md:inline" style={{ color: 'var(--ccmc-text-sec)' }}>
+            {syncing ? 'Syncing…' : 'Refresh'}
+          </span>
         </button>
 
         {/* Upload result toast */}

@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { AlertTriangle, X, Phone, Zap } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { AlertTriangle, Zap, Phone, X } from 'lucide-react';
 import { useTheme } from './ThemeContext';
 import LoginPage            from './components/LoginPage';
 import Sidebar              from './components/Sidebar';
@@ -102,6 +102,8 @@ export default function App() {
   const [drawerUid,  setDrawerUid]  = useState(null);
   // Patient full-page state (for "View Full Record" from drawer)
   const [fullPageUid, setFullPageUid] = useState(null);
+  // Coordinated refresh trigger: signals all active sub-pages to re-fetch
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Restore session
   useEffect(() => {
@@ -147,22 +149,27 @@ export default function App() {
     } catch { /* silent */ }
   }, [user]);
 
+  // ── Manual Refresh: Instant UI update + background sheet sync check ─────
   const handleRefresh = async () => {
     setSyncing(true);
     try {
+      // 1. Instantly reload stats & signal currently active screen to reload
+      await loadStats();
+      setRefreshTrigger(t => t + 1);
+      setLastSync(new Date().toLocaleTimeString());
+
+      // 2. Trigger background check for any new Google Sheets changes
       const res = await fetch(`${API}/refresh`, { method: 'POST' });
       const data = res.ok ? await res.json() : {};
-      await loadStats();
-      setLastSync(new Date().toLocaleTimeString());
-      const src = data.source === 'google_sheets' ? 'Google Sheets' : 'local file';
-      const rec = data.records ? ` — ${data.records.toLocaleString()} mothers loaded` : '';
+      const src = data.source === 'google_sheets' ? 'Google Sheets' : 'database';
+      const rec = data.records ? ` — ${data.records.toLocaleString()} records live` : '';
       pushNotification(
-        'Spreadsheet Synced',
-        `All PHC patient records refreshed from ${src}${rec}.`,
+        'Data Refreshed',
+        `Dashboard records updated from ${src}${rec}.`,
         'SUCCESS'
       );
     } catch {
-      pushNotification('Sync Failed', 'Could not reach backend server.', 'ERROR');
+      pushNotification('Sync Notice', 'Refreshed local view; verifying backend connection.', 'INFO');
     } finally {
       setSyncing(false);
     }
@@ -172,48 +179,66 @@ export default function App() {
     setNotifications(prev => [{ id: Date.now(), title, message, type }, ...prev.slice(0, 19)]);
   };
 
+  // Initial load on user login
   useEffect(() => {
-    ping();
-    const t = setInterval(ping, 30000);
-    return () => clearInterval(t);
-  }, [ping]);
+    if (user) {
+      ping();
+      loadStats();
+    }
+  }, [user, ping, loadStats]);
 
-  useEffect(() => {
-    if (user) loadStats();
-  }, [user, loadStats]);
-
-  // ── Auto-sync: poll /api/sync-status every 30s ─────────────────────────
-  // When the backend detects an Excel file change and reloads, sync_count
-  // increments. We pick that up here and refresh the UI automatically.
+  // ── Unified 5-Minute Master Pulse + Page Visibility Detection ──────────
+  // Replaces independent 10s/15s/30s polling loops with a single, gentle 5-minute pulse.
+  // When the browser tab is minimized or hidden, polling pauses completely to save bandwidth.
   useEffect(() => {
     if (!user) return;
-    const checkSync = async () => {
+
+    const checkMasterSync = async () => {
+      // If user minimized or switched away from tab, do not make any requests
+      if (typeof document !== 'undefined' && document.hidden) return;
+
       try {
         const r = await fetch(`${API}/sync-status`);
-        if (!r.ok) return;
+        if (!r.ok) {
+          setBackendOK(false);
+          return;
+        }
+        setBackendOK(true);
         const d = await r.json();
+
+        // If the server's sync_count increased (due to Excel reload or Google Sheet webhook edit):
         if (d.sync_count > syncCountRef.current && syncCountRef.current > 0) {
           await loadStats();
+          setRefreshTrigger(t => t + 1);
           setLastSync(new Date().toLocaleTimeString());
           pushNotification(
             'Data Auto-Updated',
-            `Excel reloaded — ${(d.records || 0).toLocaleString()} records now live.`,
+            `Latest updates synced — ${(d.records || 0).toLocaleString()} records live.`,
             'SUCCESS'
           );
         }
         syncCountRef.current = d.sync_count;
-      } catch { /* silent — backend may be restarting */ }
+      } catch {
+        setBackendOK(false);
+      }
     };
-    checkSync();
-    const t = setInterval(checkSync, 10000);
-    return () => clearInterval(t);
-  }, [user, loadStats]);
 
-  // ── Periodic stats refresh every 10s (catches manual Excel saves) ──────
-  useEffect(() => {
-    if (!user) return;
-    const t = setInterval(() => { loadStats(); }, 10000);
-    return () => clearInterval(t);
+    // 5-minute interval (300,000 ms)
+    const FIVE_MINUTES_MS = 5 * 60 * 1000;
+    const timer = setInterval(checkMasterSync, FIVE_MINUTES_MS);
+
+    // When staff switches back into this tab, check immediately
+    const handleVisibility = () => {
+      if (!document.hidden) {
+        checkMasterSync();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
   }, [user, loadStats]);
 
   // Opens the patient drawer overlay on any page
@@ -231,11 +256,12 @@ export default function App() {
   if (!user) return <LoginPage onLogin={handleLogin} />;
 
   const renderPage = () => {
-    const commonProps = { user, openPatient };
+    const commonProps = { user, openPatient, refreshTrigger };
     switch (activePage) {
       case 'overview':
         return <DashboardOverview stats={stats} user={user} onRefresh={handleRefresh}
-                  syncing={syncing} setActivePage={setActivePage} openPatient={openPatient} />;
+                  syncing={syncing} setActivePage={setActivePage} openPatient={openPatient}
+                  refreshTrigger={refreshTrigger} />;
       case 'workflow':
         return <DailyWorkflow user={user} />;
       case 'approvals':
