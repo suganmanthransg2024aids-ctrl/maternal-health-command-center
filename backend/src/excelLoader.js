@@ -711,6 +711,7 @@ export async function processWebhookUpdate(sheetName, headers, rowData) {
 
   cache.ts = new Date().toISOString();
   syncState.lastSyncTime = cache.ts;
+  syncState.syncCount += 1;
   
   // 3. Save the new snapshot to Postgres so it survives a reboot
   if (usingPostgres) {

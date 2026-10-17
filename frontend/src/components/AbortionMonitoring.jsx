@@ -69,7 +69,7 @@ function AbortionCard({ m, openPatient }) {
   );
 }
 
-export default function AbortionMonitoring({ user, openPatient }) {
+export default function AbortionMonitoring({ user, openPatient, refreshTrigger }) {
   const { theme } = useTheme();
   const dark = theme !== 'bright';
   const [data,    setData]    = useState(null);
@@ -85,9 +85,14 @@ export default function AbortionMonitoring({ user, openPatient }) {
   useEffect(() => {
     setLoading(true);
     load();
-    const t = setInterval(load, 30000); // stay in sync across portals
-    return () => clearInterval(t);
   }, [load]);
+
+  // Coordinated sync: reload when master pulse or manual refresh fires
+  useEffect(() => {
+    if (refreshTrigger) {
+      load();
+    }
+  }, [refreshTrigger, load]);
 
   const byPhc = data?.by_phc || [];
   const typeCounts = data?.type_counts || {};

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Phone, Filter, RefreshCw, X, Clock, CheckCircle, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import { Phone, RefreshCw, X, ChevronDown, ChevronUp } from 'lucide-react';
 import HRTCallPerformance from './HRTCallPerformance';
 import { useTheme } from '../ThemeContext';
 
@@ -116,7 +116,7 @@ function DEOPerformance() {
   );
 }
 
-export default function CallTracking({ user }) {
+export default function CallTracking({ user, refreshTrigger }) {
   const { theme } = useTheme();
   const dark = theme !== 'bright';
   const [records, setRecords]   = useState([]);
@@ -153,12 +153,12 @@ export default function CallTracking({ user }) {
 
   useEffect(() => { load(); }, [load]);
 
-  // Live sync — all HRT portals update call statuses concurrently, so poll
-  // in the background (no spinner) to show everyone's latest entries.
+  // Coordinated sync: reload when master pulse or manual refresh fires
   useEffect(() => {
-    const t = setInterval(() => load(true), 15000);
-    return () => clearInterval(t);
-  }, [load]);
+    if (refreshTrigger) {
+      load(true);
+    }
+  }, [refreshTrigger, load]);
 
   const openCallModal = (r) => {
     setCallModal({
@@ -183,8 +183,6 @@ export default function CallTracking({ user }) {
     setSaving(false);
     load();
   };
-
-  const today = Object.entries(statusCounts).reduce((a, [, v]) => a + v, 0);
 
   return (
     <div className="space-y-4">

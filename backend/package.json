@@ -5,8 +5,8 @@
   "main": "server.js",
   "type": "module",
   "scripts": {
-    "start": "node --max-old-space-size=150 server.js",
-    "dev": "nodemon server.js"
+    "start": "node api.js && node --max-old-space-size=150 server.js",
+    "dev": "node api.js && nodemon server.js"
   },
   "dependencies": {
     "better-sqlite3": "^11.3.0",
